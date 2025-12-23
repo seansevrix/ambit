@@ -1,25 +1,59 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
 
-// datasource db {
-//   provider = "sqlite"
-//   url      = "file:./dev.db"
-// }
+datasource db {
+  provider = "sqlite"
+  url      = "file:./prisma/dev.db"
+}
 
+model Customer {
+  id           Int     @id @default(autoincrement())
+  name         String
+  email        String  @unique
+  passwordHash String? // ✅ added (for login)
+
+  phone        String?
+  industry     String?
+  location     String?
+  services     String?
+
+  // comma-separated
+  keywords     String?
+  // comma-separated (ex: 237310,238220)
+  naics        String?
+
+  // Stripe / subscription gating
+  stripeCustomerId     String? @unique
+  stripeSubscriptionId String? @unique
+  subscriptionStatus   String?
+  isActive             Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
 
 model Opportunity {
-  id            Int    @id @default(autoincrement())
-  noticeId      String
-  title         String
-  agency        String
-  naics         String
-  setAside      String
-  status        String
-  dueDate       String
-  valueEstimate Int
-  samLink       String
-  notes         String
+  id         Int      @id @default(autoincrement())
+  title      String
+  location   String
+  naics      String
+
+  keywords   String?
+  agency     String?
+  url        String?
+  postedDate DateTime?
+  summary    String?
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String?
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }

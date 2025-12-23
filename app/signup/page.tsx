@@ -1,196 +1,178 @@
-'use client';
+"use client";
 
-import { useState, FormEvent, ChangeEvent } from 'react';
-import { useRouter } from 'next/navigation';
-import { API_BASE_URL } from '../config';
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { signIn } from "next-auth/react";
 
-type SignupFormState = {
-  name: string;
-  contactEmail: string;
-  industry: string;
-  location: string;
-  minValue: string;
-  maxValue: string;
-  services: string;
-};
-
-type Status = 'idle' | 'submitting' | 'success' | 'error';
+const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001";
 
 export default function SignupPage() {
   const router = useRouter();
 
-  const [form, setForm] = useState<SignupFormState>({
-    name: '',
-    contactEmail: '',
-    industry: '',
-    location: '',
-    minValue: '',
-    maxValue: '',
-    services: '',
-  });
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [status, setStatus] = useState<Status>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [industry, setIndustry] = useState("");
+  const [location, setLocation] = useState("");
+  const [services, setServices] = useState("");
 
-  const handleChange = (
-    e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  };
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: FormEvent) => {
+  async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setStatus('submitting');
-    setErrorMessage(null);
+    setError(null);
+    setLoading(true);
 
-    try {
-      const res = await fetch(`${API_BASE_URL}/customers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: form.name,
-          contactEmail: form.contactEmail,
-          industry: form.industry || undefined,
-          location: form.location || undefined,
-          minValue: form.minValue ? Number(form.minValue) : undefined,
-          maxValue: form.maxValue ? Number(form.maxValue) : undefined,
-          services: form.services || undefined,
-        }),
-      });
+    const resp = await fetch(`${BACKEND}/engine/auth/register`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name,
+        email,
+        password,
+        industry: industry || undefined,
+        location: location || undefined,
+        services: services || undefined,
+      }),
+    });
 
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || 'Failed to create customer');
-      }
+    const data = await resp.json().catch(() => null);
 
-      const created = await res.json();
-      const customerId = created.id;
-
-      setStatus('success');
-
-      // Send them to their matches page
-      router.push(`/matches/${customerId}`);
-    } catch (err: any) {
-      console.error('Signup error:', err);
-      setStatus('error');
-      setErrorMessage(err.message || 'Something went wrong');
+    if (!resp.ok || !data?.ok) {
+      setLoading(false);
+      setError(data?.error || "Failed to create account.");
+      return;
     }
-  };
+
+    // Auto-login after signup
+    const res = await signIn("credentials", {
+      redirect: false,
+      email,
+      password,
+    });
+
+    setLoading(false);
+
+    if (!res?.ok) {
+      router.push("/login");
+      return;
+    }
+
+    router.push("/dashboard");
+  }
 
   return (
-    <main className="min-h-screen p-6">
-      <div className="max-w-xl mx-auto space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-2xl font-semibold">Create your AMBIT profile</h1>
-          <p className="text-sm text-gray-600">
-            Tell us about your company so AMBIT can start matching you with
-            opportunities that fit your size, industry, and locations.
-          </p>
-        </header>
-
-        <form onSubmit={handleSubmit} className="space-y-3 border rounded-lg p-4">
-          <div>
-            <label className="block text-sm mb-1">
-              Company Name <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              required
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">
-              Contact Email <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="email"
-              name="contactEmail"
-              value={form.contactEmail}
-              onChange={handleChange}
-              required
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">Industry</label>
-            <input
-              type="text"
-              name="industry"
-              value={form.industry}
-              onChange={handleChange}
-              placeholder="Construction, HVAC, maintenance, etc."
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">Location</label>
-            <input
-              type="text"
-              name="location"
-              value={form.location}
-              onChange={handleChange}
-              placeholder="Primary city / region (e.g. San Diego, CA)"
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <div className="flex-1">
-              <label className="block text-sm mb-1">Min Job Size ($)</label>
-              <input
-                type="number"
-                name="minValue"
-                value={form.minValue}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
-            <div className="flex-1">
-              <label className="block text-sm mb-1">Max Job Size ($)</label>
-              <input
-                type="number"
-                name="maxValue"
-                value={form.maxValue}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm mb-1">Services</label>
-            <textarea
-              name="services"
-              value={form.services}
-              onChange={handleChange}
-              rows={3}
-              placeholder="Short description of what you actually perform (e.g. small civil work, HVAC PM, snow, landscaping)."
-              className="w-full border rounded px-3 py-2 text-sm"
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={status === 'submitting'}
-            className="mt-1 border rounded-md px-4 py-2 text-sm font-medium disabled:opacity-60"
+    <main className="min-h-screen bg-[#070B18] text-white">
+      <div className="mx-auto max-w-[1700px] px-6 py-12 lg:px-12">
+        <div className="mx-auto max-w-2xl">
+          {/* ✅ Back arrow */}
+          <Link
+            href="/"
+            className="mb-6 inline-flex items-center gap-2 text-sm text-white/70 hover:text-white"
           >
-            {status === 'submitting' ? 'Creating profile…' : 'Create profile'}
-          </button>
+            ← Back
+          </Link>
 
-          {status === 'error' && (
-            <p className="text-xs text-red-600 mt-1">
-              {errorMessage || 'Something went wrong. Please try again.'}
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur">
+            <h1 className="text-3xl font-semibold tracking-tight">Create your Ambit account</h1>
+            <p className="mt-2 text-sm text-white/70">
+              One plan. <span className="text-white">$39.99/month</span>. Cancel anytime.
             </p>
-          )}
-        </form>
+
+            <form onSubmit={onSubmit} className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <label className="text-sm text-white/80">Name</label>
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="Your name"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-white/80">Email</label>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  type="email"
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="you@company.com"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-white/80">Password</label>
+                <input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  type="password"
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="At least 8 characters"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-white/80">Industry (optional)</label>
+                <input
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="IT, Logistics, Engineering…"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm text-white/80">Location (optional)</label>
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="San Diego, CA"
+                />
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="text-sm text-white/80">Services (optional)</label>
+                <input
+                  value={services}
+                  onChange={(e) => setServices(e.target.value)}
+                  className="mt-2 w-full rounded-xl border border-white/10 bg-[#070B18]/60 px-4 py-3 text-sm outline-none focus:ring-white/20"
+                  placeholder="Managed security, freight brokerage, systems integration…"
+                />
+              </div>
+
+              {error ? (
+                <div className="md:col-span-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {error}
+                </div>
+              ) : null}
+
+              <button
+                disabled={loading}
+                className="md:col-span-2 w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-black hover:bg-white/90 disabled:opacity-60"
+              >
+                {loading ? "Creating…" : "Create Account"}
+              </button>
+            </form>
+
+            <div className="mt-6 text-sm text-white/70">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white/60"
+              >
+                Log in
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

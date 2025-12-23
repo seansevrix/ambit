@@ -39,3 +39,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# env files (secrets)
+.env
+.env.*
+!.env.example
+
+# local sqlite db (do not commit)
+backend/prisma/dev.db
+
+# build / cache
+.next
+dist
+node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+# never commit local sqlite db copies anywhere
+**/dev.db

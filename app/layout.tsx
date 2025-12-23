@@ -1,11 +1,11 @@
-import './globals.css';
-import type { Metadata } from 'next';
-import Link from 'next/link';
+import type { Metadata } from "next";
+import "./globals.css";
+import SiteNav from "./components/SiteNav";
+import SiteFooter from "./components/SiteFooter";
 
 export const metadata: Metadata = {
-  title: 'AMBIT',
-  description:
-    'AMBIT helps small service companies track and match to government contract opportunities.',
+  title: "AMBIT",
+  description: "Find the right government opportunities for your company.",
 };
 
 export default function RootLayout({
@@ -15,36 +15,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-white text-gray-900">
-        <header className="border-b">
-          <div className="max-w-5xl mx-auto px-6 py-3 flex items-center justify-between gap-4">
-            <Link href="/" className="text-sm font-semibold tracking-wide">
-              AMBIT
-            </Link>
+      <body className="min-h-screen bg-gradient-to-b from-[#0B1430] via-[#0D1A3A] to-[#0F2048] text-white">
+        <div className="min-h-screen flex flex-col">
+          <SiteNav />
 
-            <nav className="flex flex-wrap items-center gap-4 text-xs md:text-sm">
-              <Link href="/" className="hover:underline">
-                Home
-              </Link>
-              <Link href="/signup" className="hover:underline">
-                Signup
-              </Link>
-              {/* Demo matches points to customer 1 */}
-              <Link href="/matches/1" className="hover:underline">
-                Demo matches
-              </Link>
-              <Link href="/admin/customers" className="hover:underline">
-                Admin – customers
-              </Link>
-              <Link href="/admin/opportunities" className="hover:underline">
-                Admin – opportunities
-              </Link>
-            </nav>
-          </div>
-        </header>
+          <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-10">
+            {children}
+          </main>
 
-        {/* Page content */}
-        {children}
+          <SiteFooter />
+        </div>
       </body>
     </html>
   );
