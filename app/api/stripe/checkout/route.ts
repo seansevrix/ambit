@@ -3,6 +3,16 @@ import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
 
+function getOrigin(req: Request) {
+  // Works on Vercel/proxies + local dev
+  const proto = req.headers.get("x-forwarded-proto") ?? "http";
+  const host =
+    req.headers.get("x-forwarded-host") ??
+    req.headers.get("host") ??
+    "localhost:3000";
+  return `${proto}://${host}`;
+}
+
 export async function POST(req: Request) {
   try {
     const stripeKey = process.env.STRIPE_SECRET_KEY;
@@ -21,16 +31,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const stripe = new Stripe(stripeKey, {
-      apiVersion: "2024-06-20" as any,
-    });
+    const body = await req.json().catch(() => ({}));
+    const customerId = body?.customerId;
 
-    const { customerId } = await req.json();
     if (!customerId) {
       return NextResponse.json({ error: "Missing customerId" }, { status: 400 });
     }
 
-    const origin = req.headers.get("origin") || "http://localhost:3000";
+    const stripe = new Stripe(stripeKey, {
+      apiVersion: "2024-06-20" as any,
+    });
+
+    const origin = req.headers.get("origin") ?? getOrigin(req);
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
