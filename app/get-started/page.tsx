@@ -46,7 +46,6 @@ function norm(s?: string) {
 }
 
 function parseServiceArea(input: string) {
-  // expected: "San Diego, CA"
   const parts = input.split(",");
   const city = (parts[0] || "").trim();
   const state = (parts[1] || "").trim();
@@ -62,7 +61,7 @@ function splitKeywords(input: string) {
 }
 
 function withinLast12Months(iso?: string) {
-  if (!iso) return true; // if missing, keep it (don’t accidentally show 0)
+  if (!iso) return true;
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return true;
   const now = Date.now();
@@ -82,7 +81,6 @@ export default function GetStartedClient() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
-  // Dynamic match counter (estimate from current feed)
   const [matchCount, setMatchCount] = useState<number | null>(null);
   const [matchCountLoading, setMatchCountLoading] = useState(false);
 
@@ -95,13 +93,11 @@ export default function GetStartedClient() {
     );
   }, [companyName, email, location, keywords]);
 
-  // Estimate matches from opportunities feed
   useEffect(() => {
     const loc = location.trim();
     const kw = keywords.trim();
     const nx = naics.trim();
 
-    // Only run when we have the core inputs
     if (loc.length < 2 || kw.length < 2) {
       setMatchCount(null);
       return;
@@ -137,7 +133,6 @@ export default function GetStartedClient() {
             kwList.length > 0 &&
             kwList.some((k) => k && (oTitle.includes(k) || oLoc.includes(k)));
 
-          // Match rule: location + (naics OR keyword)
           return locationMatch && (naicsMatch || keywordMatch);
         }).length;
 
@@ -157,35 +152,30 @@ export default function GetStartedClient() {
     setLoading(true);
 
     try {
-      let payload: any = {
-        companyName: companyName.trim(),
-        email: email.trim(),
-        location: location.trim(),
-        naics: naics.trim() || null,
-        keywords: keywords.trim(), // ✅ required
+      const company = companyName.trim();
+      const mail = email.trim();
+      const loc = location.trim();
+      const nx = naics.trim();
+      const kw = keywords.trim();
+
+      // ✅ IMPORTANT FIX:
+      // Always send `name` because the deployed backend is returning "name is required".
+      // Also send `companyName` for compatibility with newer code.
+      const payload: any = {
+        name: company,                // ✅ REQUIRED BY CURRENT DEPLOY
+        companyName: company,         // keep for compatibility
+        email: mail,
+        location: loc,
+        serviceArea: loc,             // extra compatibility
+        naics: nx || null,
+        keywords: kw,                 // ✅ required on this page
       };
 
-      let { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
-
-      // Fallback if backend expects `name` not `companyName`
-      const msg = String(json?.message || json?.error || "");
-      if (
-        !res.ok &&
-        msg.toLowerCase().includes("unknown argument") &&
-        msg.includes("companyName")
-      ) {
-        payload = {
-          name: companyName.trim(),
-          email: email.trim(),
-          location: location.trim(),
-          naics: naics.trim() || null,
-          keywords: keywords.trim(),
-        };
-        ({ res, json } = await postJson(`${API_BASE}/engine/customers`, payload));
-      }
+      const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
 
       if (!res.ok) {
-        throw new Error(json?.message || json?.error || `Signup failed (${res.status})`);
+        const msg = String(json?.message || json?.error || `Signup failed (${res.status})`);
+        throw new Error(msg);
       }
 
       const id = Number(json?.id) || Number(json?.customer?.id);
@@ -205,13 +195,14 @@ export default function GetStartedClient() {
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        {/* LEFT: Form */}
         <div className="rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
           <div className="flex items-center gap-3">
             <AmbitMark size={44} />
             <div>
               <div className="text-sm font-semibold text-slate-900">AMBIT</div>
-              <div className="text-xs text-slate-600">Ranked government leads for contractors</div>
+              <div className="text-xs text-slate-600">
+                Ranked government leads for contractors
+              </div>
             </div>
           </div>
 
@@ -219,7 +210,6 @@ export default function GetStartedClient() {
             Create your profile
           </h1>
 
-          {/* TRUST BAR */}
           <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
             <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
               Built for contractors
@@ -275,7 +265,6 @@ export default function GetStartedClient() {
                 />
               </Field>
 
-              {/* ✅ KEYWORDS REQUIRED */}
               <Field label="Keywords">
                 <input
                   className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
@@ -289,7 +278,6 @@ export default function GetStartedClient() {
               </Field>
             </div>
 
-            {/* Guaranteed Match Counter (dynamic) */}
             <div className="rounded-xl border border-slate-900/10 bg-slate-50 px-4 py-3 text-sm text-slate-700">
               {matchCountLoading ? (
                 <span className="font-semibold">Checking your area…</span>
@@ -321,7 +309,6 @@ export default function GetStartedClient() {
               {loading ? "Creating…" : "Show My Matches"}
             </button>
 
-            {/* Risk reversal micro-copy */}
             <div className="text-xs text-slate-600">
               No long-term contracts. Pause or cancel in one click.
             </div>
@@ -333,7 +320,6 @@ export default function GetStartedClient() {
           </div>
         </div>
 
-        {/* RIGHT: Outcomes + Price */}
         <div className="rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
           <div className="text-xs font-semibold text-slate-600">WHAT YOU GET</div>
 
@@ -355,8 +341,6 @@ export default function GetStartedClient() {
           <div className="mt-6 rounded-3xl border border-slate-900/10 bg-slate-50 p-6">
             <div className="flex items-center justify-between">
               <div className="text-sm font-semibold text-slate-900">Price</div>
-
-              {/* ROI Badge */}
               <div className="rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
                 One win can cover years of AMBIT.
               </div>
