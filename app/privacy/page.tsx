@@ -1,175 +1,97 @@
 import Link from "next/link";
 
-export const metadata = {
-  title: "Privacy | AMBIT",
-  description: "AMBIT privacy policy.",
-};
-
 export default function PrivacyPage() {
-  const updated = "December 29, 2025";
-
   return (
-    <main className="min-h-screen bg-[#050B1A] text-white">
-      <div className="mx-auto w-full max-w-4xl px-6 py-14">
-        <h1 className="text-4xl font-semibold tracking-tight">Privacy Policy</h1>
-        <p className="mt-3 text-white/70">Last updated: {updated}</p>
+    <main className="min-h-[calc(100vh-80px)] px-4 py-16">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur md:p-10">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Privacy Policy
+          </h1>
+          <p className="mt-2 text-sm text-white/50">Last updated: Dec 29, 2025</p>
 
-        <div className="mt-8 space-y-8 rounded-2xl border border-white/10 bg-white/5 p-6 leading-relaxed">
-          <section>
-            <p className="text-white/70">
-              This Privacy Policy explains how AMBIT (“AMBIT”, “we”, “us”, “our”)
-              collects, uses, discloses, and protects information when you use our
-              website and services (the “Service”).
-            </p>
-            <p className="mt-3 text-white/70">
-              AMBIT is a private software product and is not affiliated with any
-              government entity. Our Service may reference or summarize publicly
-              available information from third-party sources.
-            </p>
-          </section>
+          <p className="mt-6 text-white/70">
+            This Privacy Policy explains how AMBIT collects, uses, and shares
+            information when you use our website and services (the “Service”).
+          </p>
 
-          <section>
-            <h2 className="text-xl font-semibold">Information We Collect</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
+          <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">1) Information we collect</h2>
+            <ul className="mt-3 space-y-2 text-sm text-white/70">
               <li>
-                <span className="text-white/80 font-medium">Account/Profile Data:</span>{" "}
-                company name, email address, service area/location, keywords, NAICS,
-                and other information you submit.
+                • <span className="text-white/80">Account/profile info</span>:
+                company name, email, service area, keywords, NAICS and related
+                fields you submit.
               </li>
               <li>
-                <span className="text-white/80 font-medium">Usage Data:</span>{" "}
-                interactions with the Service (pages viewed, clicks, feature usage),
-                approximate location derived from IP, and diagnostic logs.
+                • <span className="text-white/80">Usage data</span>: basic logs
+                and analytics (e.g., pages viewed, feature usage, performance).
               </li>
               <li>
-                <span className="text-white/80 font-medium">Device/Technical Data:</span>{" "}
-                browser type, device identifiers, and similar telemetry.
-              </li>
-              <li>
-                <span className="text-white/80 font-medium">Payments:</span>{" "}
-                billing and payment processing is handled by{" "}
-                <span className="text-white/80 font-medium">Stripe</span>. We do not
-                store full card numbers. We may store Stripe customer/subscription IDs
-                and status to manage access.
+                • <span className="text-white/80">Billing info</span>: handled by
+                our payment processor (e.g., Stripe). AMBIT does not store full
+                card numbers.
               </li>
             </ul>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">How We Use Information</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>Provide, operate, and improve the Service.</li>
-              <li>Create and manage accounts, subscriptions, and access controls.</li>
-              <li>Personalize matches and results based on your profile.</li>
-              <li>Communicate with you about support, service updates, and security.</li>
-              <li>Prevent fraud, abuse, and unauthorized access.</li>
-              <li>Comply with legal obligations and enforce our Terms.</li>
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">2) How we use information</h2>
+            <ul className="mt-3 space-y-2 text-sm text-white/70">
+              <li>• Provide and improve the Service (matching, dashboards).</li>
+              <li>• Operate billing, subscriptions, and fraud prevention.</li>
+              <li>• Respond to support and customer requests.</li>
+              <li>• Communicate product updates and important notices.</li>
             </ul>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">How We Share Information</h2>
-            <p className="mt-3 text-white/70">
-              We may share information with:
-            </p>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>
-                <span className="text-white/80 font-medium">Service Providers</span>{" "}
-                that help run the Service (hosting, databases, analytics, logs, and
-                payment processing like Stripe).
-              </li>
-              <li>
-                <span className="text-white/80 font-medium">Legal/Compliance</span>{" "}
-                when required by law, subpoena, or to protect rights, safety, and
-                security.
-              </li>
-              <li>
-                <span className="text-white/80 font-medium">Business Transfers</span>{" "}
-                if we undergo a merger, acquisition, financing, or sale of assets.
-              </li>
-            </ul>
-            <p className="mt-3 text-white/70">
-              We do not sell your profile data as a marketing lead list.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">3) How we share information</h2>
+            <p className="mt-3 text-sm text-white/70">
+              We do not sell your personal information. We may share information
+              with vendors who help us operate the Service (hosting, analytics,
+              email delivery, payment processing), and with legal authorities if
+              required by law.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">Data Retention</h2>
-            <p className="mt-3 text-white/70">
-              We retain information for as long as needed to provide the Service,
-              comply with obligations, resolve disputes, and enforce agreements. You
-              may request deletion (subject to legal and operational requirements).
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">4) Data retention</h2>
+            <p className="mt-3 text-sm text-white/70">
+              We retain information as long as needed to provide the Service and
+              comply with legal, tax, and accounting obligations. You may request
+              deletion of your account by contacting us (some records may be
+              retained where legally required).
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">Security</h2>
-            <p className="mt-3 text-white/70">
-              We use reasonable administrative, technical, and organizational measures
-              to protect data. However, no system is 100% secure; you use the Service
-              at your own risk.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">5) Security</h2>
+            <p className="mt-3 text-sm text-white/70">
+              We use reasonable administrative, technical, and physical safeguards
+              designed to protect information. No method of transmission or storage
+              is 100% secure.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">Your Choices</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>You can update your profile details in the Service.</li>
-              <li>
-                You can request access, correction, or deletion by contacting us.
-              </li>
-              <li>
-                You can manage cookies/trackers via browser controls (where applicable).
-              </li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Children’s Privacy</h2>
-            <p className="mt-3 text-white/70">
-              The Service is not intended for children under 13, and we do not knowingly
-              collect personal information from children.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Third-Party Links & Sources</h2>
-            <p className="mt-3 text-white/70">
-              The Service may link to or summarize third-party sites and public postings.
-              We are not responsible for third-party privacy practices or content. Always
-              review the official posting and its terms.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Changes to this Policy</h2>
-            <p className="mt-3 text-white/70">
-              We may update this Privacy Policy from time to time. Continued use of the
-              Service after changes means you accept the updated policy.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">Contact</h2>
-            <p className="mt-3 text-white/70">
-              Questions? Contact us via{" "}
-              <Link className="underline" href="/contact">
-                Contact
-              </Link>
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">6) Contact</h2>
+            <p className="mt-3 text-sm text-white/70">
+              Privacy questions? Visit{" "}
+              <Link className="underline hover:text-white" href="/support">
+                Support
+              </Link>{" "}
+              or email{" "}
+              <a className="underline hover:text-white" href="mailto:sean.s@sevrixgov.com">
+                sean.s@sevrixgov.com
+              </a>
               .
             </p>
-            <p className="mt-2 text-xs text-white/50">
-              Emails are handled by AMBIT’s parent company, Sevrix Government Contracting.
-            </p>
           </section>
-        </div>
 
-        <div className="mt-8 text-sm text-white/60">
-          Also review our{" "}
-          <Link className="underline" href="/terms">
-            Terms
-          </Link>
-          .
+          <p className="mt-8 text-xs text-white/50">
+            This policy is informational and not legal advice.
+          </p>
         </div>
       </div>
     </main>

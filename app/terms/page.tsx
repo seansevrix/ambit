@@ -1,176 +1,117 @@
 import Link from "next/link";
 
-export const metadata = {
-  title: "Terms | AMBIT",
-  description: "AMBIT terms of service.",
-};
-
 export default function TermsPage() {
-  const updated = "December 29, 2025";
-
   return (
-    <main className="min-h-screen bg-[#050B1A] text-white">
-      <div className="mx-auto w-full max-w-4xl px-6 py-14">
-        <h1 className="text-4xl font-semibold tracking-tight">Terms of Service</h1>
-        <p className="mt-3 text-white/70">Last updated: {updated}</p>
+    <main className="min-h-[calc(100vh-80px)] px-4 py-16">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur md:p-10">
+          <h1 className="text-3xl font-semibold tracking-tight md:text-4xl">
+            Terms of Service
+          </h1>
+          <p className="mt-2 text-sm text-white/50">Last updated: Dec 29, 2025</p>
 
-        <div className="mt-8 space-y-8 rounded-2xl border border-white/10 bg-white/5 p-6 leading-relaxed">
-          <section>
-            <p className="text-white/70">
-              These Terms of Service (“Terms”) govern your access to and use of AMBIT
-              (the “Service”). By accessing or using the Service, you agree to these Terms.
-              If you do not agree, do not use the Service.
-            </p>
-            <p className="mt-3 text-white/70">
-              AMBIT is a private software product and is not affiliated with any government
-              agency. The Service may reference or summarize publicly available third-party
-              postings and content.
-            </p>
-          </section>
+          <p className="mt-6 text-white/70">
+            These Terms govern your use of AMBIT. By accessing or using the
+            Service, you agree to these Terms.
+          </p>
 
-          <section>
-            <h2 className="text-xl font-semibold">1. The Service</h2>
-            <p className="mt-3 text-white/70">
-              AMBIT helps users discover and evaluate opportunities. We do not guarantee
-              accuracy, completeness, timeliness, eligibility, pricing, award decisions,
-              or outcomes. You are responsible for verifying all details and requirements
-              using the official posting and documents.
+          <section className="mt-8 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">1) The Service</h2>
+            <p className="mt-3 text-sm text-white/70">
+              AMBIT helps businesses discover and prioritize public-sector
+              opportunities using publicly available information and third-party
+              sources. AMBIT is an informational tool and is not legal advice.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">2. Eligibility & Accounts</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>You must provide accurate information and keep it updated.</li>
-              <li>You are responsible for all activity under your account.</li>
-              <li>You may not use the Service for unlawful or prohibited purposes.</li>
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">2) No guarantee + verification</h2>
+            <p className="mt-3 text-sm text-white/70">
+              We do not guarantee accuracy, completeness, or timeliness of any
+              listing, summary, match score, or estimate. You are responsible for
+              verifying requirements, deadlines, and attachments on the official
+              solicitation source before acting.
+            </p>
+          </section>
+
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">3) Acceptable use</h2>
+            <ul className="mt-3 space-y-2 text-sm text-white/70">
+              <li>• Don’t bypass paywalls or access controls.</li>
+              <li>• Don’t scrape, reverse engineer, or disrupt the Service.</li>
+              <li>• Don’t use the Service for unlawful or abusive activity.</li>
             </ul>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">3. Subscriptions, Billing, and Payments</h2>
-            <p className="mt-3 text-white/70">
-              Paid features require an active subscription. Payments are processed by Stripe.
-              By subscribing, you authorize recurring charges according to your selected plan.
-            </p>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>Subscription access is tied to subscription status (active/trialing, etc.).</li>
-              <li>If payment fails or subscription is canceled, access may be restricted.</li>
-              <li>Taxes may apply depending on jurisdiction.</li>
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">4) Billing, cancellation, refunds</h2>
+            <ul className="mt-3 space-y-2 text-sm text-white/70">
+              <li>• Subscriptions renew automatically until canceled.</li>
+              <li>• You can cancel anytime; access continues through the paid period.</li>
+              <li>
+                • Unless required by law, payments are non-refundable (especially
+                for partial periods).
+              </li>
             </ul>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">4. Acceptable Use</h2>
-            <ul className="mt-3 list-disc space-y-2 pl-6 text-white/70">
-              <li>No reverse engineering, scraping our app, or circumventing paywalls.</li>
-              <li>No interfering with Service operation, security, or other users.</li>
-              <li>No use of the Service to violate laws, regulations, or third-party rights.</li>
-              <li>No uploading malicious code or attempting unauthorized access.</li>
-            </ul>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">5. Third-Party Content & Links</h2>
-            <p className="mt-3 text-white/70">
-              The Service may display or link to third-party content, including public postings.
-              We do not control third-party content and are not responsible for it. Third-party
-              terms and policies may apply.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">5) Intellectual property</h2>
+            <p className="mt-3 text-sm text-white/70">
+              The Service, including its design, software, and content (excluding
+              third-party/public listings), is owned by AMBIT and/or its licensors.
+              You receive a limited, non-exclusive, non-transferable license to use
+              the Service for your internal business purposes.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">6. Intellectual Property</h2>
-            <p className="mt-3 text-white/70">
-              AMBIT and its software, design, and functionality are owned by us and protected
-              by intellectual property laws. You receive a limited, non-exclusive, non-transferable
-              right to use the Service for your internal business use, subject to these Terms.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">6) Disclaimer of warranties</h2>
+            <p className="mt-3 text-sm text-white/70">
+              THE SERVICE IS PROVIDED “AS IS” AND “AS AVAILABLE” WITHOUT WARRANTIES
+              OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING IMPLIED WARRANTIES OF
+              MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, AND
+              NON-INFRINGEMENT.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">7. Disclaimers</h2>
-            <p className="mt-3 text-white/70">
-              THE SERVICE IS PROVIDED “AS IS” AND “AS AVAILABLE” WITHOUT WARRANTIES OF ANY KIND,
-              EXPRESS OR IMPLIED, INCLUDING IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR
-              A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. WE DO NOT WARRANT THAT THE SERVICE
-              WILL BE UNINTERRUPTED, ERROR-FREE, OR THAT OPPORTUNITY DATA WILL BE ACCURATE OR
-              UP TO DATE.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">7) Limitation of liability</h2>
+            <p className="mt-3 text-sm text-white/70">
+              TO THE MAXIMUM EXTENT PERMITTED BY LAW, AMBIT WILL NOT BE LIABLE FOR
+              INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES,
+              OR ANY LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS OPPORTUNITIES.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">8. Limitation of Liability</h2>
-            <p className="mt-3 text-white/70">
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, AMBIT AND ITS AFFILIATES, OWNERS, OFFICERS,
-              EMPLOYEES, AND AGENTS WILL NOT BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL,
-              CONSEQUENTIAL, OR PUNITIVE DAMAGES, OR ANY LOSS OF PROFITS, REVENUE, DATA, OR BUSINESS
-              OPPORTUNITY, ARISING OUT OF OR RELATED TO YOUR USE OF THE SERVICE.
-            </p>
-            <p className="mt-3 text-white/70">
-              TO THE MAXIMUM EXTENT PERMITTED BY LAW, OUR TOTAL LIABILITY FOR ANY CLAIM ARISING OUT
-              OF OR RELATED TO THE SERVICE WILL NOT EXCEED THE AMOUNT YOU PAID TO US FOR THE SERVICE
-              IN THE 3 MONTHS BEFORE THE EVENT GIVING RISE TO THE CLAIM.
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">8) Indemnity</h2>
+            <p className="mt-3 text-sm text-white/70">
+              You agree to defend, indemnify, and hold AMBIT harmless from claims
+              arising out of your use of the Service, your content, or your
+              violation of these Terms.
             </p>
           </section>
 
-          <section>
-            <h2 className="text-xl font-semibold">9. Indemnification</h2>
-            <p className="mt-3 text-white/70">
-              You agree to defend, indemnify, and hold harmless AMBIT and its affiliates from and
-              against any claims, liabilities, damages, losses, and expenses (including reasonable
-              attorney fees) arising out of or related to your use of the Service, your violation of
-              these Terms, or your violation of any rights of a third party.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">10. Termination</h2>
-            <p className="mt-3 text-white/70">
-              We may suspend or terminate access to the Service at any time for violations of these
-              Terms, suspected abuse, or to protect the Service. You may stop using the Service at
-              any time. Sections that by their nature should survive termination will survive.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">11. Changes</h2>
-            <p className="mt-3 text-white/70">
-              We may update these Terms from time to time. Continued use after changes means you
-              accept the updated Terms.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">12. Governing Law</h2>
-            <p className="mt-3 text-white/70">
-              These Terms are governed by the laws of the State of California, without regard to
-              conflict of law principles. Venue for any permitted court action will be in California
-              courts located in or near San Diego County, unless otherwise required by law.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-xl font-semibold">13. Contact</h2>
-            <p className="mt-3 text-white/70">
-              For questions about these Terms, contact us via{" "}
-              <Link className="underline" href="/contact">
+          <section className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-6">
+            <h2 className="text-lg font-semibold">9) Contact</h2>
+            <p className="mt-3 text-sm text-white/70">
+              Questions? Use{" "}
+              <Link className="underline hover:text-white" href="/contact">
                 Contact
+              </Link>{" "}
+              or{" "}
+              <Link className="underline hover:text-white" href="/support">
+                Support
               </Link>
               .
             </p>
-            <p className="mt-2 text-xs text-white/50">
-              Emails are handled by AMBIT’s parent company, Sevrix Government Contracting.
-            </p>
           </section>
-        </div>
 
-        <div className="mt-8 text-sm text-white/60">
-          Review our{" "}
-          <Link className="underline" href="/privacy">
-            Privacy Policy
-          </Link>
-          .
+          <p className="mt-8 text-xs text-white/50">
+            These terms are a starting point and not legal advice. For stronger
+            protection, have counsel review before a full public launch.
+          </p>
         </div>
       </div>
     </main>
