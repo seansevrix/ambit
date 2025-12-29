@@ -1,91 +1,117 @@
+// app/support/page.tsx
 import Link from "next/link";
 
 export const metadata = {
   title: "Support | AMBIT",
-  description: "Support, trust, and product information for AMBIT.",
+  description:
+    "Learn what AMBIT is, how we handle trust and transparency, and how to contact a Sevrix associate for help.",
 };
 
 export default function SupportPage() {
   return (
-    <main className="min-h-[calc(100vh-120px)] px-4 py-14">
-      <div className="mx-auto max-w-5xl">
-        <section className="rounded-[28px] border border-white/10 bg-white/5 p-8 shadow-xl backdrop-blur">
-          <h1 className="text-3xl font-semibold text-white">Support</h1>
-          <p className="mt-2 max-w-2xl text-sm text-white/70">
-            AMBIT helps contractors find and prioritize public-sector opportunities faster — so you
-            spend less time searching and more time bidding.
+    <main className="min-h-[calc(100vh-120px)] px-4 py-10">
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-8 shadow-2xl backdrop-blur">
+          <h1 className="text-3xl font-semibold tracking-tight text-white">
+            Support
+          </h1>
+          <p className="mt-2 text-sm text-white/70">
+            AMBIT helps contractors find and prioritize public-sector
+            opportunities faster — so you spend less time searching and more
+            time bidding.
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-2">
-            {/* What AMBIT is */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <h2 className="text-base font-semibold text-white">What AMBIT is</h2>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
-                <li>• A matching engine that surfaces opportunities based on your service area + keywords/NAICS.</li>
-                <li>• A dashboard that helps you quickly triage what’s worth your time.</li>
-                <li>• Built for small businesses that don’t have time to live in portals all day.</li>
+            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <h2 className="text-sm font-semibold text-white">What AMBIT is</h2>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-white/70">
+                <li>
+                  A matching engine that surfaces opportunities based on your
+                  service area + keywords/NAICS.
+                </li>
+                <li>
+                  A dashboard that helps you quickly triage what’s worth your
+                  time.
+                </li>
+                <li>
+                  Built for small businesses that don’t have time to live in
+                  portals all day.
+                </li>
               </ul>
-            </div>
+            </section>
 
-            {/* Trust */}
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-              <h2 className="text-base font-semibold text-white">Trust + transparency</h2>
-              <ul className="mt-3 space-y-2 text-sm text-white/70">
-                <li>• We use public listings and third-party sources.</li>
-                <li>• We do not guarantee accuracy or completeness — always verify details on the official posting.</li>
-                <li>• Payments are handled by Stripe. AMBIT does not store full card numbers.</li>
+            <section className="rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+              <h2 className="text-sm font-semibold text-white">
+                Trust + transparency
+              </h2>
+              <ul className="mt-3 list-disc space-y-2 pl-5 text-sm text-white/70">
+                <li>We use public listings and third-party sources.</li>
+                <li>
+                  We do not guarantee accuracy or completeness — always verify
+                  details on the official posting.
+                </li>
+                <li>
+                  Payments are handled by Stripe. AMBIT does not store full card
+                  numbers.
+                </li>
               </ul>
-            </div>
+            </section>
           </div>
 
-          {/* Need help */}
-          <div className="mt-6 rounded-2xl border border-white/10 bg-white/5 p-6">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <section className="mt-4 rounded-2xl border border-white/10 bg-white/[0.03] p-6">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-base font-semibold text-white">Need help?</h2>
+                <h2 className="text-sm font-semibold text-white">Need help?</h2>
                 <p className="mt-2 text-sm text-white/70">
-                  For questions, billing, or support, please visit our{" "}
+                  Please see our{" "}
                   <Link
                     href="/contact"
-                    className="text-white underline underline-offset-4 hover:text-white/90"
+                    className="text-white underline decoration-white/30 underline-offset-4 hover:decoration-white/60"
                   >
-                    Contact page
+                    Contact
                   </Link>{" "}
-                  to connect with a Sevrix associate.
+                  page to connect with a Sevrix associate.
                 </p>
-                <p className="mt-2 text-xs text-white/40">
-                  Tip: Include your company name + what page you were on.
+                <p className="mt-2 text-xs text-white/50">
+                  Tip: Include your company name + what page you were on + what
+                  you expected to happen.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Link
-                  href="/contact"
-                  className="inline-flex items-center justify-center rounded-xl bg-white/10 px-4 py-2 text-sm font-medium text-white hover:bg-white/15"
-                >
-                  Go to Contact
-                </Link>
+              <Link
+                href="/contact"
+                className="inline-flex h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-medium text-black"
+              >
+                Go to Contact
+              </Link>
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-xs text-white/50">
+                AMBIT is not affiliated with the U.S. Government. AMBIT provides
+                informational tools only and is not legal advice.
+              </p>
+
+              <p className="text-xs text-white/50">
+                Review{" "}
                 <Link
                   href="/privacy"
-                  className="text-xs text-white/50 underline underline-offset-4 hover:text-white/80"
+                  className="text-white/70 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
                 >
                   Privacy
-                </Link>
-                <span className="text-xs text-white/30">•</span>
+                </Link>{" "}
+                &{" "}
                 <Link
                   href="/terms"
-                  className="text-xs text-white/50 underline underline-offset-4 hover:text-white/80"
+                  className="text-white/70 underline decoration-white/20 underline-offset-4 hover:decoration-white/50"
                 >
                   Terms
                 </Link>
-              </div>
+                .
+              </p>
             </div>
-          </div>
-
-          <p className="mt-6 text-xs text-white/35">
-            AMBIT is not affiliated with the U.S. Government. AMBIT provides informational tools only and is not legal advice.
-          </p>
-        </section>
+          </section>
+        </div>
       </div>
     </main>
   );
