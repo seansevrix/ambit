@@ -1,74 +1,47 @@
-import { NextResponse } from "next/server";
+// app/api/admin/customers/route.ts
+import { NextRequest, NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
 
-function cleanBaseUrl(url: string) {
-  return url.replace(/\/+$/, "");
-}
+export async function GET(req: NextRequest) {
+  const adminKey =
+    req.headers.get("x-admin-key") ||
+    req.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-export async function GET() {
-  const base =
-    process.env.NEXT_PUBLIC_API_BASE_URL || process.env.API_BASE_URL || "";
+  if (!adminKey || adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-  const adminKey = process.env.ADMIN_API_KEY || "";
-
-  if (!base) {
+  const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL;
+  if (!baseUrl) {
     return NextResponse.json(
-      { error: "Missing API base URL env var (NEXT_PUBLIC_API_BASE_URL or API_BASE_URL)." },
+      { error: "Missing NEXT_PUBLIC_API_BASE_URL in env" },
       { status: 500 }
     );
   }
 
-  if (!adminKey) {
-    return NextResponse.json(
-      { error: "Missing ADMIN_API_KEY env var on Vercel." },
-      { status: 500 }
-    );
-  }
-
-  const cleanBase = cleanBaseUrl(base);
-
-  // Try the “admin protected” endpoint first, then fall back if your backend uses a different path.
-  const candidates = [
-    `${cleanBase}/engine/admin/customers`,
-    `${cleanBase}/engine/customers`,
-  ];
-
-  let lastStatus = 500;
-  let lastText = "";
-
-  for (const url of candidates) {
-    const res = await fetch(url, {
+  try {
+    const upstream = await fetch(`${baseUrl}/engine/customers`, {
       method: "GET",
       headers: {
-        "accept": "application/json",
-        "x-admin-api-key": adminKey, // <-- matches your Render ADMIN_API_KEY pattern
+        "Content-Type": "application/json",
+        "x-admin-key": adminKey, // pass through to backend if it checks this
       },
       cache: "no-store",
     });
 
-    lastStatus = res.status;
-    lastText = await res.text();
+    const text = await upstream.text();
 
-    // If it’s not a 404, we found the right endpoint (even if it’s 401/500).
-    if (res.status !== 404) {
-      return new NextResponse(lastText, {
-        status: res.status,
-        headers: {
-          "content-type": res.headers.get("content-type") || "application/json",
-        },
-      });
-    }
+    return new NextResponse(text, {
+      status: upstream.status,
+      headers: {
+        "content-type": upstream.headers.get("content-type") ?? "application/json",
+      },
+    });
+  } catch (err: any) {
+    return NextResponse.json(
+      { error: "Upstream fetch failed", detail: err?.message ?? String(err) },
+      { status: 502 }
+    );
   }
-
-  // Both candidates were 404
-  return NextResponse.json(
-    {
-      error: "Backend customers endpoint not found (both /engine/admin/customers and /engine/customers returned 404).",
-      tried: candidates,
-      lastStatus,
-      lastText: lastText?.slice(0, 300),
-    },
-    { status: 404 }
-  );
 }
