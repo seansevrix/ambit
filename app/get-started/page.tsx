@@ -69,12 +69,12 @@ function withinLast12Months(iso?: string) {
   return now - d.getTime() <= yearMs;
 }
 
-export default function GetStartedClient() {
+export default function GetStartedPage() {
   const router = useRouter();
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
-  const [location, setLocation] = useState("");
+  const [serviceArea, setServiceArea] = useState("");
   const [naics, setNaics] = useState("");
   const [keywords, setKeywords] = useState("");
 
@@ -84,17 +84,19 @@ export default function GetStartedClient() {
   const [matchCount, setMatchCount] = useState<number | null>(null);
   const [matchCountLoading, setMatchCountLoading] = useState(false);
 
+  // ✅ Keywords required ONLY on this page
   const canSubmit = useMemo(() => {
     return (
       companyName.trim().length >= 2 &&
       email.trim().includes("@") &&
-      location.trim().length >= 2 &&
-      keywords.trim().length >= 2 // ✅ Keywords required ONLY on this page
+      serviceArea.trim().length >= 2 &&
+      keywords.trim().length >= 2
     );
-  }, [companyName, email, location, keywords]);
+  }, [companyName, email, serviceArea, keywords]);
 
+  // live match count preview (same logic, just uses serviceArea variable)
   useEffect(() => {
-    const loc = location.trim();
+    const loc = serviceArea.trim();
     const kw = keywords.trim();
     const nx = naics.trim();
 
@@ -145,7 +147,7 @@ export default function GetStartedClient() {
       controller.abort();
       setMatchCountLoading(false);
     };
-  }, [location, naics, keywords]);
+  }, [serviceArea, naics, keywords]);
 
   async function createCustomer() {
     setErr("");
@@ -154,27 +156,28 @@ export default function GetStartedClient() {
     try {
       const company = companyName.trim();
       const mail = email.trim();
-      const loc = location.trim();
+      const loc = serviceArea.trim();
       const nx = naics.trim();
       const kw = keywords.trim();
 
-      // ✅ IMPORTANT FIX:
-      // Always send `name` because the deployed backend is returning "name is required".
-      // Also send `companyName` for compatibility with newer code.
+      // ✅ IMPORTANT:
+      // Deployed backend expects `name`. Send both for compatibility.
       const payload: any = {
-        name: company,                // ✅ REQUIRED BY CURRENT DEPLOY
-        companyName: company,         // keep for compatibility
+        name: company,
+        companyName: company,
         email: mail,
         location: loc,
-        serviceArea: loc,             // extra compatibility
+        serviceArea: loc,
         naics: nx || null,
-        keywords: kw,                 // ✅ required on this page
+        keywords: kw,
       };
 
       const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
 
       if (!res.ok) {
-        const msg = String(json?.message || json?.error || `Signup failed (${res.status})`);
+        const msg = String(
+          json?.message || json?.error || `Signup failed (${res.status})`
+        );
         throw new Error(msg);
       }
 
@@ -194,40 +197,51 @@ export default function GetStartedClient() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
-      <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-        <div className="rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
-          <div className="flex items-center gap-3">
-            <AmbitMark size={44} />
-            <div>
-              <div className="text-sm font-semibold text-slate-900">AMBIT</div>
-              <div className="text-xs text-slate-600">
-                Ranked government leads for contractors
-              </div>
+      {/* HERO (full-width, orderly) */}
+      <header className="mx-auto max-w-3xl text-center">
+        <div className="mx-auto flex items-center justify-center gap-3">
+          <AmbitMark size={44} />
+          <div className="text-left">
+            <div className="text-sm font-semibold text-slate-900">AMBIT</div>
+            <div className="text-xs text-slate-600">
+              Ranked government leads for contractors
             </div>
           </div>
+        </div>
 
-          <h1 className="mt-6 text-3xl font-semibold tracking-tight text-slate-900">
-            Create your profile
-          </h1>
+        <h1 className="mt-6 text-4xl font-semibold tracking-tight text-slate-900">
+          Create your profile
+        </h1>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-600">
-            <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
-              Built for contractors
-            </span>
-            <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
-              Save hours weekly
-            </span>
-            <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
-              Cancel anytime
-            </span>
-          </div>
+        <div className="mt-4 flex flex-wrap justify-center gap-2 text-xs font-semibold text-slate-600">
+          <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
+            Built for contractors
+          </span>
+          <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
+            Save hours weekly
+          </span>
+          <span className="rounded-full border border-slate-900/10 bg-slate-50 px-3 py-1">
+            Cancel anytime
+          </span>
+        </div>
 
-          <p className="mt-4 max-w-md text-sm text-slate-700">
-            Tell us your trade and service area—AMBIT finds opportunities, ranks them, and gives you
-            clear next steps so you can spend time bidding, not searching.
-          </p>
+        <p className="mt-5 text-base leading-relaxed text-slate-700">
+          <span className="font-semibold text-slate-900">
+            Invest in Scale, Not Search.
+          </span>{" "}
+          For just{" "}
+          <span className="font-semibold text-slate-900">$1.33/day</span>, AMBIT
+          automates the search process, reclaiming{" "}
+          <span className="font-semibold text-slate-900">15–20 hours</span> of
+          your week. In an industry where one contract can generate millions,
+          AMBIT doesn’t just pay for itself—it powers your growth.
+        </p>
+      </header>
 
-          <div className="mt-6 grid gap-4">
+      {/* FORM (centered, clean) */}
+      <section className="mx-auto mt-10 max-w-3xl rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
+        <div className="grid gap-4">
+          <div className="grid gap-4 md:grid-cols-2">
             <Field label="Company name">
               <input
                 className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
@@ -245,129 +259,118 @@ export default function GetStartedClient() {
                 placeholder="you@company.com"
               />
             </Field>
+          </div>
 
-            <Field label="Service area">
+          <Field label="Service area">
+            <input
+              className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
+              value={serviceArea}
+              onChange={(e) => setServiceArea(e.target.value)}
+              placeholder="San Diego, CA"
+            />
+          </Field>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="NAICS (optional)">
               <input
                 className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="San Diego, CA"
+                value={naics}
+                onChange={(e) => setNaics(e.target.value)}
+                placeholder="237310"
               />
             </Field>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Field label="NAICS (optional)">
-                <input
-                  className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
-                  value={naics}
-                  onChange={(e) => setNaics(e.target.value)}
-                  placeholder="237310"
-                />
-              </Field>
-
-              <Field label="Keywords">
-                <input
-                  className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="asphalt, striping, concrete"
-                />
-                <div className="text-xs text-slate-500">
-                  Use commas. Example: “HVAC, ductwork, rooftop unit”
-                </div>
-              </Field>
-            </div>
-
-            <div className="rounded-xl border border-slate-900/10 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-              {matchCountLoading ? (
-                <span className="font-semibold">Checking your area…</span>
-              ) : matchCount === null ? (
-                <span>
-                  Add your service area and keywords to see how many matches we’ve seen in the last
-                  12 months.
-                </span>
-              ) : (
-                <span>
-                  In the last 12 months, we’ve seen{" "}
-                  <span className="font-semibold text-slate-900">{matchCount}</span> opportunities
-                  matching your area/trade.
-                </span>
-              )}
-            </div>
-
-            {err ? (
-              <div className="rounded-xl border border-red-600/20 bg-red-50 px-3 py-2 text-sm text-red-700">
-                {err}
+            <Field label="Keywords">
+              <input
+                className="w-full rounded-xl border border-slate-900/15 bg-white px-3 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="asphalt, striping, concrete"
+              />
+              <div className="text-xs text-slate-500">
+                Use commas. Example: “HVAC, ductwork, rooftop unit”
               </div>
-            ) : null}
+            </Field>
+          </div>
 
-            <button
-              disabled={!canSubmit || loading}
-              onClick={createCustomer}
-              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
-            >
-              {loading ? "Creating…" : "Show My Matches"}
-            </button>
+          <div className="rounded-xl border border-slate-900/10 bg-slate-50 px-4 py-3 text-sm text-slate-700">
+            {matchCountLoading ? (
+              <span className="font-semibold">Checking your area…</span>
+            ) : matchCount === null ? (
+              <span>
+                Add your service area and keywords to see how many matches we’ve
+                seen in the last 12 months.
+              </span>
+            ) : (
+              <span>
+                In the last 12 months, we’ve seen{" "}
+                <span className="font-semibold text-slate-900">{matchCount}</span>{" "}
+                opportunities matching your area/trade.
+              </span>
+            )}
+          </div>
 
-            <div className="text-xs text-slate-600">
-              No long-term contracts. Pause or cancel in one click.
+          {err ? (
+            <div className="rounded-xl border border-red-600/20 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {err}
             </div>
+          ) : null}
 
-            <div className="text-xs text-slate-600">
-              By continuing, you’ll be taken to your matches page. If your subscription is inactive,
-              you’ll see the subscribe screen.
-            </div>
+          <button
+            disabled={!canSubmit || loading}
+            onClick={createCustomer}
+            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-black disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Creating…" : "Show My Matches"}
+          </button>
+
+          <div className="text-center text-xs text-slate-600">
+            No long-term contracts. Pause or cancel in one click.
           </div>
         </div>
+      </section>
 
-        <div className="rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
-          <div className="text-xs font-semibold text-slate-600">WHAT YOU GET</div>
+      {/* WHAT YOU GET + PRICE (as requested) */}
+      <section className="mx-auto mt-12 max-w-5xl">
+        <div className="text-center text-xs font-semibold tracking-widest text-slate-600">
+          WHAT YOU GET
+        </div>
 
-          <div className="mt-4 grid gap-3">
-            <Outcome
-              title="Know what’s worth bidding"
-              body="A match score that helps you ignore the junk and move fast."
-            />
-            <Outcome
-              title="Understand it in 60 seconds"
-              body="Plain-English summaries so you can decide quickly."
-            />
-            <Outcome
-              title="Wake up to new leads"
-              body="Stop manual searching. We scan while you sleep."
-            />
-          </div>
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          <FeatureCard
+            title="Know what’s worth bidding"
+            body="A match score that helps you ignore the junk and move fast."
+          />
+          <FeatureCard
+            title="Understand it in 60 seconds"
+            body="Plain-English summaries so you can decide quickly."
+          />
+          <FeatureCard
+            title="Wake up to new leads"
+            body="Stop manual searching. We scan while you sleep."
+          />
+        </div>
 
-          <div className="mt-6 rounded-3xl border border-slate-900/10 bg-slate-50 p-6">
-            <div className="flex items-center justify-between">
+        <div className="mt-6 rounded-3xl border border-slate-900/10 bg-white p-8 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
               <div className="text-sm font-semibold text-slate-900">Price</div>
-              <div className="rounded-full border border-slate-900/10 bg-white px-3 py-1 text-[11px] font-semibold text-slate-700">
-                One win can cover years of AMBIT.
-              </div>
+              <div className="mt-1 text-xs text-slate-600">Cancel anytime.</div>
             </div>
 
-            <div className="mt-3 flex items-end gap-2">
-              <div className="text-4xl font-semibold text-slate-900 tabular-nums">$39.99</div>
-              <div className="pb-1 text-sm text-slate-600">/ month</div>
-            </div>
-
-            <div className="mt-2 text-xs text-slate-600">Cancel anytime.</div>
-
-            <div className="mt-5 rounded-2xl border border-slate-900/10 bg-white p-4">
-              <div className="text-xs font-semibold text-slate-700">Why it’s worth it</div>
-              <div className="mt-2 text-sm text-slate-700">
-                If AMBIT saves you even{" "}
-                <span className="font-semibold text-slate-900">1–2 hours/week</span> of searching,
-                it pays for itself.
+            <div className="flex items-end justify-center gap-2 sm:justify-end">
+              <div className="text-5xl font-semibold text-slate-900 tabular-nums">
+                $39.99
               </div>
+              <div className="pb-2 text-sm text-slate-600">/ month</div>
             </div>
           </div>
 
-          <div className="mt-6 text-xs text-slate-600">
+          <div className="mt-5 rounded-2xl border border-slate-900/10 bg-slate-50 p-4 text-sm text-slate-700">
             Tip: You can refine NAICS/keywords anytime to tighten matches.
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
@@ -387,11 +390,11 @@ function Field({
   );
 }
 
-function Outcome({ title, body }: { title: string; body: string }) {
+function FeatureCard({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-2xl border border-slate-900/10 bg-white p-4">
+    <div className="rounded-2xl border border-slate-900/10 bg-white p-5 shadow-sm">
       <div className="text-sm font-semibold text-slate-900">{title}</div>
-      <div className="mt-1 text-sm text-slate-700">{body}</div>
+      <div className="mt-2 text-sm text-slate-700">{body}</div>
     </div>
   );
 }
