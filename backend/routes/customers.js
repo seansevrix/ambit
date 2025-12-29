@@ -1,111 +1,102 @@
+// backend/routes/customers.js
 import express from "express";
-import prisma from "../lib/prisma.js";
+import crypto from "crypto";
+import prisma from "../lib/prismaClient.js";
 
 const router = express.Router();
 
-// GET /engine/customers
-router.get("/customers", async (req, res) => {
-  try {
-    const customers = await prisma.customer.findMany({ orderBy: { id: "asc" } });
-    return res.json(customers);
-  } catch (err) {
-    console.error("get customers error:", err);
-    return res.status(500).json({ message: "Failed to load customers" });
+function cleanStr(v) {
+  if (v === null || v === undefined) return "";
+  return String(v).trim();
+}
+
+function optionalStr(v) {
+  const s = cleanStr(v);
+  return s ? s : undefined;
+}
+
+function normalizeComma(v) {
+  if (v === null || v === undefined) return undefined;
+
+  if (Array.isArray(v)) {
+    const joined = v.map((x) => cleanStr(x)).filter(Boolean).join(", ");
+    return joined ? joined : undefined;
   }
-});
 
-// GET /engine/customers/:customerId
-router.get("/customers/:customerId", async (req, res) => {
-  try {
-    const customerId = Number(req.params.customerId);
-    if (!customerId || Number.isNaN(customerId)) {
-      return res.status(400).json({ message: "Invalid customerId" });
-    }
+  const s = cleanStr(v);
+  return s ? s : undefined;
+}
 
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        phone: true,
-        industry: true,
-        services: true,
-        location: true,
-        keywords: true,
-        naics: true,
-        isActive: true,
-        subscriptionStatus: true,
-        stripeCustomerId: true,
-        stripeSubscriptionId: true,
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
+function makeAnonEmail() {
+  const id =
+    typeof crypto.randomUUID === "function"
+      ? crypto.randomUUID()
+      : crypto.randomBytes(16).toString("hex");
+  return `anon-${id}@ambit.local`;
+}
 
-    if (!customer) return res.status(404).json({ message: "Customer not found" });
-    return res.json(customer);
-  } catch (err) {
-    console.error("get customer error:", err);
-    return res.status(500).json({ message: "Failed to load customer" });
-  }
-});
+function normalizeEmail(raw) {
+  const s = cleanStr(raw).toLowerCase();
+  if (!s) return makeAnonEmail();
+  if (!s.includes("@")) return `${s}@ambit.local`;
+  return s;
+}
 
 // POST /engine/customers
 router.post("/customers", async (req, res) => {
   try {
-    const { name, email, phone, industry, location, services, keywords, naics } = req.body || {};
+    const body = req.body || {};
 
-    if (!name) return res.status(400).json({ message: "name is required" });
-    if (!email) return res.status(400).json({ message: "email is required" });
+    const email = normalizeEmail(body.email);
 
-    const created = await prisma.customer.create({
-      data: {
-        name: String(name),
-        email: String(email),
-        phone: typeof phone === "string" ? phone : null,
-        industry: typeof industry === "string" ? industry : null,
-        location: typeof location === "string" ? location : null,
-        services: typeof services === "string" ? services : null,
-        keywords: typeof keywords === "string" ? keywords : null,
-        naics: typeof naics === "string" ? naics : null,
-        // isActive stays false by default (paywall)
+    const providedName =
+      optionalStr(body.name) || optionalStr(body.companyName);
+    const emailPrefix = email.includes("@") ? email.split("@")[0] : email;
+
+    // Required by schema on CREATE
+    const nameForCreate = providedName || emailPrefix || "Customer";
+
+    const phone = optionalStr(body.phone);
+    const industry = optionalStr(body.industry);
+    const location = optionalStr(body.location) || optionalStr(body.serviceArea);
+    const services = optionalStr(body.services);
+
+    const keywords = normalizeComma(body.keywords);
+    const naics = normalizeComma(body.naics);
+
+    // Only update what caller actually sent
+    const updateData = {};
+    if (providedName) updateData.name = providedName;
+    if (phone !== undefined) updateData.phone = phone;
+    if (industry !== undefined) updateData.industry = industry;
+    if (location !== undefined) updateData.location = location;
+    if (services !== undefined) updateData.services = services;
+    if (keywords !== undefined) updateData.keywords = keywords;
+    if (naics !== undefined) updateData.naics = naics;
+
+    const customer = await prisma.customer.upsert({
+      where: { email },
+      update: updateData,
+      create: {
+        name: nameForCreate,
+        email,
+        phone: phone ?? null,
+        industry: industry ?? null,
+        location: location ?? null,
+        services: services ?? null,
+        keywords: keywords ?? null,
+        naics: naics ?? null,
+        // passwordHash stays null until they register
       },
     });
 
-    return res.status(201).json(created);
+    return res.status(200).json(customer);
   } catch (err) {
-    console.error("create customer error:", err);
-    return res.status(500).json({ message: "Failed to create customer" });
-  }
-});
-
-// PATCH /engine/customers/:customerId
-router.patch("/customers/:customerId", async (req, res) => {
-  try {
-    const customerId = Number(req.params.customerId);
-    if (!customerId || Number.isNaN(customerId)) {
-      return res.status(400).json({ message: "Invalid customerId" });
-    }
-
-    const { industry, services, location, keywords, naics, phone } = req.body || {};
-
-    const updated = await prisma.customer.update({
-      where: { id: customerId },
-      data: {
-        phone: typeof phone === "string" ? phone : undefined,
-        industry: typeof industry === "string" ? industry : undefined,
-        services: typeof services === "string" ? services : undefined,
-        location: typeof location === "string" ? location : undefined,
-        keywords: typeof keywords === "string" ? keywords : undefined,
-        naics: typeof naics === "string" ? naics : undefined,
-      },
+    console.error("POST /engine/customers error:", err);
+    return res.status(500).json({
+      message: "Server error creating customer",
+      error: err?.message || String(err),
     });
-
-    return res.json(updated);
-  } catch (err) {
-    console.error("update customer error:", err);
-    return res.status(500).json({ message: "Failed to update customer" });
   }
 });
 
