@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 type Opportunity = {
   id?: number | string;
@@ -29,14 +30,21 @@ const PRIMARY =
 const SECONDARY =
   "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10";
 
-const API_BASE =
-  (process.env.NEXT_PUBLIC_API_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_BASE ||
-    "http://localhost:5001")?.replace(/\/$/, "");
+// ✅ Important: set NEXT_PUBLIC_API_BASE_URL on Vercel to your Render backend
+// Fallback to Render so production never points at localhost.
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  "https://ambit-0dnp.onrender.com"
+).replace(/\/$/, "");
 
 async function getOpportunities(): Promise<Opportunity[]> {
   try {
-    const res = await fetch(`${API_BASE}/engine/opportunities`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}/engine/opportunities`, {
+      // ✅ Reduce cold-start pain; still “fresh enough” for a preview feed
+      next: { revalidate: 60 },
+    });
+
     if (!res.ok) return [];
     const data = await res.json();
     return Array.isArray(data) ? data : [];
@@ -122,7 +130,6 @@ const FEATURED_UNLOCKED: FeaturedOpportunity = {
   dueDateISO: new Date(Date.now() + 12 * 24 * 60 * 60 * 1000).toISOString(),
   estimatedValue: "$65,000 – $95,000 (est.)",
   pop: "1–2 weeks after award (night work possible)",
-  // Exactly 4 sentences:
   summary4:
     "Resurface an existing asphalt parking lot and restripe stalls to current layout requirements. Scope includes milling/patching, asphalt overlay, and re-striping with compliant paint and markings. Contractor must coordinate base access, safety controls, and work windows to minimize disruption. Deliverables include a simple work plan, schedule, and closeout photos with as-built striping notes.",
   deliverables: [
@@ -153,12 +160,11 @@ export default async function OpportunitiesPreviewPage() {
   const uniqueReal = dedupe(raw.map(normalize)).filter((o) => withinLast12Months(o.createdAt));
   const combined = shuffle(uniqueReal).concat(shuffle(SAMPLE_PREVIEW));
 
-  // We’ll show 1 unlocked featured + 10 locked items
+  // 1 unlocked featured + 10 locked
   const lockedList = dedupe(combined).slice(0, 10);
 
   return (
     <div className="space-y-10">
-      {/* Header */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
@@ -196,7 +202,6 @@ export default async function OpportunitiesPreviewPage() {
         </div>
       </section>
 
-      {/* Featured Unlocked */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
         <div className="mb-5 flex items-center justify-between">
           <div className="text-sm font-semibold text-white">Featured unlocked example</div>
@@ -206,7 +211,6 @@ export default async function OpportunitiesPreviewPage() {
         <UnlockedCard o={FEATURED_UNLOCKED} />
       </section>
 
-      {/* Locked Feed */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold text-white">Preview feed (locked)</div>
@@ -220,7 +224,6 @@ export default async function OpportunitiesPreviewPage() {
         </div>
       </section>
 
-      {/* Bottom CTA */}
       <section className="rounded-3xl border border-white/10 bg-[#0B1430]/45 p-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -259,7 +262,6 @@ function Pill({ label }: { label: string }) {
 function UnlockedCard({ o }: { o: FeaturedOpportunity }) {
   return (
     <div className="relative overflow-hidden rounded-3xl border border-white/12 bg-gradient-to-b from-white/8 to-white/5 p-8">
-      {/* Open lock badge */}
       <div className="absolute right-5 top-5">
         <div className="flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-200/10 px-3 py-1 text-xs font-semibold text-emerald-50 shadow-sm">
           <span aria-hidden="true">🔓</span>
@@ -332,8 +334,7 @@ function UnlockedCard({ o }: { o: FeaturedOpportunity }) {
 
 function LockedCard({ o }: { o: Opportunity }) {
   return (
-    <div className="relative rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6 overflow-hidden">
-      {/* Locked badge */}
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6">
       <div className="absolute right-4 top-4">
         <div className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75 shadow-sm">
           🔒 Locked
@@ -350,10 +351,10 @@ function LockedCard({ o }: { o: Opportunity }) {
           NAICS: {maskNaics(o.naics)}
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-          Posted: {"Locked"}
+          Posted: Locked
         </span>
         <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-          Due: {"Locked"}
+          Due: Locked
         </span>
       </div>
 
@@ -365,7 +366,6 @@ function LockedCard({ o }: { o: Opportunity }) {
           </span>
         </div>
 
-        {/* “SaaS-y” blur + shimmer */}
         <div className="relative mt-3">
           <div className="space-y-2 opacity-70">
             <div className="h-3 w-full rounded bg-white/10" />
@@ -377,7 +377,7 @@ function LockedCard({ o }: { o: Opportunity }) {
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent opacity-40 [mask-image:linear-gradient(to_bottom,transparent,black,transparent)]" />
 
           <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="rounded-xl bg-[#0B1430]/80 px-4 py-2 text-xs font-semibold text-white shadow-sm border border-white/10">
+            <div className="rounded-xl border border-white/10 bg-[#0B1430]/80 px-4 py-2 text-xs font-semibold text-white shadow-sm">
               Full summary + deadlines + attachments hidden
             </div>
           </div>
@@ -396,7 +396,7 @@ function LockedCard({ o }: { o: Opportunity }) {
   );
 }
 
-function Chip({ children }: { children: React.ReactNode }) {
+function Chip({ children }: { children: ReactNode }) {
   return (
     <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
       {children}

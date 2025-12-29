@@ -10,24 +10,36 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SE
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 const stripe = STRIPE_SECRET_KEY
-  ? new Stripe(STRIPE_SECRET_KEY)
+  ? new Stripe(STRIPE_SECRET_KEY, {
+      // apiVersion optional; Stripe auto-selects. Keep if you want consistency:
+      // apiVersion: "2024-06-20",
+    })
   : null;
 
 // Helper: pick frontend base URL (prod or local)
 function getFrontendBaseUrl(req) {
-  // Prefer explicit env var in production
+  const isProd = process.env.NODE_ENV === "production";
+
+  // In prod: require explicit env var (don’t trust Origin headers)
   const envUrl = process.env.FRONTEND_URL || process.env.NEXT_PUBLIC_FRONTEND_URL;
   if (envUrl) return envUrl.replace(/\/$/, "");
 
-  // Fallback to request origin (works during dev sometimes)
+  if (isProd) {
+    // Safer: block if missing (prevents open redirect via forged Origin)
+    throw new Error("Missing FRONTEND_URL on backend env vars (required in production).");
+  }
+
+  // Dev fallback: request origin (OK locally)
   const origin = req.headers.origin;
   if (origin) return String(origin).replace(/\/$/, "");
 
-  // Final fallback
+  // Final dev fallback
   return "http://localhost:3000";
 }
 
 async function ensureStripeCustomer(customer) {
+  if (!stripe) throw new Error("Stripe not configured.");
+
   // If we already have stripeCustomerId, we're good
   if (customer.stripeCustomerId) return customer.stripeCustomerId;
 
@@ -50,9 +62,9 @@ async function ensureStripeCustomer(customer) {
 /**
  * POST /engine/billing/create-checkout-session
  * Body: { customerId: number }
- * Returns: { url: string }
+ * Returns: { ok: true, url: string }
  */
-router.post("/create-checkout-session", async (req, res) => {
+async function createCheckoutSession(req, res) {
   try {
     if (!stripe) {
       return res.status(500).json({
@@ -83,7 +95,6 @@ router.post("/create-checkout-session", async (req, res) => {
     }
 
     const stripeCustomerId = await ensureStripeCustomer(customer);
-
     const frontendBase = getFrontendBaseUrl(req);
 
     // Send them back to matches page on success/cancel
@@ -94,10 +105,19 @@ router.post("/create-checkout-session", async (req, res) => {
       mode: "subscription",
       customer: stripeCustomerId,
       line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+
       success_url: successUrl,
       cancel_url: cancelUrl,
+
+      // ✅ Critical: matches your webhook lookup
       metadata: { customerId: String(id) },
       client_reference_id: String(id),
+
+      // ✅ Extra safety: put customerId on the subscription too
+      subscription_data: {
+        metadata: { customerId: String(id) },
+      },
+
       allow_promotion_codes: true,
     });
 
@@ -109,12 +129,11 @@ router.post("/create-checkout-session", async (req, res) => {
       error: err?.message || "Billing error creating checkout session.",
     });
   }
-});
+}
 
-// Optional alias: POST /engine/billing/checkout (so both work)
-router.post("/checkout", async (req, res) => {
-  req.url = "/create-checkout-session";
-  return router.handle(req, res);
-});
+router.post("/create-checkout-session", createCheckoutSession);
+
+// Optional alias: POST /engine/billing/checkout
+router.post("/checkout", createCheckoutSession);
 
 export default router;

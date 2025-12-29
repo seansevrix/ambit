@@ -11,63 +11,79 @@ import opportunitiesRoutes from "./routes/opportunities.js";
 import matchesRoutes from "./routes/matches.js";
 import billingRoutes from "./routes/billing.js";
 import stripeWebhookRoutes from "./routes/stripeWebhook.js";
-import authRoutes from "./routes/auth.js"; // ✅ NEW
+import authRoutes from "./routes/auth.js";
 
 const app = express();
+app.disable("x-powered-by");
 
 // ✅ Stripe webhook must be mounted BEFORE express.json()
-// (Stripe needs raw body for signature verification)
 app.use("/webhooks/stripe", stripeWebhookRoutes);
 
 // Logging
 app.use(morgan("dev"));
 
-// JSON body parsing for all non-webhook routes
-app.use(express.json({ limit: "2mb" }));
-
-// CORS
-const allowedOrigins = [
-  process.env.FRONTEND_URL || "http://localhost:3000",
-];
-
+/**
+ * ✅ BODY PARSING (THIS IS THE FIX)
+ * Many frontends accidentally send JSON with Content-Type: text/plain.
+ * This makes sure req.body is still parsed.
+ */
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      // allow server-to-server or curl (no origin)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) return callback(null, true);
-
-      return callback(new Error(`CORS blocked for origin: ${origin}`));
-    },
-    credentials: true,
+  express.json({
+    limit: "2mb",
+    type: ["application/json", "text/plain", "application/*+json"],
   })
 );
+
+// CORS (keep your current approach)
+const allowedOrigins = [
+  process.env.FRONTEND_URL, // e.g. https://ambit-kappa.vercel.app
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+].filter(Boolean);
+
+function isAllowedOrigin(origin) {
+  if (!origin) return true; // server-to-server / curl
+  if (allowedOrigins.includes(origin)) return true;
+  if (origin.endsWith(".vercel.app")) return true;
+  return false;
+}
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (isAllowedOrigin(origin)) return callback(null, true);
+    return callback(null, false);
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 // Health
 app.get("/engine/health", (req, res) => res.json({ status: "ok" }));
 
-// ✅ API routes
-app.use("/engine/auth", authRoutes); // ✅ NEW: /engine/auth/register + /engine/auth/login
-
+// Routes
+app.use("/engine/auth", authRoutes);
 app.use("/engine", customersRoutes);
 app.use("/engine", opportunitiesRoutes);
 app.use("/engine", matchesRoutes);
-
 app.use("/engine/billing", billingRoutes);
 
-// 404 handler (helps when you hit wrong endpoints)
+// 404
 app.use((req, res) => {
   res.status(404).json({ ok: false, error: "Route not found." });
 });
 
-// Error handler (so errors return JSON)
+// Error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ ok: false, error: "Server error." });
+  console.error("SERVER ERROR:", err);
+  res.status(500).json({ ok: false, error: err?.message || "Server error." });
 });
 
 const PORT = Number(process.env.PORT) || 5001;
 app.listen(PORT, () => {
   console.log(`AMBIT backend listening on port ${PORT}`);
+  console.log("Allowed origins:", allowedOrigins);
 });
