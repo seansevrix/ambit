@@ -322,9 +322,26 @@ export default function GetStartedPage() {
                 inputMode="numeric"
                 pattern="\d*"
               />
+
+              {/* keep this font/style exactly */}
               <div className="text-xs text-slate-300">
                 6 digits is best. Example: <span className="font-semibold text-white">237310</span>.
                 (Your match engine relies heavily on NAICS.)
+              </div>
+
+              {/* ✅ new text goes DIRECTLY under the line above, same font */}
+              <div className="text-xs text-slate-300">
+                NAICS codes are vital for tailoring your experience and ensuring optimal match results.
+                Need help? Find your code at{" "}
+                <a
+                  href="https://www.naics.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white/70"
+                >
+                  naics.com
+                </a>
+                .
               </div>
 
               {naicsTouched && !naicsValid ? (
@@ -346,24 +363,6 @@ export default function GetStartedPage() {
                 Use commas. Example: “HVAC, ductwork, rooftop unit”
               </div>
             </Field>
-
-            {/* ✅ new info section below the fill-in area */}
-            <div className="rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3 text-sm text-slate-200">
-              <div className="font-semibold text-white">Enhance Match Accuracy</div>
-              <div className="mt-1 text-xs text-slate-300">
-                NAICS codes are vital for tailoring your experience and ensuring optimal match results.
-                Need help? Find your code at{" "}
-                <a
-                  href="https://www.naics.com"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white/70"
-                >
-                  naics.com
-                </a>
-                .
-              </div>
-            </div>
 
             <div className="rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3 text-sm text-slate-200">
               {matchCountLoading ? (
