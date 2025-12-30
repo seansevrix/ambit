@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import AmbitMark from "../components/AmbitMark";
 
@@ -24,6 +24,8 @@ type Opportunity = {
   title?: string;
   location?: string;
   naics?: string;
+  keywords?: string | null;
+  summary?: string | null;
   createdAt?: string;
 };
 
@@ -69,6 +71,16 @@ function withinLast12Months(iso?: string) {
   return now - d.getTime() <= yearMs;
 }
 
+function sanitizeNaics(input: string) {
+  // digits only, max 6
+  return input.replace(/[^\d]/g, "").slice(0, 6);
+}
+
+function isValidNaics(input: string) {
+  // allow 2–6 digits (prefix matching is useful), but recommend full 6
+  return /^\d{2,6}$/.test(input);
+}
+
 export default function GetStartedPage() {
   const router = useRouter();
 
@@ -81,26 +93,33 @@ export default function GetStartedPage() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
+  const [naicsTouched, setNaicsTouched] = useState(false);
+
   const [matchCount, setMatchCount] = useState<number | null>(null);
   const [matchCountLoading, setMatchCountLoading] = useState(false);
 
+  const naicsClean = useMemo(() => sanitizeNaics(naics), [naics]);
+  const naicsValid = useMemo(() => isValidNaics(naicsClean), [naicsClean]);
+
   // ✅ Keywords required ONLY on this page
+  // ✅ NAICS required (because matching is NAICS-heavy)
   const canSubmit = useMemo(() => {
     return (
       companyName.trim().length >= 2 &&
       email.trim().includes("@") &&
       serviceArea.trim().length >= 2 &&
-      keywords.trim().length >= 2
+      keywords.trim().length >= 2 &&
+      naicsValid
     );
-  }, [companyName, email, serviceArea, keywords]);
+  }, [companyName, email, serviceArea, keywords, naicsValid]);
 
-  // live match count preview
+  // live match count preview (requires service area + keywords + NAICS)
   useEffect(() => {
     const loc = serviceArea.trim();
     const kw = keywords.trim();
-    const nx = naics.trim();
+    const nx = naicsClean.trim();
 
-    if (loc.length < 2 || kw.length < 2) {
+    if (loc.length < 2 || kw.length < 2 || !isValidNaics(nx)) {
       setMatchCount(null);
       return;
     }
@@ -124,17 +143,28 @@ export default function GetStartedPage() {
           const oLoc = norm(o.location);
           const oTitle = norm(o.title);
           const oNaics = norm(o.naics);
+          const oKw = norm(o.keywords || "");
+          const oSummary = norm(o.summary || "");
 
           const locationMatch =
             (!!cityN && oLoc.includes(cityN)) ||
             (!!stateN && oLoc.includes(stateN));
 
+          // prefix match so "2373" can still find "237310"
           const naicsMatch = !!naicsN && !!oNaics && oNaics.startsWith(naicsN);
 
           const keywordMatch =
             kwList.length > 0 &&
-            kwList.some((k) => k && (oTitle.includes(k) || oLoc.includes(k)));
+            kwList.some(
+              (k) =>
+                k &&
+                (oTitle.includes(k) ||
+                  oLoc.includes(k) ||
+                  oKw.includes(k) ||
+                  oSummary.includes(k))
+            );
 
+          // Preview logic: must match location AND (NAICS OR keywords)
           return locationMatch && (naicsMatch || keywordMatch);
         }).length;
 
@@ -147,7 +177,7 @@ export default function GetStartedPage() {
       controller.abort();
       setMatchCountLoading(false);
     };
-  }, [serviceArea, naics, keywords]);
+  }, [serviceArea, keywords, naicsClean]);
 
   async function createCustomer() {
     setErr("");
@@ -157,8 +187,13 @@ export default function GetStartedPage() {
       const company = companyName.trim();
       const mail = email.trim();
       const loc = serviceArea.trim();
-      const nx = naics.trim();
+      const nx = naicsClean.trim();
       const kw = keywords.trim();
+
+      if (!isValidNaics(nx)) {
+        setNaicsTouched(true);
+        throw new Error("Please enter a valid NAICS code (2–6 digits, usually 6).");
+      }
 
       // ✅ IMPORTANT: deployed backend expects `name`. Send both for compatibility.
       const payload: any = {
@@ -167,7 +202,7 @@ export default function GetStartedPage() {
         email: mail,
         location: loc,
         serviceArea: loc,
-        naics: nx || null,
+        naics: nx, // REQUIRED
         keywords: kw,
       };
 
@@ -204,7 +239,7 @@ export default function GetStartedPage() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6 py-12">
-        {/* HERO like screenshot 4 */}
+        {/* HERO */}
         <header className="mx-auto max-w-4xl text-center">
           <div className="mx-auto flex items-center justify-center gap-3">
             <div className="rounded-2xl border border-white/10 bg-white/5 p-2 shadow-sm backdrop-blur">
@@ -244,7 +279,7 @@ export default function GetStartedPage() {
           </p>
         </header>
 
-        {/* FORM (glassy dark card) */}
+        {/* FORM */}
         <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
           <div className="grid gap-4">
             <div className="grid gap-4 md:grid-cols-2">
@@ -276,27 +311,58 @@ export default function GetStartedPage() {
               />
             </Field>
 
-            <div className="grid gap-4 md:grid-cols-2">
-              <Field label="NAICS (optional)">
-                <input
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                  value={naics}
-                  onChange={(e) => setNaics(e.target.value)}
-                  placeholder="237310"
-                />
-              </Field>
+            {/* ✅ NAICS first */}
+            <Field label="NAICS (required)">
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                value={naicsClean}
+                onChange={(e) => setNaics(e.target.value)}
+                onBlur={() => setNaicsTouched(true)}
+                placeholder="237310"
+                inputMode="numeric"
+                pattern="\d*"
+              />
+              <div className="text-xs text-slate-300">
+                6 digits is best. Example: <span className="font-semibold text-white">237310</span>.
+                (Your match engine relies heavily on NAICS.)
+              </div>
 
-              <Field label="Keywords">
-                <input
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                  placeholder="asphalt, striping, concrete"
-                />
-                <div className="text-xs text-slate-300">
-                  Use commas. Example: “HVAC, ductwork, rooftop unit”
+              {naicsTouched && !naicsValid ? (
+                <div className="text-xs text-red-200">
+                  Enter a valid NAICS code (2–6 digits; usually 6).
                 </div>
-              </Field>
+              ) : null}
+            </Field>
+
+            {/* ✅ Keywords moved BELOW NAICS */}
+            <Field label="Keywords (required)">
+              <input
+                className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="asphalt, striping, concrete"
+              />
+              <div className="text-xs text-slate-300">
+                Use commas. Example: “HVAC, ductwork, rooftop unit”
+              </div>
+            </Field>
+
+            {/* ✅ new info section below the fill-in area */}
+            <div className="rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3 text-sm text-slate-200">
+              <div className="font-semibold text-white">Enhance Match Accuracy</div>
+              <div className="mt-1 text-xs text-slate-300">
+                NAICS codes are vital for tailoring your experience and ensuring optimal match results.
+                Need help? Find your code at{" "}
+                <a
+                  href="https://www.naics.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-semibold text-white underline decoration-white/30 underline-offset-4 hover:decoration-white/70"
+                >
+                  naics.com
+                </a>
+                .
+              </div>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3 text-sm text-slate-200">
@@ -304,8 +370,8 @@ export default function GetStartedPage() {
                 <span className="font-semibold text-white">Checking your area…</span>
               ) : matchCount === null ? (
                 <span>
-                  Add your service area and keywords to see how many matches we’ve seen in the last
-                  12 months.
+                  Add your service area, NAICS, and keywords to see how many matches we’ve seen in the
+                  last 12 months.
                 </span>
               ) : (
                 <span>
@@ -336,7 +402,7 @@ export default function GetStartedPage() {
           </div>
         </section>
 
-        {/* WHAT YOU GET + PRICE (dark/glass to match home) */}
+        {/* WHAT YOU GET + PRICE */}
         <section className="mx-auto mt-12 max-w-5xl">
           <div className="text-center text-xs font-semibold tracking-widest text-slate-300">
             WHAT YOU GET
@@ -380,7 +446,7 @@ export default function GetStartedPage() {
   );
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <label className="grid gap-2">
       <div className="text-xs font-semibold text-slate-200">{label}</div>
