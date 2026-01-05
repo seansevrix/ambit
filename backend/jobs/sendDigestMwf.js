@@ -4,7 +4,6 @@ import { PrismaClient } from "@prisma/client";
 import { Resend } from "resend";
 
 const prisma = new PrismaClient();
-const resend = new Resend(process.env.RESEND_API_KEY);
 
 function isMwf(date = new Date()) {
   const d = date.getDay(); // 0 Sun, 1 Mon, 2 Tue, 3 Wed, 4 Thu, 5 Fri, 6 Sat
@@ -29,8 +28,20 @@ function fmtDate(v) {
 }
 
 function pick(obj, keys) {
-  for (const k of keys) if (obj && obj[k] != null && obj[k] !== "") return obj[k];
+  for (const k of keys) {
+    if (obj && obj[k] != null && obj[k] !== "") return obj[k];
+  }
   return null;
+}
+
+// Support both shapes:
+// 1) [ {title, location, ...}, ... ]
+// 2) [ {score, opportunity: {title, location, ...}}, ... ]
+function normalizeMatches(raw) {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((m) => (m && typeof m === "object" && m.opportunity ? m.opportunity : m))
+    .filter(Boolean);
 }
 
 function buildHtml({ customerId, email, matches, appUrl }) {
@@ -60,7 +71,6 @@ function buildHtml({ customerId, email, matches, appUrl }) {
   const max = Number(process.env.DIGEST_MAX_MATCHES || 10);
 
   const cards = matches.slice(0, max).map((m) => {
-    // supports a bunch of common shapes (your matches endpoint may differ)
     const title = pick(m, ["title", "opportunityTitle", "name"]) || "Untitled";
     const location = pick(m, ["location", "place", "cityState"]) || "—";
     const naics = pick(m, ["naics", "naicsCode"]) || "—";
@@ -73,7 +83,13 @@ function buildHtml({ customerId, email, matches, appUrl }) {
     return `
       <div style="padding:12px;border:1px solid #eee;border-radius:12px;margin-bottom:10px">
         <div style="font-weight:700;margin-bottom:6px">
-          ${url ? `<a href="${url}" target="_blank" style="color:#111;text-decoration:none">${safe(title)}</a>` : safe(title)}
+          ${
+            url
+              ? `<a href="${url}" target="_blank" style="color:#111;text-decoration:none">${safe(
+                  title
+                )}</a>`
+              : safe(title)
+          }
         </div>
         <div style="color:#444;font-size:14px">
           <div><strong>Location:</strong> ${safe(location)}</div>
@@ -82,7 +98,13 @@ function buildHtml({ customerId, email, matches, appUrl }) {
           <div><strong>Due:</strong> ${due}</div>
           ${value ? `<div><strong>Est. Value:</strong> ${safe(value)}</div>` : ``}
         </div>
-        ${summary ? `<p style="margin:8px 0 0;color:#333">${safe(summary).slice(0, 400)}${safe(summary).length > 400 ? "…" : ""}</p>` : ``}
+        ${
+          summary
+            ? `<p style="margin:8px 0 0;color:#333">${safe(summary).slice(0, 400)}${
+                safe(summary).length > 400 ? "…" : ""
+              }</p>`
+            : ``
+        }
       </div>
     `;
   }).join("");
@@ -102,11 +124,14 @@ function buildHtml({ customerId, email, matches, appUrl }) {
 }
 
 async function main() {
-  // guard: only run on M/W/F (extra safety)
+  // Extra safety: only run on Mon/Wed/Fri
   if (!isMwf()) {
     console.log("Not Mon/Wed/Fri — skipping digest.");
     return;
   }
+
+  // Debug (safe): confirms env injection without printing secrets
+  console.log("Has RESEND_API_KEY?", !!process.env.RESEND_API_KEY);
 
   const FROM = process.env.EMAIL_FROM;
   const BACKEND_URL = process.env.BACKEND_URL;
@@ -116,6 +141,9 @@ async function main() {
   if (!FROM) throw new Error("Missing EMAIL_FROM");
   if (!BACKEND_URL) throw new Error("Missing BACKEND_URL");
   if (!process.env.DATABASE_URL) throw new Error("Missing DATABASE_URL");
+
+  // Create Resend client ONLY after we confirm the key exists
+  const resend = new Resend(process.env.RESEND_API_KEY);
 
   // Only email active customers
   const customers = await prisma.customer.findMany({
@@ -133,8 +161,9 @@ async function main() {
         continue;
       }
 
-      const matches = await resp.json();
-      const hasMatches = Array.isArray(matches) && matches.length > 0;
+      const raw = await resp.json();
+      const matches = normalizeMatches(raw);
+      const hasMatches = matches.length > 0;
 
       const subject = hasMatches
         ? `AMBIT Matches Digest — ${new Date().toLocaleDateString("en-US")}`
@@ -147,7 +176,7 @@ async function main() {
       const html = buildHtml({
         customerId: c.id,
         email: c.email,
-        matches: Array.isArray(matches) ? matches : [],
+        matches,
         appUrl: APP_URL,
       });
 
