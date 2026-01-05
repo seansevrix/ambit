@@ -12,6 +12,7 @@ import matchesRoutes from "./routes/matches.js";
 import billingRoutes from "./routes/billing.js";
 import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 import authRoutes from "./routes/auth.js";
+import unsubscribeRoutes from "./routes/unsubscribe.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -23,9 +24,9 @@ app.use("/webhooks/stripe", stripeWebhookRoutes);
 app.use(morgan("dev"));
 
 /**
- * ✅ BODY PARSING (THIS IS THE FIX)
- * Many frontends accidentally send JSON with Content-Type: text/plain.
- * This makes sure req.body is still parsed.
+ * ✅ BODY PARSING
+ * Some clients accidentally send JSON with Content-Type: text/plain.
+ * This makes sure req.body still gets parsed.
  */
 app.use(
   express.json({
@@ -34,28 +35,36 @@ app.use(
   })
 );
 
-// CORS (keep your current approach)
+/**
+ * ✅ CORS
+ * Must allow your custom domain(s) or the browser will block fetch() calls.
+ */
 const allowedOrigins = [
-  process.env.FRONTEND_URL, // e.g. https://ambit-kappa.vercel.app
+  process.env.FRONTEND_URL, // e.g. https://ambitco.app
+  "https://www.ambitco.app",
+  "https://ambitco.app",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ].filter(Boolean);
 
 function isAllowedOrigin(origin) {
-  if (!origin) return true; // server-to-server / curl
+  if (!origin) return true; // curl / server-to-server requests
   if (allowedOrigins.includes(origin)) return true;
-  if (origin.endsWith(".vercel.app")) return true;
+  if (origin.endsWith(".vercel.app")) return true; // allow Vercel previews
   return false;
 }
 
 const corsOptions = {
   origin: (origin, callback) => {
     if (isAllowedOrigin(origin)) return callback(null, true);
+
+    // Helpful debug in Render logs
+    console.log("❌ CORS blocked origin:", origin);
     return callback(null, false);
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
+  allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
 };
 
 app.use(cors(corsOptions));
@@ -64,7 +73,13 @@ app.options("*", cors(corsOptions));
 // Health
 app.get("/engine/health", (req, res) => res.json({ status: "ok" }));
 
-// Routes
+/**
+ * ✅ Public routes (no auth)
+ * Used for email compliance / unsubscribe links
+ */
+app.use("/public", unsubscribeRoutes);
+
+// Engine routes
 app.use("/engine/auth", authRoutes);
 app.use("/engine", customersRoutes);
 app.use("/engine", opportunitiesRoutes);
