@@ -1,5 +1,6 @@
 // backend/jobs/sendDigestMwf.js
 import "dotenv/config";
+import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { Resend } from "resend";
 
@@ -34,7 +35,7 @@ function pick(obj, keys) {
   return null;
 }
 
-// Support both shapes:
+// Supports both shapes:
 // 1) [ {title, location, ...}, ... ]
 // 2) [ {score, opportunity: {title, location, ...}}, ... ]
 function normalizeMatches(raw) {
@@ -44,7 +45,33 @@ function normalizeMatches(raw) {
     .filter(Boolean);
 }
 
-function buildHtml({ customerId, email, matches, appUrl }) {
+function signUnsub(email, ts, secret) {
+  const base = `${email}|${ts}`;
+  return crypto.createHmac("sha256", secret).update(base).digest("hex");
+}
+
+function buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail }) {
+  return `
+    <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
+    <div style="color:#666;font-size:12px;line-height:1.5">
+      <div style="margin-bottom:6px">
+        You’re receiving this email because you signed up for AMBIT alerts at
+        <a href="${signupUrl}" target="_blank" style="color:#111">${signupUrl}</a>.
+      </div>
+      <div style="margin-bottom:6px">
+        To improve delivery: add <strong>${supportEmail}</strong> to your contacts and mark this email as “Not spam”.
+      </div>
+      <div style="margin-bottom:6px">
+        <a href="${unsubscribeUrl}" target="_blank" style="color:#111">Unsubscribe</a>
+        &nbsp;•&nbsp;
+        <a href="${signupUrl}" target="_blank" style="color:#111">Manage preferences</a>
+      </div>
+      <div>${safe(companyAddress)}</div>
+    </div>
+  `;
+}
+
+function buildHtml({ customerId, email, matches, appUrl, signupUrl, unsubscribeUrl, companyAddress, supportEmail }) {
   const header = `
     <div style="font-family:Arial,sans-serif;line-height:1.5">
       <h2 style="margin:0 0 10px">AMBIT Matches Digest</h2>
@@ -53,6 +80,8 @@ function buildHtml({ customerId, email, matches, appUrl }) {
         <div><strong>Registered Email:</strong> ${email}</div>
       </div>
   `;
+
+  const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
 
   if (!matches || matches.length === 0) {
     return `
@@ -64,6 +93,7 @@ function buildHtml({ customerId, email, matches, appUrl }) {
           Open AMBIT
         </a>
       </p>
+      ${footer}
     </div>
     `;
   }
@@ -85,9 +115,7 @@ function buildHtml({ customerId, email, matches, appUrl }) {
         <div style="font-weight:700;margin-bottom:6px">
           ${
             url
-              ? `<a href="${url}" target="_blank" style="color:#111;text-decoration:none">${safe(
-                  title
-                )}</a>`
+              ? `<a href="${url}" target="_blank" style="color:#111;text-decoration:none">${safe(title)}</a>`
               : safe(title)
           }
         </div>
@@ -119,39 +147,46 @@ function buildHtml({ customerId, email, matches, appUrl }) {
         View all matches
       </a>
     </p>
+    ${footer}
   </div>
   `;
 }
 
 async function main() {
-  // Extra safety: only run on Mon/Wed/Fri
   if (!isMwf()) {
     console.log("Not Mon/Wed/Fri — skipping digest.");
     return;
   }
 
-  // Debug (safe): confirms env injection without printing secrets
-  console.log("Has RESEND_API_KEY?", !!process.env.RESEND_API_KEY);
-
-  const FROM = process.env.EMAIL_FROM;
-  const BACKEND_URL = process.env.BACKEND_URL;
+  const FROM = process.env.EMAIL_FROM;                 // e.g. "AMBIT <ambit@sevrixgov.com>"
+  const BACKEND_URL = process.env.BACKEND_URL;         // e.g. https://ambit-0dnp.onrender.com
   const APP_URL = process.env.FRONTEND_URL || "https://ambitco.app";
 
+  // Where users sign up (Resend cares about this)
+  const SIGNUP_URL = process.env.SIGNUP_URL || `${APP_URL}/get-started`;
+
+  // Unsubscribe endpoint lives on backend (we’ll add it below)
+  const UNSUB_BASE = process.env.UNSUBSCRIBE_BASE_URL || `${BACKEND_URL}/public/unsubscribe`;
+
+  // CAN-SPAM style footer address (set this in env)
+  const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
+  const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "ambit@sevrixgov.com";
+
   if (!process.env.RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
+  if (!process.env.UNSUBSCRIBE_SECRET) throw new Error("Missing UNSUBSCRIBE_SECRET");
   if (!FROM) throw new Error("Missing EMAIL_FROM");
   if (!BACKEND_URL) throw new Error("Missing BACKEND_URL");
   if (!process.env.DATABASE_URL) throw new Error("Missing DATABASE_URL");
 
-  // Create Resend client ONLY after we confirm the key exists
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // Only email active customers
   const customers = await prisma.customer.findMany({
     where: { isActive: true },
     select: { id: true, email: true },
   });
 
   console.log(`Active customers: ${customers.length}`);
+  console.log(`Using FROM: ${FROM}`);
 
   for (const c of customers) {
     try {
@@ -169,18 +204,28 @@ async function main() {
         ? `AMBIT Matches Digest — ${new Date().toLocaleDateString("en-US")}`
         : `AMBIT Matches Digest — No new solicitations`;
 
+      // Secure unsubscribe link
+      const ts = Date.now().toString();
+      const sig = signUnsub(c.email, ts, process.env.UNSUBSCRIBE_SECRET);
+      const unsubscribeUrl =
+        `${UNSUB_BASE}?email=${encodeURIComponent(c.email)}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
+
       const text = hasMatches
-        ? `Customer ID: ${c.id}\nRegistered Email: ${c.email}\n\nYou have ${matches.length} match(es).\n\nOpen AMBIT: ${APP_URL}`
-        : `Customer ID: ${c.id}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\n\nOpen AMBIT: ${APP_URL}`;
+        ? `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${c.email}\n\nYou have ${matches.length} match(es).\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`
+        : `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`;
 
       const html = buildHtml({
         customerId: c.id,
         email: c.email,
         matches,
         appUrl: APP_URL,
+        signupUrl: SIGNUP_URL,
+        unsubscribeUrl,
+        companyAddress: COMPANY_ADDRESS,
+        supportEmail: SUPPORT_EMAIL,
       });
 
-      await resend.emails.send({
+      const { data, error } = await resend.emails.send({
         from: FROM,
         to: c.email,
         subject,
@@ -188,7 +233,12 @@ async function main() {
         html,
       });
 
-      console.log(`Sent digest to ${c.email} (customer ${c.id})`);
+      if (error) {
+        console.error(`❌ Resend error for ${c.email}:`, error);
+        continue;
+      }
+
+      console.log(`✅ Resend accepted: ${c.email} (id=${data?.id || "n/a"})`);
     } catch (err) {
       console.error(`Digest failed for customer ${c.id}:`, err?.message || err);
     }
