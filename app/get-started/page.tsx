@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import AmbitMark from "../components/AmbitMark";
 
@@ -20,65 +20,44 @@ async function postJson(url: string, body: any) {
   return { res, json };
 }
 
-type Opportunity = {
-  title?: string;
-  location?: string;
-  naics?: string;
-  keywords?: string | null;
-  summary?: string | null;
-  createdAt?: string;
-};
-
-async function getOpportunities(signal?: AbortSignal): Promise<Opportunity[]> {
-  try {
-    const res = await fetch(`${API_BASE}/engine/opportunities`, {
-      cache: "no-store",
-      signal,
-    });
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
-
-function norm(s?: string) {
-  return (s || "").toLowerCase().trim();
-}
-
-function parseServiceArea(input: string) {
-  const parts = input.split(",");
-  const city = (parts[0] || "").trim();
-  const state = (parts[1] || "").trim();
-  return { city, state };
-}
-
-function splitKeywords(input: string) {
-  return input
-    .split(",")
-    .map((k) => k.trim())
-    .filter(Boolean)
-    .slice(0, 12);
-}
-
-function withinLast12Months(iso?: string) {
-  if (!iso) return true;
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return true;
-  const now = Date.now();
-  const yearMs = 365 * 24 * 60 * 60 * 1000;
-  return now - d.getTime() <= yearMs;
-}
-
-function sanitizeNaics(input: string) {
+/** NAICS helpers */
+function sanitizeNaicsToken(input: string) {
   // digits only, max 6
   return input.replace(/[^\d]/g, "").slice(0, 6);
 }
-
-function isValidNaics(input: string) {
+function isValidNaicsToken(input: string) {
   // allow 2–6 digits (prefix matching is useful), but recommend full 6
   return /^\d{2,6}$/.test(input);
+}
+function parseNaicsList(raw: string) {
+  // split by comma; allow extra spaces
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const cleaned = parts.map(sanitizeNaicsToken).filter(Boolean);
+
+  const valid = cleaned.filter(isValidNaicsToken);
+
+  // unique, keep order
+  const seen = new Set<string>();
+  const uniqueValid: string[] = [];
+  for (const v of valid) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      uniqueValid.push(v);
+    }
+  }
+
+  return {
+    valid: uniqueValid,
+    hasAny: uniqueValid.length > 0,
+    // "invalid" means user typed something non-empty that doesn't become a valid token
+    hasInvalid:
+      parts.length > 0 &&
+      cleaned.some((t) => t.length > 0 && !isValidNaicsToken(t)),
+  };
 }
 
 export default function GetStartedPage() {
@@ -87,7 +66,7 @@ export default function GetStartedPage() {
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [serviceArea, setServiceArea] = useState("");
-  const [naics, setNaics] = useState("");
+  const [naicsInput, setNaicsInput] = useState(""); // ✅ now multiple NAICS allowed
   const [keywords, setKeywords] = useState("");
 
   const [loading, setLoading] = useState(false);
@@ -95,89 +74,20 @@ export default function GetStartedPage() {
 
   const [naicsTouched, setNaicsTouched] = useState(false);
 
-  const [matchCount, setMatchCount] = useState<number | null>(null);
-  const [matchCountLoading, setMatchCountLoading] = useState(false);
-
-  const naicsClean = useMemo(() => sanitizeNaics(naics), [naics]);
-  const naicsValid = useMemo(() => isValidNaics(naicsClean), [naicsClean]);
+  const naicsParsed = useMemo(() => parseNaicsList(naicsInput), [naicsInput]);
+  const naicsCsv = useMemo(() => naicsParsed.valid.join(","), [naicsParsed.valid]);
 
   // ✅ Keywords required ONLY on this page
-  // ✅ NAICS required (because matching is NAICS-heavy)
+  // ✅ NAICS required (now: at least one valid NAICS)
   const canSubmit = useMemo(() => {
     return (
       companyName.trim().length >= 2 &&
       email.trim().includes("@") &&
       serviceArea.trim().length >= 2 &&
       keywords.trim().length >= 2 &&
-      naicsValid
+      naicsParsed.hasAny
     );
-  }, [companyName, email, serviceArea, keywords, naicsValid]);
-
-  // live match count preview (requires service area + keywords + NAICS)
-  useEffect(() => {
-    const loc = serviceArea.trim();
-    const kw = keywords.trim();
-    const nx = naicsClean.trim();
-
-    if (loc.length < 2 || kw.length < 2 || !isValidNaics(nx)) {
-      setMatchCount(null);
-      return;
-    }
-
-    setMatchCountLoading(true);
-    const controller = new AbortController();
-
-    const timer = setTimeout(async () => {
-      const list = await getOpportunities(controller.signal);
-
-      const { city, state } = parseServiceArea(loc);
-      const cityN = norm(city);
-      const stateN = norm(state);
-
-      const kwList = splitKeywords(kw).map((k) => norm(k));
-      const naicsN = norm(nx);
-
-      const count = list
-        .filter((o) => withinLast12Months(o.createdAt))
-        .filter((o) => {
-          const oLoc = norm(o.location);
-          const oTitle = norm(o.title);
-          const oNaics = norm(o.naics);
-          const oKw = norm(o.keywords || "");
-          const oSummary = norm(o.summary || "");
-
-          const locationMatch =
-            (!!cityN && oLoc.includes(cityN)) ||
-            (!!stateN && oLoc.includes(stateN));
-
-          // prefix match so "2373" can still find "237310"
-          const naicsMatch = !!naicsN && !!oNaics && oNaics.startsWith(naicsN);
-
-          const keywordMatch =
-            kwList.length > 0 &&
-            kwList.some(
-              (k) =>
-                k &&
-                (oTitle.includes(k) ||
-                  oLoc.includes(k) ||
-                  oKw.includes(k) ||
-                  oSummary.includes(k))
-            );
-
-          // Preview logic: must match location AND (NAICS OR keywords)
-          return locationMatch && (naicsMatch || keywordMatch);
-        }).length;
-
-      setMatchCount(count);
-      setMatchCountLoading(false);
-    }, 350);
-
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-      setMatchCountLoading(false);
-    };
-  }, [serviceArea, keywords, naicsClean]);
+  }, [companyName, email, serviceArea, keywords, naicsParsed.hasAny]);
 
   async function createCustomer() {
     setErr("");
@@ -185,33 +95,32 @@ export default function GetStartedPage() {
 
     try {
       const company = companyName.trim();
-      const mail = email.trim();
+      const mail = email.trim().toLowerCase();
       const loc = serviceArea.trim();
-      const nx = naicsClean.trim();
       const kw = keywords.trim();
 
-      if (!isValidNaics(nx)) {
+      if (!naicsParsed.hasAny) {
         setNaicsTouched(true);
-        throw new Error("Please enter a valid NAICS code (2–6 digits, usually 6).");
+        throw new Error("Please enter at least one valid NAICS code (2–6 digits each).");
       }
 
       // ✅ IMPORTANT: deployed backend expects `name`. Send both for compatibility.
+      // ✅ For multi-NAICS: send CSV in `naics` + also send `naicsCodes` array for future-proofing.
       const payload: any = {
         name: company,
         companyName: company,
         email: mail,
         location: loc,
         serviceArea: loc,
-        naics: nx, // REQUIRED
+        naics: naicsCsv, // e.g., "237310,238220"
+        naicsCodes: naicsParsed.valid, // e.g., ["237310","238220"]
         keywords: kw,
       };
 
       const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
 
       if (!res.ok) {
-        const msg = String(
-          json?.message || json?.error || `Signup failed (${res.status})`
-        );
+        const msg = String(json?.message || json?.error || `Signup failed (${res.status})`);
         throw new Error(msg);
       }
 
@@ -247,9 +156,7 @@ export default function GetStartedPage() {
             </div>
             <div className="text-left">
               <div className="text-sm font-semibold tracking-wide">AMBIT</div>
-              <div className="text-xs text-slate-300">
-                Ranked government leads for contractors
-              </div>
+              <div className="text-xs text-slate-300">Ranked government leads for contractors</div>
             </div>
           </div>
 
@@ -311,27 +218,25 @@ export default function GetStartedPage() {
               />
             </Field>
 
-            {/* ✅ NAICS first */}
-            <Field label="NAICS (required)">
+            {/* ✅ NAICS (multiple) */}
+            <Field label="NAICS codes (required)">
               <input
                 className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                value={naicsClean}
-                onChange={(e) => setNaics(e.target.value)}
+                value={naicsInput}
+                onChange={(e) => setNaicsInput(e.target.value)}
                 onBlur={() => setNaicsTouched(true)}
-                placeholder="237310"
-                inputMode="numeric"
-                pattern="\d*"
+                placeholder="237310, 238220, 561730"
+                inputMode="text"
               />
 
               {/* keep this font/style exactly */}
               <div className="text-xs text-slate-300">
-                6 digits is best. Example: <span className="font-semibold text-white">237310</span>.
-                (Your match engine relies heavily on NAICS.)
+                Add as many as you want to broaden your search. 6 digits is best (example:{" "}
+                <span className="font-semibold text-white">237310</span>).
               </div>
 
-              {/* ✅ new text goes DIRECTLY under the line above, same font */}
+              {/* ✅ keep NAICS help line */}
               <div className="text-xs text-slate-300">
-                NAICS codes are vital for tailoring your experience and ensuring optimal match results.
                 Need help? Find your code at{" "}
                 <a
                   href="https://www.naics.com"
@@ -344,14 +249,18 @@ export default function GetStartedPage() {
                 .
               </div>
 
-              {naicsTouched && !naicsValid ? (
+              {naicsTouched && !naicsParsed.hasAny ? (
                 <div className="text-xs text-red-200">
-                  Enter a valid NAICS code (2–6 digits; usually 6).
+                  Enter at least one valid NAICS code (2–6 digits each).
+                </div>
+              ) : naicsTouched && naicsParsed.hasInvalid ? (
+                <div className="text-xs text-amber-200">
+                  One or more NAICS entries look invalid — use digits only (2–6 digits each).
                 </div>
               ) : null}
             </Field>
 
-            {/* ✅ Keywords moved BELOW NAICS */}
+            {/* ✅ Keywords */}
             <Field label="Keywords (required)">
               <input
                 className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
@@ -359,26 +268,13 @@ export default function GetStartedPage() {
                 onChange={(e) => setKeywords(e.target.value)}
                 placeholder="asphalt, striping, concrete"
               />
-              <div className="text-xs text-slate-300">
-                Use commas. Example: “HVAC, ductwork, rooftop unit”
-              </div>
+              {/* ✅ Removed: “Use commas…” helper line */}
             </Field>
 
+            {/* ✅ Replace the match-count panel with your exact message */}
             <div className="rounded-2xl border border-white/10 bg-slate-950/25 px-4 py-3 text-sm text-slate-200">
-              {matchCountLoading ? (
-                <span className="font-semibold text-white">Checking your area…</span>
-              ) : matchCount === null ? (
-                <span>
-                  Add your service area, NAICS, and keywords to see how many matches we’ve seen in the
-                  last 12 months.
-                </span>
-              ) : (
-                <span>
-                  In the last 12 months, we’ve seen{" "}
-                  <span className="font-semibold text-white">{matchCount}</span> opportunities matching
-                  your area/trade.
-                </span>
-              )}
+              Great news: we’ve found a selection of high-potential opportunities tailored to your
+              specific expertise.
             </div>
 
             {err ? (
