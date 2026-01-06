@@ -164,32 +164,19 @@ function buildHtml({
 }
 
 async function main() {
-  // DEBUG: show what cron actually sees (no secrets printed)
-  console.log("FORCE_DIGEST:", JSON.stringify(process.env.FORCE_DIGEST));
-
-  // Allow forcing sends any day for testing:
-  // Render env var: FORCE_DIGEST=1
-  const FORCE = process.env.FORCE_DIGEST === "1";
-
-  if (!FORCE && !isMwf()) {
+  // ✅ Normal behavior: ONLY send on Mon/Wed/Fri
+  if (!isMwf()) {
     console.log("Not Mon/Wed/Fri — skipping digest.");
     return;
-  }
-  if (FORCE) {
-    console.log("FORCE_DIGEST=1 — sending digest regardless of day.");
   }
 
   const FROM = process.env.EMAIL_FROM; // e.g. "AMBIT <ambit@sevrixgov.com>"
   const BACKEND_URL = process.env.BACKEND_URL; // e.g. https://ambit-0dnp.onrender.com
   const APP_URL = process.env.FRONTEND_URL || "https://ambitco.app";
 
-  // Where users sign up (Resend cares about this)
   const SIGNUP_URL = process.env.SIGNUP_URL || `${APP_URL}/get-started`;
-
-  // Unsubscribe endpoint lives on backend
   const UNSUB_BASE = process.env.UNSUBSCRIBE_BASE_URL || `${BACKEND_URL}/public/unsubscribe`;
 
-  // CAN-SPAM footer info (set in env)
   const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
   const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "ambit@sevrixgov.com";
 
@@ -225,7 +212,6 @@ async function main() {
         ? `AMBIT Matches Digest — ${new Date().toLocaleDateString("en-US")}`
         : `AMBIT Matches Digest — No new solicitations`;
 
-      // Secure unsubscribe link (email-based, matches your unsubscribe.js)
       const ts = Date.now().toString();
       const sig = signUnsub(c.email, ts, process.env.UNSUBSCRIBE_SECRET);
       const unsubscribeUrl = `${UNSUB_BASE}?email=${encodeURIComponent(
@@ -233,12 +219,8 @@ async function main() {
       )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
 
       const text = hasMatches
-        ? `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${
-            c.email
-          }\n\nYou have ${matches.length} match(es).\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`
-        : `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${
-            c.email
-          }\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`;
+        ? `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${c.email}\n\nYou have ${matches.length} match(es).\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`
+        : `AMBIT Matches Digest\n\nCustomer ID: ${c.id}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`;
 
       const html = buildHtml({
         customerId: c.id,
@@ -251,7 +233,6 @@ async function main() {
         supportEmail: SUPPORT_EMAIL,
       });
 
-      // One-click unsubscribe headers (Gmail, Apple Mail, etc.)
       const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
       const listUnsubscribeHttp = unsubscribeUrl;
       const listUnsubscribe = `<${listUnsubscribeHttp}>, <${listUnsubscribeMailto}>`;

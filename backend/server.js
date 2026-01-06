@@ -16,6 +16,7 @@ import unsubscribeRoutes from "./routes/unsubscribe.js";
 
 const app = express();
 app.disable("x-powered-by");
+app.set("trust proxy", 1);
 
 // ✅ Stripe webhook must be mounted BEFORE express.json()
 app.use("/webhooks/stripe", stripeWebhookRoutes);
@@ -25,8 +26,8 @@ app.use(morgan("dev"));
 
 /**
  * ✅ BODY PARSING
- * Some clients accidentally send JSON with Content-Type: text/plain.
- * This makes sure req.body still gets parsed.
+ * - JSON (including accidental text/plain JSON)
+ * - URL-encoded (needed for List-Unsubscribe one-click POST)
  */
 app.use(
   express.json({
@@ -34,10 +35,10 @@ app.use(
     type: ["application/json", "text/plain", "application/*+json"],
   })
 );
+app.use(express.urlencoded({ extended: false }));
 
 /**
  * ✅ CORS
- * Must allow your custom domain(s) or the browser will block fetch() calls.
  */
 const allowedOrigins = [
   process.env.FRONTEND_URL, // e.g. https://ambitco.app
@@ -57,8 +58,6 @@ function isAllowedOrigin(origin) {
 const corsOptions = {
   origin: (origin, callback) => {
     if (isAllowedOrigin(origin)) return callback(null, true);
-
-    // Helpful debug in Render logs
     console.log("❌ CORS blocked origin:", origin);
     return callback(null, false);
   },
@@ -74,8 +73,7 @@ app.options("*", cors(corsOptions));
 app.get("/engine/health", (req, res) => res.json({ status: "ok" }));
 
 /**
- * ✅ Public routes (no auth)
- * Used for email compliance / unsubscribe links
+ * ✅ Public routes (no auth) — unsubscribe links
  */
 app.use("/public", unsubscribeRoutes);
 
