@@ -4,7 +4,7 @@ import Link from "next/link";
 export const metadata = {
   title: "About | AMBIT",
   description:
-    "AMBIT helps small businesses find the right government contracts faster with clear matches and simple scouting reports.",
+    "AMBIT helps businesses find the right government contracts faster with clear matches and simple scouting reports.",
 };
 
 const PREVIEW_HREF = "/opportunities";
@@ -23,12 +23,12 @@ export default function AboutPage() {
 
             <h1 className="mt-4 text-4xl md:text-6xl font-semibold tracking-tight">
               Making government contracting
-              <span className="text-white/90"> easier</span> for small businesses
+              <span className="text-white/90"> easier</span> for businesses
             </h1>
 
             <p className="mt-5 text-base md:text-lg text-white/70">
-              Tell AMBIT what you do and where you work. We find live opportunities, score matches,
-              and deliver a clear scouting report — so you don’t miss good bids.
+              Tell AMBIT what your business does and where you work. We find live opportunities,
+              score matches, and deliver a clear scouting report — so you don’t miss good bids.
             </p>
 
             <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
@@ -63,7 +63,7 @@ export default function AboutPage() {
             </h2>
 
             <p className="mt-4 text-white/70 leading-relaxed">
-              Small businesses don’t have time to live inside portals, PDFs, and endless listings.
+              Businesses don’t have time to live inside portals, PDFs, and endless listings.
               AMBIT is built to reduce noise and surface the opportunities that actually fit —
               with match scoring, key details up front, and clear summaries you can act on.
             </p>
@@ -90,8 +90,8 @@ export default function AboutPage() {
               <div className="rounded-2xl border border-white/10 bg-[#071a3a]/50 p-4">
                 <div className="text-xs text-white/60">Summary</div>
                 <div className="mt-2 text-sm text-white/80 leading-relaxed">
-                  Clear scope and schedule with standard compliance. Strong fit for small contractors
-                  who want to move fast and avoid wasted time on bad opportunities.
+                  Clear scope and schedule with standard compliance. Strong fit for businesses
+                  that want to move fast and avoid wasted time on bad opportunities.
                 </div>
               </div>
             </div>
