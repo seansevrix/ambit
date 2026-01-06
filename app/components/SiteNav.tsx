@@ -26,6 +26,11 @@ export default function SiteNav() {
           <Link href="/login" className="hover:text-white">
             Log In
           </Link>
+
+          {/* ✅ NEW */}
+          <Link href="/about" className="hover:text-white">
+            About
+          </Link>
         </nav>
 
         {/* Right */}
@@ -46,6 +51,11 @@ export default function SiteNav() {
         </Link>
         <Link href="/login" className="hover:text-white">
           Log In
+        </Link>
+
+        {/* ✅ NEW */}
+        <Link href="/about" className="hover:text-white">
+          About
         </Link>
       </nav>
     </header>
