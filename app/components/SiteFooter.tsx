@@ -22,6 +22,7 @@ export default function SiteFooter() {
               <FooterLink href="/contact">Contact</FooterLink>
               <FooterLink href="/privacy">Privacy</FooterLink>
               <FooterLink href="/terms">Terms</FooterLink>
+              <FooterLink href="/cancel">Cancel</FooterLink>
             </div>
           </div>
         </div>
