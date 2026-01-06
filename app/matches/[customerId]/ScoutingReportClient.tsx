@@ -23,6 +23,14 @@ type MatchesResponse = {
   matches: Match[];
 };
 
+type CustomerProfile = {
+  id?: number;
+  email?: string | null;
+  name?: string | null;
+  location?: string | null;
+  serviceArea?: string | null;
+};
+
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_BASE ||
@@ -31,6 +39,8 @@ const API_BASE = (
 
 const CHECKOUT_PATH = "/engine/billing/create-checkout-session";
 
+type SortKey = "score" | "newest" | "closest";
+
 export default function ScoutingReportClient({ customerId }: { customerId: number }) {
   const searchParams = useSearchParams();
 
@@ -38,29 +48,16 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const [loading, setLoading] = useState(true);
   const [needsSub, setNeedsSub] = useState(false);
   const [errMsg, setErrMsg] = useState<string>("");
+
   const [q, setQ] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("score");
+
+  // Used only for "Closest location" sorting
+  const [customerLoc, setCustomerLoc] = useState<{ city?: string; state?: string } | null>(
+    null
+  );
 
   const matches = useMemo(() => data?.matches || [], [data]);
-
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return matches;
-
-    return matches.filter((m) => {
-      const haystack = [
-        m.title,
-        m.location,
-        m.naics || "",
-        m.agency || "",
-        m.keywords || "",
-        m.summary || "",
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(query);
-    });
-  }, [matches, q]);
 
   async function load() {
     setLoading(true);
@@ -92,6 +89,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     }
   }
 
+  // Load matches
   useEffect(() => {
     if (!Number.isFinite(customerId) || customerId <= 0) {
       setLoading(false);
@@ -100,6 +98,37 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     }
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  // Optional: fetch customer profile to power "Closest location" sorting
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCustomerProfile() {
+      try {
+        // Most likely route
+        const res = await fetch(`${API_BASE}/engine/customers/${customerId}`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (!res.ok) return; // silently ignore if endpoint doesn't exist
+
+        const prof = (await res.json().catch(() => ({}))) as CustomerProfile;
+        const loc = (prof?.serviceArea || prof?.location || "").trim();
+        if (!loc) return;
+
+        const parsed = parseCityState(loc);
+        if (!cancelled) setCustomerLoc(parsed);
+      } catch {
+        // ignore
+      }
+    }
+
+    loadCustomerProfile();
+    return () => {
+      cancelled = true;
+    };
   }, [customerId]);
 
   // If Stripe redirects back with common params, auto-refresh once.
@@ -137,16 +166,62 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     }
   }
 
+  const filtered = useMemo(() => {
+    const query = q.trim().toLowerCase();
+    if (!query) return matches;
+
+    return matches.filter((m) => {
+      const haystack = [
+        m.title,
+        m.location,
+        m.naics || "",
+        m.agency || "",
+        m.keywords || "",
+        m.summary || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      return haystack.includes(query);
+    });
+  }, [matches, q]);
+
+  const sorted = useMemo(() => {
+    const list = [...filtered];
+
+    if (sortKey === "score") {
+      list.sort((a, b) => clampScore(b.score) - clampScore(a.score));
+      return list;
+    }
+
+    if (sortKey === "newest") {
+      list.sort((a, b) => toTime(b.postedDate) - toTime(a.postedDate));
+      return list;
+    }
+
+    // "Closest location" (best-effort)
+    // Rank: city+state match (0) -> state match (1) -> everything else (2)
+    // Secondary: higher score first
+    const city = norm(customerLoc?.city);
+    const state = norm(customerLoc?.state);
+
+    list.sort((a, b) => {
+      const ra = locationRank(a.location, city, state);
+      const rb = locationRank(b.location, city, state);
+      if (ra !== rb) return ra - rb;
+      return clampScore(b.score) - clampScore(a.score);
+    });
+
+    return list;
+  }, [filtered, sortKey, customerLoc]);
+
   return (
-    // ✅ This prevents any tiny horizontal overflow from escaping the container
     <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
           <div className="text-xs font-semibold tracking-wide text-white/60">AMBIT</div>
-          <h1 className="mt-1 text-2xl font-semibold text-white">
-            Opportunity matches
-          </h1>
+          <h1 className="mt-1 text-2xl font-semibold text-white">Opportunity matches</h1>
           <div className="mt-1 text-sm text-white/60">
             Enter your company portal to view your opportunity matches.
           </div>
@@ -168,16 +243,37 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         </div>
       </div>
 
-      {/* Search */}
-      <div className="mt-5">
-        <input
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-          placeholder="Search by location, NAICS, agency, or keywords…"
-          className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-        />
-        <div className="mt-2 text-xs text-white/50">
-          Tip: use search to filter by location, NAICS, agency, or keywords.
+      {/* Search + Sort */}
+      <div className="mt-5 grid gap-3 md:grid-cols-3 md:items-end">
+        <div className="md:col-span-2">
+          <input
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="Search by location, NAICS, agency, or keywords…"
+            className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+          />
+          <div className="mt-2 text-xs text-white/50">
+            Tip: use search to filter by location, NAICS, agency, or keywords.
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-semibold text-white/60">Sort</label>
+          <select
+            value={sortKey}
+            onChange={(e) => setSortKey(e.target.value as SortKey)}
+            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+          >
+            <option value="score">Highest score</option>
+            <option value="newest">Newest posted</option>
+            <option value="closest">Closest location</option>
+          </select>
+
+          {sortKey === "closest" && !customerLoc?.state ? (
+            <div className="mt-2 text-xs text-white/45">
+              Closest sorting is best-effort (needs your saved service area).
+            </div>
+          ) : null}
         </div>
       </div>
 
@@ -242,7 +338,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
             Refresh
           </button>
         </Panel>
-      ) : !filtered.length ? (
+      ) : !sorted.length ? (
         <Panel>
           <div className="text-sm font-semibold text-white">No matches found</div>
           <div className="mt-1 text-sm text-white/70">
@@ -257,35 +353,27 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         </Panel>
       ) : (
         <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur overflow-hidden">
-          {/* ✅ overflow-hidden keeps rounded border clean */}
           <div className="flex items-center justify-between gap-4">
             <div className="text-sm font-semibold text-white">More matches</div>
             <div className="text-xs text-white/50 tabular-nums">
-              Showing {Math.min(filtered.length, 50)} of {filtered.length}
+              Showing {Math.min(sorted.length, 50)} of {sorted.length}
             </div>
           </div>
 
           <div className="mt-4 grid gap-3">
-            {filtered.slice(0, 50).map((m) => (
+            {sorted.slice(0, 50).map((m) => (
               <div
                 key={m.id}
-                // ✅ overflow-hidden clips any long text inside the rounded card
                 className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 overflow-hidden"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    {/* ✅ break-words prevents long unbroken strings from forcing horizontal overflow */}
-                    <div
-                      className="text-sm font-semibold text-white leading-snug break-words"
-                      title={m.title}
-                    >
+                    <div className="text-sm font-semibold text-white leading-snug break-words" title={m.title}>
                       {m.title}
                     </div>
 
                     <div className="mt-1 text-xs text-white/60 break-words">
-                      <span className="uppercase tracking-wide">
-                        {m.agency || "Unknown agency"}
-                      </span>
+                      <span className="uppercase tracking-wide">{m.agency || "Unknown agency"}</span>
                       <span className="mx-2 opacity-40">•</span>
                       <span>{m.location}</span>
                       <span className="mx-2 opacity-40">•</span>
@@ -361,4 +449,44 @@ function formatDate(iso: string | null) {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+function toTime(iso: string | null) {
+  if (!iso) return 0;
+  const t = new Date(iso).getTime();
+  return Number.isFinite(t) ? t : 0;
+}
+
+function norm(s?: string | null) {
+  return String(s || "").trim().toLowerCase();
+}
+
+function parseCityState(input: string) {
+  // accepts: "San Diego, CA" or "San Diego CA"
+  const raw = String(input || "").trim();
+  if (!raw) return {};
+  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 2) return { city: parts[0], state: parts[1] };
+
+  const tokens = raw.split(/\s+/).filter(Boolean);
+  if (tokens.length >= 2) {
+    const maybeState = tokens[tokens.length - 1];
+    const city = tokens.slice(0, -1).join(" ");
+    return { city, state: maybeState };
+  }
+  return { city: raw };
+}
+
+function locationRank(matchLocation: string, cityN: string, stateN: string) {
+  // If we don't know the customer's location, treat all as same rank.
+  if (!cityN && !stateN) return 2;
+
+  const loc = norm(matchLocation);
+
+  const hasState = !!stateN && loc.includes(stateN);
+  const hasCity = !!cityN && loc.includes(cityN);
+
+  if (hasCity && hasState) return 0;
+  if (hasState) return 1;
+  return 2;
 }
