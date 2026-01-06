@@ -6,45 +6,37 @@ const router = express.Router();
 
 /**
  * POST /engine/auth/login
- * Body: { customerId: number, email: string }
- * Verifies that the email matches the customer record.
+ * Body: { email: string }
+ * Finds the customer by email and returns their customer id.
+ * (MVP email-only login — no password / no OTP)
  */
 router.post("/login", async (req, res) => {
   try {
-    const { customerId, email } = req.body || {};
-    const id = Number(customerId);
-    const cleanEmail = String(email || "").trim().toLowerCase();
+    const cleanEmail = String(req.body?.email || "").trim().toLowerCase();
 
-    if (!id || !Number.isFinite(id)) {
-      return res.status(400).json({ ok: false, error: "customerId is required." });
-    }
     if (!cleanEmail) {
-      return res.status(400).json({ ok: false, error: "email is required." });
+      return res.status(400).json({ error: "email is required." });
     }
 
-    const customer = await prisma.customer.findUnique({ where: { id } });
+    const customer = await prisma.customer.findUnique({
+      where: { email: cleanEmail },
+    });
+
     if (!customer) {
-      return res.status(404).json({ ok: false, error: "Customer not found." });
+      return res.status(404).json({ error: "No account found for that email." });
     }
 
-    const storedEmail = String(customer.email || "").trim().toLowerCase();
-    if (!storedEmail || storedEmail !== cleanEmail) {
-      return res.status(401).json({
-        ok: false,
-        error: "Email does not match this Customer ID.",
-      });
-    }
-
+    // Return minimal shape the frontend expects: { id }
+    // (You can include extra fields if you want)
     return res.json({
-      ok: true,
-      customerId: customer.id,
+      id: customer.id,
       subscriptionStatus: customer.subscriptionStatus,
       isActive: customer.isActive,
       name: customer.name,
     });
   } catch (err) {
     console.error("auth login error:", err);
-    return res.status(500).json({ ok: false, error: "Auth error." });
+    return res.status(500).json({ error: "Auth error." });
   }
 });
 
