@@ -4,80 +4,94 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-function getApiBaseUrl() {
-  const raw = process.env.NEXT_PUBLIC_API_BASE_URL || "";
+function getBackendBaseUrl() {
+  const raw =
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "";
+
   return raw.replace(/\/$/, "");
 }
 
 export default function LoginClient({ safeNext }: { safeNext?: string }) {
   const router = useRouter();
 
-  const apiBase = useMemo(() => getApiBaseUrl(), []);
-  const [customerId, setCustomerId] = useState("");
+  const backend = useMemo(() => getBackendBaseUrl(), []);
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(true);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Prefill from localStorage
   useEffect(() => {
     try {
-      const savedId = localStorage.getItem("ambit_customerId");
       const savedEmail = localStorage.getItem("ambit_email");
-      if (savedId) setCustomerId(savedId);
       if (savedEmail) setEmail(savedEmail);
     } catch {
       // ignore
     }
   }, []);
 
-  const parsedId = useMemo(() => Number(customerId), [customerId]);
-  const idIsValid = Number.isFinite(parsedId) && parsedId > 0;
+  function isValidEmail(v: string) {
+    const s = v.trim().toLowerCase();
+    return s.length >= 5 && s.includes("@") && s.includes(".");
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!idIsValid) {
-      setError("Please enter a valid Customer ID (e.g., 1).");
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!isValidEmail(trimmedEmail)) {
+      setError("Enter the email you used during signup.");
+      return;
+    }
+
+    if (!backend) {
+      setError("Login is unavailable (missing NEXT_PUBLIC_BACKEND_URL).");
       return;
     }
 
     setLoading(true);
     try {
-      // If email is provided AND backend is configured, verify email+ID match
-      if (email.trim() && apiBase) {
-        const res = await fetch(`${apiBase}/engine/auth/login`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            customerId: parsedId,
-            email: email.trim(),
-          }),
-        });
+      const res = await fetch(`${backend}/engine/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: trimmedEmail }),
+      });
 
-        const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({}));
 
-        if (!res.ok || data?.ok === false) {
-          throw new Error(
-            data?.error ||
-              "Login failed. Double-check your Customer ID + email and try again."
-          );
-        }
+      if (!res.ok) {
+        throw new Error(
+          data?.error || "Login failed. Double-check your email and try again."
+        );
+      }
+
+      const id = Number(data?.id);
+      if (!id || !Number.isFinite(id)) {
+        throw new Error("Login succeeded, but no account id was returned.");
       }
 
       if (remember) {
         try {
-          localStorage.setItem("ambit_customerId", String(parsedId));
-          if (email.trim()) localStorage.setItem("ambit_email", email.trim());
+          localStorage.setItem("ambit_email", trimmedEmail);
+        } catch {
+          // ignore
+        }
+      } else {
+        try {
+          localStorage.removeItem("ambit_email");
         } catch {
           // ignore
         }
       }
 
-      const destination = safeNext || `/matches/${parsedId}`;
+      const destination = safeNext || `/matches/${id}`;
       router.push(destination);
+      router.refresh();
     } catch (err: any) {
       setError(err?.message || "Login failed. Please try again.");
     } finally {
@@ -96,43 +110,22 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
             <div>
               <div className="text-sm font-semibold text-white">AMBIT</div>
               <div className="text-xs text-white/60">
-                Log in to view your match history
+                Enter your company portal to view your opportunity matches
               </div>
             </div>
           </div>
 
           <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white">
-            Log in
+            Company Portal
           </h1>
           <p className="mt-2 text-sm text-white/70">
-            Use your Customer ID. For extra verification, add the email you used
-            during signup.
+            Enter the email you used when you signed up.
           </p>
 
           <form onSubmit={handleSubmit} className="mt-6 space-y-4">
             <div>
               <label className="mb-1 block text-xs font-medium text-white/70">
-                Customer ID
-              </label>
-              <input
-                value={customerId}
-                onChange={(e) => setCustomerId(e.target.value)}
-                inputMode="numeric"
-                placeholder="e.g., 1"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-white/30"
-              />
-              <div className="mt-1 text-xs text-white/50">
-                Don’t know it?{" "}
-                <Link className="underline hover:text-white" href="/get-started">
-                  Create your profile
-                </Link>{" "}
-                (you’ll be shown your Customer ID).
-              </div>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-xs font-medium text-white/70">
-                Email (recommended)
+                Email
               </label>
               <input
                 value={email}
@@ -141,12 +134,20 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
                 placeholder="you@company.com"
                 className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-white/30"
               />
-              {!apiBase && (
+
+              {!backend && (
                 <div className="mt-1 text-xs text-amber-200/80">
-                  Note: email verification is disabled (missing
-                  NEXT_PUBLIC_API_BASE_URL).
+                  Missing frontend env: NEXT_PUBLIC_BACKEND_URL
                 </div>
               )}
+
+              <div className="mt-2 text-xs text-white/50">
+                New here?{" "}
+                <Link className="underline hover:text-white" href="/get-started">
+                  Create your profile
+                </Link>
+                .
+              </div>
             </div>
 
             <div className="flex items-center justify-between gap-3">
@@ -179,7 +180,7 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
               disabled={loading}
               className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading ? "Signing in…" : "View My Matches"}
+              {loading ? "Signing in…" : "Show My Matches"}
             </button>
 
             <div className="text-xs text-white/50">
