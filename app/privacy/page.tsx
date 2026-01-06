@@ -82,8 +82,8 @@ export default function PrivacyPage() {
                 Support
               </Link>{" "}
               or email{" "}
-              <a className="underline hover:text-white" href="mailto:sean.s@sevrixgov.com">
-                sean.s@sevrixgov.com
+              <a className="underline hover:text-white" href="mailto:ambit@sevrixgov.com">
+                ambit@sevrixgov.com
               </a>
               .
             </p>
