@@ -22,8 +22,7 @@ export default function AboutPage() {
             </div>
 
             <h1 className="mt-4 text-4xl md:text-6xl font-semibold tracking-tight">
-              Making government contracting
-              <span className="text-white/90"> easier</span> for businesses
+              Your Bridge to Federal, State, and Local Opportunities.
             </h1>
 
             <p className="mt-5 text-base md:text-lg text-white/70">
