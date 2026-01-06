@@ -41,6 +41,8 @@ const CHECKOUT_PATH = "/engine/billing/create-checkout-session";
 
 type SortKey = "score" | "newest" | "closest";
 
+const PAGE_SIZE = 10;
+
 export default function ScoutingReportClient({ customerId }: { customerId: number }) {
   const searchParams = useSearchParams();
 
@@ -52,10 +54,19 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
 
+  // Pagination / Load more
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+
+  // Starred (localStorage)
+  const [starred, setStarred] = useState<Set<number>>(new Set());
+  const [starredOnly, setStarredOnly] = useState(false);
+
   // Used only for "Closest location" sorting
   const [customerLoc, setCustomerLoc] = useState<{ city?: string; state?: string } | null>(
     null
   );
+
+  const storageKey = useMemo(() => `ambit_starred_matches_${customerId}`, [customerId]);
 
   const matches = useMemo(() => data?.matches || [], [data]);
 
@@ -100,13 +111,54 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [customerId]);
 
+  // Load starred from localStorage (per customer)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(storageKey);
+      if (!raw) {
+        setStarred(new Set());
+        return;
+      }
+      const arr = JSON.parse(raw);
+      if (Array.isArray(arr)) {
+        const s = new Set<number>();
+        for (const n of arr) {
+          const id = Number(n);
+          if (Number.isFinite(id)) s.add(id);
+        }
+        setStarred(s);
+      } else {
+        setStarred(new Set());
+      }
+    } catch {
+      setStarred(new Set());
+    }
+  }, [storageKey]);
+
+  function persistStarred(next: Set<number>) {
+    try {
+      localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
+    } catch {
+      // ignore
+    }
+  }
+
+  function toggleStar(matchId: number) {
+    setStarred((prev) => {
+      const next = new Set(prev);
+      if (next.has(matchId)) next.delete(matchId);
+      else next.add(matchId);
+      persistStarred(next);
+      return next;
+    });
+  }
+
   // Optional: fetch customer profile to power "Closest location" sorting
   useEffect(() => {
     let cancelled = false;
 
     async function loadCustomerProfile() {
       try {
-        // Most likely route
         const res = await fetch(`${API_BASE}/engine/customers/${customerId}`, {
           credentials: "include",
           cache: "no-store",
@@ -199,9 +251,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
       return list;
     }
 
-    // "Closest location" (best-effort)
-    // Rank: city+state match (0) -> state match (1) -> everything else (2)
-    // Secondary: higher score first
+    // Closest location (best-effort): city+state -> state -> everything else
     const city = norm(customerLoc?.city);
     const state = norm(customerLoc?.state);
 
@@ -215,6 +265,20 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     return list;
   }, [filtered, sortKey, customerLoc]);
 
+  // Apply "Starred only" filter AFTER sorting/searching
+  const finalList = useMemo(() => {
+    if (!starredOnly) return sorted;
+    return sorted.filter((m) => starred.has(m.id));
+  }, [sorted, starredOnly, starred]);
+
+  // Reset pagination when list inputs change
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [q, sortKey, starredOnly, data?.matches?.length]);
+
+  const visible = useMemo(() => finalList.slice(0, visibleCount), [finalList, visibleCount]);
+  const canLoadMore = visibleCount < finalList.length;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
       {/* Header */}
@@ -223,7 +287,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           <div className="text-xs font-semibold tracking-wide text-white/60">AMBIT</div>
           <h1 className="mt-1 text-2xl font-semibold text-white">Opportunity matches</h1>
           <div className="mt-1 text-sm text-white/60">
-            Enter your company portal to view your opportunity matches.
+            Your company portal — ranked opportunities tailored to your profile.
           </div>
         </div>
 
@@ -243,7 +307,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         </div>
       </div>
 
-      {/* Search + Sort */}
+      {/* Search + Sort + Starred */}
       <div className="mt-5 grid gap-3 md:grid-cols-3 md:items-end">
         <div className="md:col-span-2">
           <input
@@ -252,28 +316,43 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
             placeholder="Search by location, NAICS, agency, or keywords…"
             className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
           />
-          <div className="mt-2 text-xs text-white/50">
-            Tip: use search to filter by location, NAICS, agency, or keywords.
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
+            <span>Tip: search filters live (no page reload).</span>
+            <span className="tabular-nums">
+              Starred: <span className="font-semibold text-white/80">{starred.size}</span>
+            </span>
           </div>
         </div>
 
-        <div>
-          <label className="block text-xs font-semibold text-white/60">Sort</label>
-          <select
-            value={sortKey}
-            onChange={(e) => setSortKey(e.target.value as SortKey)}
-            className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-          >
-            <option value="score">Highest score</option>
-            <option value="newest">Newest posted</option>
-            <option value="closest">Closest location</option>
-          </select>
+        <div className="grid gap-3">
+          <div>
+            <label className="block text-xs font-semibold text-white/60">Sort</label>
+            <select
+              value={sortKey}
+              onChange={(e) => setSortKey(e.target.value as SortKey)}
+              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+            >
+              <option value="score">Highest score</option>
+              <option value="newest">Newest posted</option>
+              <option value="closest">Closest location</option>
+            </select>
 
-          {sortKey === "closest" && !customerLoc?.state ? (
-            <div className="mt-2 text-xs text-white/45">
-              Closest sorting is best-effort (needs your saved service area).
-            </div>
-          ) : null}
+            {sortKey === "closest" && !customerLoc?.state ? (
+              <div className="mt-2 text-xs text-white/45">
+                Closest is best-effort (needs saved service area).
+              </div>
+            ) : null}
+          </div>
+
+          <label className="flex items-center gap-2 text-sm text-white/70">
+            <input
+              type="checkbox"
+              checked={starredOnly}
+              onChange={(e) => setStarredOnly(e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
+            />
+            Show starred only
+          </label>
         </div>
       </div>
 
@@ -338,74 +417,146 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
             Refresh
           </button>
         </Panel>
-      ) : !sorted.length ? (
+      ) : !finalList.length ? (
         <Panel>
-          <div className="text-sm font-semibold text-white">No matches found</div>
-          <div className="mt-1 text-sm text-white/70">
-            Try clearing search or expanding NAICS/keywords/location.
+          <div className="text-sm font-semibold text-white">
+            {starredOnly ? "No starred matches yet" : "No matches found"}
           </div>
-          <button
-            onClick={() => setQ("")}
-            className="mt-4 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-          >
-            Clear search
-          </button>
+          <div className="mt-1 text-sm text-white/70">
+            {starredOnly
+              ? "Star opportunities to save them here."
+              : "Try clearing search or expanding NAICS/keywords/location."}
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setQ("")}
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+            >
+              Clear search
+            </button>
+            {starredOnly ? (
+              <button
+                onClick={() => setStarredOnly(false)}
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+              >
+                Show all matches
+              </button>
+            ) : null}
+          </div>
         </Panel>
       ) : (
         <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur overflow-hidden">
-          <div className="flex items-center justify-between gap-4">
-            <div className="text-sm font-semibold text-white">More matches</div>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm font-semibold text-white">
+              {starredOnly ? "Starred matches" : "Matches"}
+            </div>
+
             <div className="text-xs text-white/50 tabular-nums">
-              Showing {Math.min(sorted.length, 50)} of {sorted.length}
+              Showing <span className="font-semibold text-white/80">{visible.length}</span> of{" "}
+              <span className="font-semibold text-white/80">{finalList.length}</span>
             </div>
           </div>
 
           <div className="mt-4 grid gap-3">
-            {sorted.slice(0, 50).map((m) => (
-              <div
-                key={m.id}
-                className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 overflow-hidden"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="text-sm font-semibold text-white leading-snug break-words" title={m.title}>
-                      {m.title}
+            {visible.map((m) => {
+              const isStarred = starred.has(m.id);
+
+              return (
+                <div
+                  key={m.id}
+                  className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 overflow-hidden"
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div
+                        className="text-sm font-semibold text-white leading-snug break-words"
+                        title={m.title}
+                      >
+                        {m.title}
+                      </div>
+
+                      <div className="mt-1 text-xs text-white/60 break-words">
+                        <span className="uppercase tracking-wide">{m.agency || "Unknown agency"}</span>
+                        <span className="mx-2 opacity-40">•</span>
+                        <span>{m.location}</span>
+                        <span className="mx-2 opacity-40">•</span>
+                        <span>NAICS {m.naics || "—"}</span>
+                        <span className="mx-2 opacity-40">•</span>
+                        <span>Posted {formatDate(m.postedDate)}</span>
+                      </div>
                     </div>
 
-                    <div className="mt-1 text-xs text-white/60 break-words">
-                      <span className="uppercase tracking-wide">{m.agency || "Unknown agency"}</span>
-                      <span className="mx-2 opacity-40">•</span>
-                      <span>{m.location}</span>
-                      <span className="mx-2 opacity-40">•</span>
-                      <span>NAICS {m.naics || "—"}</span>
-                      <span className="mx-2 opacity-40">•</span>
-                      <span>Posted {formatDate(m.postedDate)}</span>
-                    </div>
-                  </div>
+                    <div className="flex shrink-0 items-center gap-2">
+                      {/* Star */}
+                      <button
+                        onClick={() => toggleStar(m.id)}
+                        className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+                        aria-label={isStarred ? "Unstar" : "Star"}
+                        title={isStarred ? "Unstar" : "Star"}
+                      >
+                        {isStarred ? "★" : "☆"}
+                      </button>
 
-                  <div className="flex shrink-0 items-center gap-2">
-                    <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white tabular-nums">
-                      {clampScore(m.score)}
-                    </span>
+                      {/* Score */}
+                      <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white tabular-nums">
+                        {clampScore(m.score)}
+                      </span>
 
-                    {m.url ? (
-                      <a href={m.url} target="_blank" rel="noreferrer">
-                        <button className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white">
+                      {/* Source */}
+                      {m.url ? (
+                        <a href={m.url} target="_blank" rel="noreferrer">
+                          <button className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white">
+                            Source
+                          </button>
+                        </a>
+                      ) : (
+                        <button
+                          disabled
+                          className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/30"
+                        >
                           Source
                         </button>
-                      </a>
-                    ) : (
-                      <button
-                        disabled
-                        className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/30"
-                      >
-                        Source
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
+
+                  {/* Optional 2-line summary preview */}
+                  {m.summary ? (
+                    <div className="mt-3 text-sm text-white/70 break-words">
+                      {m.summary}
+                    </div>
+                  ) : null}
                 </div>
-              </div>
-            ))}
+              );
+            })}
+          </div>
+
+          {/* Load more */}
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-xs text-white/50">
+              {canLoadMore ? "Load more to see additional matches." : "You’re all caught up."}
+            </div>
+
+            <div className="flex gap-2">
+              {canLoadMore ? (
+                <button
+                  onClick={() => setVisibleCount((n) => Math.min(finalList.length, n + PAGE_SIZE))}
+                  className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+                >
+                  Load more
+                </button>
+              ) : null}
+
+              {visibleCount > PAGE_SIZE ? (
+                <button
+                  onClick={() => setVisibleCount(PAGE_SIZE)}
+                  className="rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+                >
+                  Back to top
+                </button>
+              ) : null}
+            </div>
           </div>
 
           {errMsg ? (
@@ -462,7 +613,6 @@ function norm(s?: string | null) {
 }
 
 function parseCityState(input: string) {
-  // accepts: "San Diego, CA" or "San Diego CA"
   const raw = String(input || "").trim();
   if (!raw) return {};
   const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
@@ -478,14 +628,10 @@ function parseCityState(input: string) {
 }
 
 function locationRank(matchLocation: string, cityN: string, stateN: string) {
-  // If we don't know the customer's location, treat all as same rank.
   if (!cityN && !stateN) return 2;
-
   const loc = norm(matchLocation);
-
   const hasState = !!stateN && loc.includes(stateN);
   const hasCity = !!cityN && loc.includes(cityN);
-
   if (hasCity && hasState) return 0;
   if (hasState) return 1;
   return 2;
