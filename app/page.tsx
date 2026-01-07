@@ -29,9 +29,33 @@ const TESTIMONIALS = [
   },
 ];
 
+function TrialBanner() {
+  return (
+    <section className="rounded-3xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+            7 Day Free Trial
+          </div>
+          <div className="text-sm text-white/70">
+            Start free today. Credit card required. Cancel anytime.
+          </div>
+        </div>
+
+        <Link href="/get-started" className={PRIMARY}>
+          Start Free Trial
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   return (
     <div className="space-y-12">
+      {/* TRIAL BANNER (non-blocking) */}
+      <TrialBanner />
+
       {/* HERO */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
@@ -98,10 +122,7 @@ export default function HomePage() {
 
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
-            <div
-              key={t.name}
-              className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6"
-            >
+            <div key={t.name} className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6">
               <p className="text-sm leading-relaxed text-white/75">
                 <span className="text-white/40">“</span>
                 {t.quote}
