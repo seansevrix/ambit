@@ -9,6 +9,9 @@ const router = express.Router();
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 
+// ✅ Trial settings
+const TRIAL_DAYS = Number(process.env.STRIPE_TRIAL_DAYS || 7); // default 7
+
 const stripe = STRIPE_SECRET_KEY
   ? new Stripe(STRIPE_SECRET_KEY, {
       // apiVersion optional
@@ -54,9 +57,14 @@ async function ensureStripeCustomer(customer) {
 /**
  * POST /engine/billing/create-checkout-session
  * Body: { customerId: number }
+ *
+ * ✅ Creates a Stripe Checkout Session for a subscription:
+ * - 7-day free trial (configurable via STRIPE_TRIAL_DAYS)
+ * - Credit card REQUIRED up front (payment_method_collection: "always")
  */
 async function createCheckoutSession(req, res) {
   try {
+    // --- basic config checks ---
     if (!stripe) {
       return res.status(500).json({
         ok: false,
@@ -65,15 +73,20 @@ async function createCheckoutSession(req, res) {
       });
     }
     if (!STRIPE_PRICE_ID) {
-      return res.status(500).json({ ok: false, error: "Missing STRIPE_PRICE_ID on the backend env vars." });
+      return res.status(500).json({
+        ok: false,
+        error: "Missing STRIPE_PRICE_ID on the backend env vars.",
+      });
     }
 
+    // --- validate body ---
     const { customerId } = req.body || {};
     const id = Number(customerId);
     if (!id || !Number.isFinite(id)) {
       return res.status(400).json({ ok: false, error: "customerId is required." });
     }
 
+    // --- load customer ---
     const customer = await prisma.customer.findUnique({ where: { id } });
     if (!customer) return res.status(404).json({ ok: false, error: "Customer not found." });
 
@@ -83,32 +96,52 @@ async function createCheckoutSession(req, res) {
     const successUrl = `${frontendBase}/matches/${id}?checkout=success`;
     const cancelUrl = `${frontendBase}/matches/${id}?checkout=cancel`;
 
+    // ✅ Create subscription checkout with trial + card required
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
+
       customer: stripeCustomerId,
+
+      // ✅ $39.99/month price
       line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+
+      // ✅ REQUIRE a payment method (credit card) to start the trial
+      // This prevents "no-card free trials"
+      payment_method_collection: "always",
+
       success_url: successUrl,
       cancel_url: cancelUrl,
+
+      // Optional: allow promo codes if you want
+      allow_promotion_codes: true,
+
+      // Helpful identifiers
       metadata: { customerId: String(id) },
       client_reference_id: String(id),
-      subscription_data: { metadata: { customerId: String(id) } },
-      allow_promotion_codes: true,
+
+      // ✅ TRIAL HERE (NOT in Stripe product/price screen)
+      subscription_data: {
+        trial_period_days: TRIAL_DAYS,
+        metadata: { customerId: String(id) },
+      },
     });
 
     return res.status(200).json({ ok: true, url: session.url });
   } catch (err) {
     console.error("Billing create-checkout-session error:", err);
-    return res.status(500).json({ ok: false, error: err?.message || "Billing error creating checkout session." });
+    return res.status(500).json({
+      ok: false,
+      error: err?.message || "Billing error creating checkout session.",
+    });
   }
 }
 
 /**
- * ✅ NEW
  * POST /engine/billing/create-portal-session
  * Body: { customerId?: number, email?: string }
  * Returns: { ok: true, url }
  *
- * This sends the user to Stripe’s Customer Portal where they can cancel.
+ * Sends the user to Stripe’s Customer Portal where they can cancel/update billing.
  */
 async function createPortalSession(req, res) {
   try {
@@ -120,7 +153,6 @@ async function createPortalSession(req, res) {
     }
 
     const { customerId, email } = req.body || {};
-
     let customer = null;
 
     // Prefer customerId if provided
@@ -145,7 +177,6 @@ async function createPortalSession(req, res) {
     const stripeCustomerId = await ensureStripeCustomer(customer);
     const frontendBase = getFrontendBaseUrl(req);
 
-    // Where Stripe sends them back after they cancel/update
     const returnUrl = `${frontendBase}/support?portal=return`;
 
     const session = await stripe.billingPortal.sessions.create({
@@ -156,14 +187,18 @@ async function createPortalSession(req, res) {
     return res.status(200).json({ ok: true, url: session.url });
   } catch (err) {
     console.error("Billing create-portal-session error:", err);
-    return res.status(500).json({ ok: false, error: err?.message || "Billing error creating portal session." });
+    return res.status(500).json({
+      ok: false,
+      error: err?.message || "Billing error creating portal session.",
+    });
   }
 }
 
+// Routes
 router.post("/create-checkout-session", createCheckoutSession);
 router.post("/checkout", createCheckoutSession);
 
-// ✅ NEW route
+// Portal routes
 router.post("/create-portal-session", createPortalSession);
 router.post("/portal", createPortalSession); // optional alias
 
