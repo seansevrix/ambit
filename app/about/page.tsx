@@ -56,11 +56,8 @@ export default function AboutPage() {
                   What we do
                 </a>
 
-                {/* track line */}
-                <div className="mt-3 h-[3px] w-full rounded-full bg-white/10">
-                  {/* active indicator */}
-                  <div className="h-[3px] w-28 rounded-full bg-[#1A4FA3]" />
-                </div>
+                {/* ✅ Fully blue underline */}
+                <div className="mt-3 h-[3px] w-full rounded-full bg-[#1A4FA3]" />
               </div>
             </div>
           </div>
@@ -136,8 +133,6 @@ export default function AboutPage() {
           </div>
         </div>
       </section>
-
-      {/* ✅ Rest of page stays the same */}
 
       {/* Stats row */}
       <section className="px-6 py-10">
