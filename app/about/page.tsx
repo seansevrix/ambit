@@ -12,8 +12,8 @@ const GET_STARTED_HREF = "/get-started";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen text-white bg-gradient-to-b from-[#061633] via-[#071a3a] to-[#061633]">
-      {/* HERO (Prismatic-style center headline) */}
+    <main className="min-h-screen scroll-smooth text-white bg-gradient-to-b from-[#061633] via-[#071a3a] to-[#061633]">
+      {/* HERO */}
       <section className="px-6 pt-14 pb-10">
         <div className="mx-auto max-w-6xl">
           <div className="mx-auto max-w-3xl text-center">
@@ -45,14 +45,32 @@ export default function AboutPage() {
                 Preview opportunities
               </Link>
             </div>
+
+            {/* ✅ Clickable "What we do" tab — scrolls to section below */}
+            <div className="mt-10">
+              <div className="mx-auto flex max-w-lg flex-col items-center">
+                <a
+                  href="#what-we-do"
+                  className="text-sm font-semibold text-white/85 hover:text-white transition"
+                >
+                  What we do
+                </a>
+
+                {/* track line */}
+                <div className="mt-3 h-[3px] w-full rounded-full bg-white/10">
+                  {/* active indicator */}
+                  <div className="h-[3px] w-28 rounded-full bg-[#1A4FA3]" />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* “WHAT DRIVES US” split section (Prismatic-style) */}
-      <section className="px-6 py-12">
-        <div className="mx-auto max-w-6xl grid gap-10 md:grid-cols-2 items-center">
-          <div>
+      {/* ✅ WHAT DRIVES US (text block ONLY) */}
+      <section id="what-we-do" className="scroll-mt-24 px-6 pt-6 pb-10">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl text-left">
             <div className="text-xs tracking-widest text-blue-300/90">
               WHAT DRIVES US
             </div>
@@ -73,39 +91,45 @@ export default function AboutPage() {
               <Feature line="Short, scannable summaries for fast bid decisions" />
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* Right-side “product preview” card */}
-          <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold">Scouting Report Preview</div>
-              <div className="text-xs text-white/60">Sample</div>
-            </div>
+      {/* ✅ Scouting report block BELOW the text */}
+      <section className="px-6 pb-12">
+        <div className="mx-auto max-w-6xl">
+          <div className="mx-auto max-w-3xl">
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Scouting Report Preview</div>
+                <div className="text-xs text-white/60">Sample</div>
+              </div>
 
-            <div className="mt-5 space-y-3">
-              <MiniCard title="NAICS" value="237310 • Highway, Street, and Bridge" />
-              <MiniCard title="Location" value="San Diego, CA" />
-              <MiniCard title="Why it matches" value="Local + relevant NAICS + keywords align" />
+              <div className="mt-5 space-y-3">
+                <MiniCard title="NAICS" value="237310 • Highway, Street, and Bridge" />
+                <MiniCard title="Location" value="San Diego, CA" />
+                <MiniCard title="Why it matches" value="Local + relevant NAICS + keywords align" />
 
-              <div className="rounded-2xl border border-white/10 bg-[#071a3a]/50 p-4">
-                <div className="text-xs text-white/60">Summary</div>
-                <div className="mt-2 text-sm text-white/80 leading-relaxed">
-                  Clear scope and schedule with standard compliance. Strong fit for businesses
-                  that want to move fast and avoid wasted time on bad opportunities.
+                <div className="rounded-2xl border border-white/10 bg-[#071a3a]/50 p-4">
+                  <div className="text-xs text-white/60">Summary</div>
+                  <div className="mt-2 text-sm text-white/80 leading-relaxed">
+                    Clear scope and schedule with standard compliance. Strong fit for businesses
+                    that want to move fast and avoid wasted time on bad opportunities.
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="mt-6 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-2xl font-semibold text-blue-300">Signal</div>
-                <div className="mt-1 text-sm text-white/70">
-                  Better-fit opportunities first
+              <div className="mt-6 grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-2xl font-semibold text-blue-300">Signal</div>
+                  <div className="mt-1 text-sm text-white/70">
+                    Better-fit opportunities first
+                  </div>
                 </div>
-              </div>
-              <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                <div className="text-2xl font-semibold text-blue-300">Speed</div>
-                <div className="mt-1 text-sm text-white/70">
-                  Decide in minutes, not hours
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-2xl font-semibold text-blue-300">Speed</div>
+                  <div className="mt-1 text-sm text-white/70">
+                    Decide in minutes, not hours
+                  </div>
                 </div>
               </div>
             </div>
@@ -113,7 +137,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Stats row (Prismatic-style, but truthful) */}
+      {/* ✅ Rest of page stays the same */}
+
+      {/* Stats row */}
       <section className="px-6 py-10">
         <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-3">
           <Stat
