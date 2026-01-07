@@ -35,14 +35,36 @@ function getFrontendBaseUrl(req) {
   return "http://localhost:3000";
 }
 
+/**
+ * ✅ FIXED:
+ * Some DB rows may contain an old stripeCustomerId from a different Stripe account/key.
+ * In that case Stripe returns: resource_missing (param: customer).
+ * We verify the customer exists; if not, we create a new one and update DB.
+ */
 async function ensureStripeCustomer(customer) {
   if (!stripe) throw new Error("Stripe not configured.");
 
-  if (customer.stripeCustomerId) return customer.stripeCustomerId;
+  const existingId = customer.stripeCustomerId ? String(customer.stripeCustomerId) : null;
 
+  // ✅ If we have a saved Stripe customer id, verify it exists in THIS Stripe environment/account
+  if (existingId) {
+    try {
+      const existing = await stripe.customers.retrieve(existingId);
+      if (existing && !existing.deleted) return existing.id;
+    } catch (err) {
+      const code = err?.code || err?.raw?.code;
+      // Most common: resource_missing (old ID). We will recreate.
+      console.warn(
+        "⚠️ Saved Stripe customerId invalid or not found; recreating:",
+        code || err?.message || err
+      );
+    }
+  }
+
+  // ✅ Create a fresh Stripe customer
   const created = await stripe.customers.create({
     email: customer.email || undefined,
-    name: customer.name || undefined,
+    name: customer.companyName || customer.name || undefined,
     metadata: { customerId: String(customer.id) },
   });
 
@@ -96,30 +118,24 @@ async function createCheckoutSession(req, res) {
     const successUrl = `${frontendBase}/matches/${id}?checkout=success`;
     const cancelUrl = `${frontendBase}/matches/${id}?checkout=cancel`;
 
-    // ✅ Create subscription checkout with trial + card required
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-
       customer: stripeCustomerId,
 
       // ✅ $39.99/month price
       line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
 
       // ✅ REQUIRE a payment method (credit card) to start the trial
-      // This prevents "no-card free trials"
       payment_method_collection: "always",
 
       success_url: successUrl,
       cancel_url: cancelUrl,
 
-      // Optional: allow promo codes if you want
       allow_promotion_codes: true,
 
-      // Helpful identifiers
       metadata: { customerId: String(id) },
       client_reference_id: String(id),
 
-      // ✅ TRIAL HERE (NOT in Stripe product/price screen)
       subscription_data: {
         trial_period_days: TRIAL_DAYS,
         metadata: { customerId: String(id) },
@@ -148,7 +164,8 @@ async function createPortalSession(req, res) {
     if (!stripe) {
       return res.status(500).json({
         ok: false,
-        error: "Stripe is not configured on the backend. Missing STRIPE_SECRET_KEY (or STRIPE_SECRET).",
+        error:
+          "Stripe is not configured on the backend. Missing STRIPE_SECRET_KEY (or STRIPE_SECRET).",
       });
     }
 
