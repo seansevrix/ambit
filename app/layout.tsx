@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SiteNav from "./components/SiteNav";
 import SiteFooter from "./components/SiteFooter";
+import { Analytics } from "@vercel/analytics/react";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 export const metadata: Metadata = {
   title: "AMBIT",
@@ -25,6 +27,10 @@ export default function RootLayout({
 
           <SiteFooter />
         </div>
+
+        {/* Vercel Analytics + Speed Insights */}
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
