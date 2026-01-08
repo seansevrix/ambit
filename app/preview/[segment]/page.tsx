@@ -73,18 +73,19 @@ function LockedCard({ index }: { index: number }) {
   );
 }
 
-export default function PreviewSegmentPage({
+export default async function PreviewSegmentPage({
   params,
 }: {
-  params: { segment: string };
+  params: Promise<{ segment: string }>;
 }) {
-  const seg = params.segment?.toLowerCase();
+  const { segment } = await params;
 
+  const seg = segment?.toLowerCase();
   const allowed: Segment[] = ["residential", "commercial", "government"];
   if (!allowed.includes(seg as Segment)) return notFound();
 
-  const segment = seg as Segment;
-  const data = getPreviewData(segment);
+  const segmentKey = seg as Segment;
+  const data = getPreviewData(segmentKey);
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -93,7 +94,7 @@ export default function PreviewSegmentPage({
         <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <div>
             <div className="text-xs font-semibold tracking-widest text-white/50">
-              {titleCase(segment)}
+              {titleCase(segmentKey)}
             </div>
             <h1 className="mt-2 text-3xl font-bold leading-tight text-white md:text-4xl">
               {data.headline}
