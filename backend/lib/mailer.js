@@ -1,77 +1,75 @@
 // backend/lib/mailer.js
-import nodemailer from "nodemailer";
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ||
+  process.env.RESEND_FROM ||
+  "AMBIT <ambit@sevrixgov.com>";
 
-let cachedTransporter = null;
+const APP_URL =
+  process.env.APP_URL ||
+  process.env.FRONTEND_URL ||
+  process.env.NEXT_PUBLIC_FRONTEND_URL ||
+  "https://www.ambitco.app/login";
 
-function must(name) {
-  const v = process.env[name];
-  return v && String(v).trim() ? String(v).trim() : null;
-}
+async function sendMail({ to, subject, text, html }) {
+  if (!RESEND_API_KEY) {
+    throw new Error("RESEND_API_KEY missing on backend env vars.");
+  }
+  if (!to) throw new Error("sendMail: missing 'to'");
+  if (!subject) throw new Error("sendMail: missing 'subject'");
+  if (!text && !html) throw new Error("sendMail: provide 'text' or 'html'");
 
-function getTransporter() {
-  if (cachedTransporter) return cachedTransporter;
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: EMAIL_FROM,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html,
+    }),
+  });
 
-  const host = must("SMTP_HOST");
-  const port = must("SMTP_PORT");
-  const secure = (process.env.SMTP_SECURE || "true").toLowerCase() === "true";
-  const user = must("SMTP_USER");
-  const pass = must("SMTP_PASS");
+  const data = await resp.json().catch(() => ({}));
 
-  if (!host || !port || !user || !pass) {
-    throw new Error(
-      `SMTP env vars missing. Need SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS (and optionally SMTP_SECURE).`
-    );
+  if (!resp.ok) {
+    const msg =
+      data?.message ||
+      data?.error ||
+      `Resend error: HTTP ${resp.status}`;
+    throw new Error(msg);
   }
 
-  cachedTransporter = nodemailer.createTransport({
-    host,
-    port: Number(port),
-    secure, // true for 465
-    auth: { user, pass },
-  });
-
-  return cachedTransporter;
+  return data;
 }
 
-export async function sendMail({ to, subject, text, html }) {
-  const transporter = getTransporter();
-
-  const from = (process.env.MAIL_FROM || process.env.SMTP_USER || "").trim();
-  if (!from) throw new Error("MAIL_FROM or SMTP_USER must be set");
-
-  // Optional: verify once at runtime (fast enough, but you can remove if you want)
-  await transporter.verify();
-
-  return transporter.sendMail({
-    from,
-    to,
-    subject,
-    text,
-    ...(html ? { html } : {}),
-  });
-}
-
+// ✅ Welcome email
 export async function sendWelcomeEmail({ to, companyName }) {
-  const appUrl =
-    (process.env.APP_URL || process.env.FRONTEND_URL || "").trim() ||
-    "http://localhost:3000";
-
-  const name = companyName ? String(companyName).trim() : "there";
-
-  const subject = "Welcome to AMBIT ✅";
+  const name = (companyName || "").trim() || "there";
+  const subject = "Welcome to AMBIT — your 7-day trial is live";
 
   const text = `Hey ${name},
 
-Welcome to AMBIT.
+Welcome to AMBIT — your 7-day free trial is active.
 
-You can log in here:
-${appUrl}
+Log in here:
+${APP_URL}
 
-If you have any questions, just reply to this email.
+If you need anything, just reply to this email.
 
-— AMBIT
-`;
+— AMBIT`;
 
-  // keep it simple (deliverability > fancy)
   return sendMail({ to, subject, text });
+}
+
+// ✅ Generic helper (if your digest/job already calls sendMail directly)
+export { sendMail };
+
+// ✅ Optional alias in case other code calls this name
+export async function sendDigestEmail({ to, subject, text, html }) {
+  return sendMail({ to, subject, text, html });
 }
