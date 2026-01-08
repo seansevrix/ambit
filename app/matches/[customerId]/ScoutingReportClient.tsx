@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import ProfileEditor from "./ProfileEditor";
 
 type Match = {
   id: number;
@@ -23,12 +24,18 @@ type MatchesResponse = {
   matches: Match[];
 };
 
-type CustomerProfile = {
-  id?: number;
-  email?: string | null;
-  name?: string | null;
-  location?: string | null;
-  serviceArea?: string | null;
+type ProfileResponse = {
+  ok: boolean;
+  customer?: {
+    id: number;
+    email?: string | null;
+    name?: string | null;
+    location?: string | null;
+    naics?: string | null;
+    keywords?: string | null;
+    services?: string | null;
+  };
+  error?: string;
 };
 
 const API_BASE = (
@@ -153,21 +160,28 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     });
   }
 
-  // Optional: fetch customer profile to power "Closest location" sorting
+  // ✅ Fetch customer profile for "Closest location" sorting using SELF-SERVE endpoint
   useEffect(() => {
     let cancelled = false;
 
     async function loadCustomerProfile() {
       try {
-        const res = await fetch(`${API_BASE}/engine/customers/${customerId}`, {
+        const savedEmail = localStorage.getItem("ambit_email");
+        if (!savedEmail) return; // only works after user has loaded/saved their profile once
+
+        const url = `${API_BASE}/engine/customers/${customerId}/profile?email=${encodeURIComponent(
+          savedEmail
+        )}`;
+
+        const res = await fetch(url, {
           credentials: "include",
           cache: "no-store",
         });
 
-        if (!res.ok) return; // silently ignore if endpoint doesn't exist
+        const body = (await res.json().catch(() => ({}))) as ProfileResponse;
+        if (!res.ok || !body?.ok || !body.customer) return;
 
-        const prof = (await res.json().catch(() => ({}))) as CustomerProfile;
-        const loc = (prof?.serviceArea || prof?.location || "").trim();
+        const loc = (body.customer.location || "").trim();
         if (!loc) return;
 
         const parsed = parseCityState(loc);
@@ -291,7 +305,16 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           </div>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
+          {/* ✅ NEW: Profile editor */}
+          <ProfileEditor
+            customerId={customerId}
+            onSaved={() => {
+              // simplest: refresh the page so matches re-run
+              window.location.reload();
+            }}
+          />
+
           <button
             onClick={load}
             className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
@@ -339,7 +362,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
 
             {sortKey === "closest" && !customerLoc?.state ? (
               <div className="mt-2 text-xs text-white/45">
-                Closest is best-effort (needs saved service area).
+                Closest is best-effort (needs saved service area — use Edit profile).
               </div>
             ) : null}
           </div>
@@ -425,7 +448,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           <div className="mt-1 text-sm text-white/70">
             {starredOnly
               ? "Star opportunities to save them here."
-              : "Try clearing search or expanding NAICS/keywords/location."}
+              : "Try clearing search or expanding NAICS/keywords/location (use Edit profile)."}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -521,11 +544,9 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                     </div>
                   </div>
 
-                  {/* Optional 2-line summary preview */}
+                  {/* Optional summary */}
                   {m.summary ? (
-                    <div className="mt-3 text-sm text-white/70 break-words">
-                      {m.summary}
-                    </div>
+                    <div className="mt-3 text-sm text-white/70 break-words">{m.summary}</div>
                   ) : null}
                 </div>
               );
