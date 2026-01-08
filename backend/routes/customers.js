@@ -1,7 +1,7 @@
 // backend/routes/customers.js
 import express from "express";
 import crypto from "crypto";
-import prisma from "../lib/prismaClient.js";
+import prisma from "../lib/prisma.js"; // ✅ make sure this matches your actual file name
 
 const router = express.Router();
 
@@ -24,6 +24,7 @@ function requireAdmin(req, res) {
   if (adminKey) {
     const provided = req.query?.key || req.headers["x-admin-key"];
     if (String(provided || "") === String(adminKey)) return true;
+
     res.status(401).json({ ok: false, error: "Unauthorized" });
     return false;
   }
@@ -73,7 +74,117 @@ function normalizeEmail(raw) {
   return s;
 }
 
-// ✅ GET /engine/customers (sanity check)
+function normEmail(v) {
+  return String(v || "").toLowerCase().trim();
+}
+
+/**
+ * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
+ * Allows customers to update NAICS + location (and optional keywords/services)
+ *
+ * GET   /engine/customers/:id/profile?email=...
+ * PATCH /engine/customers/:id/profile   { email, location, naics, keywords, services, name }
+ */
+
+// ✅ GET profile (prefill editor)
+router.get("/customers/:id/profile", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
+
+    const email = normEmail(req.query?.email);
+    if (!email) {
+      return res.status(401).json({ ok: false, error: "Email required." });
+    }
+
+    const customer = await prisma.customer.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        location: true,
+        naics: true,
+        keywords: true,
+        services: true,
+        updatedAt: true,
+      },
+    });
+
+    if (!customer) return res.status(404).json({ ok: false, error: "Not found" });
+
+    // Simple proof-of-ownership (MVP): email must match the customer record
+    if (normEmail(customer.email) !== email) {
+      return res.status(401).json({ ok: false, error: "Email does not match this customer." });
+    }
+
+    return res.json({ ok: true, customer });
+  } catch (err) {
+    console.error("GET /engine/customers/:id/profile error:", err);
+    return res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+// ✅ PATCH profile (save changes)
+router.patch("/customers/:id/profile", async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
+
+    const body = req.body || {};
+    const email = normEmail(body.email);
+    if (!email) {
+      return res.status(401).json({ ok: false, error: "Email required." });
+    }
+
+    const existing = await prisma.customer.findUnique({
+      where: { id },
+      select: { id: true, email: true },
+    });
+
+    if (!existing) return res.status(404).json({ ok: false, error: "Not found" });
+
+    if (normEmail(existing.email) !== email) {
+      return res.status(401).json({ ok: false, error: "Email does not match this customer." });
+    }
+
+    // Allow these fields to be updated by the customer
+    const name = optionalStr(body.name) || optionalStr(body.companyName);
+    const location = optionalStr(body.location) || optionalStr(body.serviceArea);
+    const naics = normalizeComma(body.naics);
+    const keywords = normalizeComma(body.keywords);
+    const services = optionalStr(body.services);
+
+    const data = {};
+    if (name !== undefined) data.name = name;
+    if (location !== undefined) data.location = location;
+    if (naics !== undefined) data.naics = naics;
+    if (keywords !== undefined) data.keywords = keywords;
+    if (services !== undefined) data.services = services;
+
+    // If they sent nothing to update
+    if (Object.keys(data).length === 0) {
+      return res.status(400).json({ ok: false, error: "No fields provided to update." });
+    }
+
+    await prisma.customer.update({ where: { id }, data });
+
+    return res.json({ ok: true });
+  } catch (err) {
+    console.error("PATCH /engine/customers/:id/profile error:", err);
+    return res.status(500).json({ ok: false, error: "Server error" });
+  }
+});
+
+/**
+ * ✅ ADMIN-ONLY ENDPOINTS (PROTECTED IN PROD)
+ */
+
+// ✅ GET /engine/customers
 router.get("/customers", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
@@ -103,13 +214,15 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-// ✅ GET /engine/customers/:id (single customer)
+// ✅ GET /engine/customers/:id
 router.get("/customers/:id", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
 
     const id = Number(req.params.id);
-    if (!id) return res.status(400).json({ ok: false, error: "Invalid id" });
+    if (!Number.isFinite(id) || id <= 0) {
+      return res.status(400).json({ ok: false, error: "Invalid id" });
+    }
 
     const customer = await prisma.customer.findUnique({
       where: { id },
