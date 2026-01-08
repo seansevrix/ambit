@@ -1,12 +1,52 @@
+// backend/lib/mailer.js
+const RESEND_API_KEY = process.env.RESEND_API_KEY;
+
+const EMAIL_FROM =
+  process.env.EMAIL_FROM ||
+  process.env.RESEND_FROM ||
+  "AMBIT <ambit@sevrixgov.com>";
+
+const APP_URL =
+  process.env.APP_URL ||
+  process.env.FRONTEND_URL ||
+  process.env.NEXT_PUBLIC_FRONTEND_URL ||
+  "https://www.ambitco.app/login";
+
+// ✅ Core sender (Resend API)
+export async function sendMail({ to, subject, text, html }) {
+  if (!RESEND_API_KEY) throw new Error("RESEND_API_KEY missing on backend env vars.");
+  if (!to) throw new Error("sendMail: missing 'to'");
+  if (!subject) throw new Error("sendMail: missing 'subject'");
+  if (!text && !html) throw new Error("sendMail: provide 'text' or 'html'");
+
+  const resp = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: EMAIL_FROM,
+      to: Array.isArray(to) ? to : [to],
+      subject,
+      text,
+      html,
+    }),
+  });
+
+  const data = await resp.json().catch(() => ({}));
+
+  if (!resp.ok) {
+    const msg = data?.message || data?.error || `Resend error: HTTP ${resp.status}`;
+    throw new Error(msg);
+  }
+
+  return data;
+}
+
+// ✅ Welcome email (uses sendMail defined above)
 export async function sendWelcomeEmail({ to, companyName }) {
-  const appUrl =
-    process.env.APP_URL ||
-    process.env.FRONTEND_URL ||
-    process.env.NEXT_PUBLIC_FRONTEND_URL ||
-    "https://www.ambitco.app/login";
-
   const name = (companyName || "").trim() || "there";
-
   const subject = "Welcome to AMBIT — your 7-day trial is live";
 
   const text = `Hi ${name},
@@ -33,10 +73,18 @@ As a subscriber, you get full access to:
 Pro tip (this matters most):
 Keep your NAICS codes + service area up to date. Those two inputs drive the match engine more than anything.
 
+Log in here:
+${APP_URL}
+
 If you have any questions, just reply to this email — I read every one.
 
 — Sean S.
 Founder, AMBIT`;
 
   return sendMail({ to, subject, text });
+}
+
+// ✅ Optional helper for your existing digest code (if you call this elsewhere)
+export async function sendDigestEmail({ to, subject, text, html }) {
+  return sendMail({ to, subject, text, html });
 }
