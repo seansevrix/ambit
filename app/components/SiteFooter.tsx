@@ -19,6 +19,7 @@ export default function SiteFooter() {
             {/* Right */}
             <div className="flex flex-wrap items-center gap-3">
               <FooterLink href="/support">Support</FooterLink>
+              <FooterLink href="/about">About</FooterLink>
               <FooterLink href="/contact">Contact</FooterLink>
               <FooterLink href="/privacy">Privacy</FooterLink>
               <FooterLink href="/terms">Terms</FooterLink>
