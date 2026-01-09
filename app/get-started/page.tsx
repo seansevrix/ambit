@@ -156,7 +156,7 @@ export default function GetStartedPage() {
             </div>
             <div className="text-left">
               <div className="text-sm font-semibold tracking-wide">AMBIT</div>
-              <div className="text-xs text-slate-300">Ranked government leads for contractors</div>
+              {/* ✅ Removed tagline line entirely */}
             </div>
           </div>
 
