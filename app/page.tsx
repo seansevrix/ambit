@@ -8,21 +8,21 @@ const SECONDARY =
 const TESTIMONIALS = [
   {
     quote:
-      "Before AMBIT, I spent two hours every morning digging through portals and PDFs. Now I open one email and see a ranked list of HVAC opportunities that actually fit.",
+      "I used to bounce between referrals, Facebook groups, and random lead sites. Now AMBIT sends a clean list of jobs in my service area across residential and commercial — with the details I need to decide fast.",
     name: "James Miller",
     title: "Owner, Miller Mechanical Services",
     location: "Texas, USA",
   },
   {
     quote:
-      "Government contracts used to feel like a different language. AMBIT’s plain-English summaries let me tell in under a minute if a project fits our crew.",
+      "The biggest win is clarity. AMBIT summarizes the work in plain English and ranks it. Whether it’s a home remodel, a facility job, or a public bid — I know what’s worth chasing.",
     name: "Linda Chen",
     title: "Project Coordinator, Vertex Construction Group",
     location: "Virginia, USA",
   },
   {
     quote:
-      "AMBIT helps us spot relevant electrical opportunities faster and stay focused on our service area. The matches are clean and actionable.",
+      "We stay focused on our trade and our territory. AMBIT filters out the noise and surfaces real opportunities — with matching that actually makes sense.",
     name: "Robert “Bo” Henderson",
     title: "Lead Estimator, Ironclad Electrical",
     location: "California, USA",
@@ -58,13 +58,26 @@ export default function HomePage() {
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
         <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
           <div>
-            <h1 className="text-5xl font-semibold tracking-tight leading-[1.05]">
-              Government contracts matched to your business.
+            <div className="inline-flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                Residential
+              </span>
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                Commercial
+              </span>
+              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                Government
+              </span>
+            </div>
+
+            <h1 className="mt-4 text-5xl font-semibold tracking-tight leading-[1.05]">
+              Work opportunities matched to your business.
             </h1>
 
             <p className="mt-4 max-w-xl text-white/70">
-              Tell AMBIT what you do and where you work. We find live opportunities, score matches,
-              and deliver a clear scouting report — so you don’t miss good bids.
+              Tell AMBIT what you do and where you work. We find relevant jobs across residential,
+              commercial, and government sources, score the fit, and deliver a clear scouting report
+              — so you spend less time searching and more time winning work.
             </p>
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
@@ -85,12 +98,15 @@ export default function HomePage() {
           </div>
 
           <div className="grid gap-4">
+            <InfoCard title="1) Build your profile" body="Add your company info, trades, and service area." />
             <InfoCard
-              title="1) Sign up"
-              body="Add your company info, services, and service area."
+              title="2) Choose your markets"
+              body="Residential, commercial, government — pick one or run all three."
             />
-            <InfoCard title="2) Subscribe" body="Unlock match scoring, summaries, and digests." />
-            <InfoCard title="3) Get matches" body="View match history anytime from your login." />
+            <InfoCard
+              title="3) Get matched work"
+              body="See ranked opportunities, quick summaries, and your match history anytime."
+            />
           </div>
         </div>
       </section>
@@ -106,8 +122,8 @@ export default function HomePage() {
               Built for contractors. Proven in the field.
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/70">
-              Real feedback from businesses using AMBIT to find and act on government opportunities
-              faster.
+              Real feedback from businesses using AMBIT to find and act on residential, commercial,
+              and government opportunities faster.
             </p>
           </div>
 
