@@ -7,21 +7,39 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum OpportunitySegment {
+  government
+  commercial
+  residential
+}
+
 model Customer {
   id           Int     @id @default(autoincrement())
   name         String
   email        String  @unique
   passwordHash String? // ✅ added (for login)
 
-  phone        String?
-  industry     String?
-  location     String?
-  services     String?
+  phone       String?
+  industry    String?
+  location    String?
+  serviceArea String? // ✅ added (frontend sends this)
+  services    String?
+
+  // ✅ NEW: selected markets from onboarding (multi-select)
+  segments OpportunitySegment[]
+
+  // ✅ NEW: where to ingest from (future-proof)
+  // ex: ["sam","opengov"] or ["opengov"]
+  sources String[]
 
   // comma-separated
-  keywords     String?
+  keywords String?
+
   // comma-separated (ex: 237310,238220)
-  naics        String?
+  naics String?
+
+  // ✅ NEW: NAICS as a real array too (frontend sends this)
+  naicsCodes String[]
 
   // Stripe / subscription gating
   stripeCustomerId     String? @unique
@@ -29,24 +47,105 @@ model Customer {
   subscriptionStatus   String?
   isActive             Boolean @default(false)
 
+  // ✅ Digest emails (Mon/Wed/Fri)
+  digestEnabled    Boolean   @default(true)
+  lastDigestSentAt DateTime?
+
+  // ✅ Integrations
+  thumbtackIntegration ThumbtackIntegration?
+  thumbtackEvents      ThumbtackWebhookEvent[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Opportunity {
-  id         Int      @id @default(autoincrement())
-  title      String
-  location   String
-  naics      String
+  id      Int                @id @default(autoincrement())
+  segment OpportunitySegment @default(government)
 
+  // where it came from (sam, opengov, planhub, thumbtack, etc.)
+  source     String  @default("sam")
+  externalId String? // source's unique ID for upsert (required for ingestion)
+  url        String?
+
+  title    String
+  location String
+
+  // gov uses NAICS; residential/commercial can leave empty
+  naics String @default("")
+
+  // general enrichment
   keywords   String?
   agency     String?
-  url        String?
   postedDate DateTime?
+  dueDate    DateTime?
   summary    String?
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  // non-gov fields
+  category  String? // trade / service category (roofing, concrete, HVAC, etc.)
+  valueText String? // "$35k-$65k" or "TBD"
+  status    String? // open / won / lost / in-progress / etc.
+
+  // optional debugging payload storage
+  raw Json?
+
+  // ✅ FIX: opposite relation field for ThumbtackWebhookEvent.opportunity
+  thumbtackEvents ThumbtackWebhookEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@index([segment])
+  @@index([source])
+}
+
+model ThumbtackIntegration {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @unique
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  // Thumbtack business id that webhooks attach to
+  businessId String?
+
+  accessToken  String
+  refreshToken String?
+  tokenType    String?
+  scope        String?
+  expiresAt    DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ThumbtackWebhookEvent {
+  id         Int       @id @default(autoincrement())
+  customerId Int?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  receivedAt DateTime @default(now())
+
+  // what Thumbtack says this event is
+  eventType String
+
+  // negotiation id / message id / etc (if present)
+  externalId String?
+
+  // raw webhook JSON
+  payload Json
+
+  processed   Boolean   @default(false)
+  processedAt DateTime?
+  error       String?
+
+  // if we create/update an opportunity from this event
+  opportunityId Int?
+  opportunity   Opportunity? @relation(fields: [opportunityId], references: [id], onDelete: SetNull)
+
+  @@index([receivedAt])
+  @@index([eventType])
+  @@index([externalId])
+  @@index([processed])
 }
 
 model User {

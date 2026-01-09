@@ -79,6 +79,75 @@ function normEmail(v) {
 }
 
 /**
+ * ✅ New helpers: arrays + segments
+ */
+function normalizeStringArray(v) {
+  if (v === null || v === undefined) return undefined;
+
+  // allow ["a","b"]
+  if (Array.isArray(v)) {
+    const arr = v.map((x) => cleanStr(x)).filter(Boolean);
+    return arr.length ? arr : undefined;
+  }
+
+  // allow "a,b,c"
+  const s = cleanStr(v);
+  if (!s) return undefined;
+  const parts = s
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length ? parts : undefined;
+}
+
+const VALID_SEGMENTS = new Set(["government", "commercial", "residential"]);
+
+// returns array of enum strings (lowercase) or undefined
+function normalizeSegments(v) {
+  const arr = normalizeStringArray(v);
+  if (!arr) return undefined;
+
+  const cleaned = arr
+    .map((x) => cleanStr(x).toLowerCase())
+    .filter(Boolean)
+    .filter((x) => VALID_SEGMENTS.has(x));
+
+  // unique, keep order
+  const seen = new Set();
+  const uniq = [];
+  for (const x of cleaned) {
+    if (!seen.has(x)) {
+      seen.add(x);
+      uniq.push(x);
+    }
+  }
+
+  return uniq.length ? uniq : undefined;
+}
+
+// normalize NAICS codes array (digits only, max 6)
+function normalizeNaicsCodes(v) {
+  const arr = normalizeStringArray(v);
+  if (!arr) return undefined;
+
+  const cleaned = arr
+    .map((x) => cleanStr(x).replace(/[^\d]/g, "").slice(0, 6))
+    .filter(Boolean)
+    .filter((x) => /^\d{2,6}$/.test(x));
+
+  const seen = new Set();
+  const uniq = [];
+  for (const x of cleaned) {
+    if (!seen.has(x)) {
+      seen.add(x);
+      uniq.push(x);
+    }
+  }
+
+  return uniq.length ? uniq : undefined;
+}
+
+/**
  * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
  * Allows customers to update NAICS + location (and optional keywords/services)
  *
@@ -106,9 +175,13 @@ router.get("/customers/:id/profile", async (req, res) => {
         name: true,
         email: true,
         location: true,
+        serviceArea: true, // ✅ include
         naics: true,
+        naicsCodes: true, // ✅ include
         keywords: true,
         services: true,
+        segments: true, // ✅ include
+        sources: true, // ✅ include
         updatedAt: true,
       },
     });
@@ -154,17 +227,31 @@ router.patch("/customers/:id/profile", async (req, res) => {
 
     // Allow these fields to be updated by the customer
     const name = optionalStr(body.name) || optionalStr(body.companyName);
+
+    // Support both location and serviceArea inputs
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
+    const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
+
     const naics = normalizeComma(body.naics);
     const keywords = normalizeComma(body.keywords);
     const services = optionalStr(body.services);
 
+    // Optional (safe)
+    const segments = normalizeSegments(body.segments);
+    const sources = normalizeStringArray(body.sources);
+    const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
+
     const data = {};
     if (name !== undefined) data.name = name;
     if (location !== undefined) data.location = location;
+    if (serviceArea !== undefined) data.serviceArea = serviceArea;
     if (naics !== undefined) data.naics = naics;
     if (keywords !== undefined) data.keywords = keywords;
     if (services !== undefined) data.services = services;
+
+    if (segments !== undefined) data.segments = segments;
+    if (sources !== undefined) data.sources = sources;
+    if (naicsCodes !== undefined) data.naicsCodes = naicsCodes;
 
     // If they sent nothing to update
     if (Object.keys(data).length === 0) {
@@ -196,8 +283,12 @@ router.get("/customers", async (req, res) => {
         name: true,
         email: true,
         location: true,
+        serviceArea: true,
         keywords: true,
         naics: true,
+        naicsCodes: true,
+        segments: true,
+        sources: true,
         isActive: true,
         subscriptionStatus: true,
         stripeCustomerId: true,
@@ -231,8 +322,12 @@ router.get("/customers/:id", async (req, res) => {
         name: true,
         email: true,
         location: true,
+        serviceArea: true,
         keywords: true,
         naics: true,
+        naicsCodes: true,
+        segments: true,
+        sources: true,
         isActive: true,
         subscriptionStatus: true,
         stripeCustomerId: true,
@@ -265,21 +360,46 @@ router.post("/customers", async (req, res) => {
 
     const phone = optionalStr(body.phone);
     const industry = optionalStr(body.industry);
+
+    // Support both location and serviceArea inputs
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
+    const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
+
     const services = optionalStr(body.services);
 
     const keywords = normalizeComma(body.keywords);
     const naics = normalizeComma(body.naics);
+
+    // NEW: arrays (safe)
+    const segments = normalizeSegments(body.segments);
+    const sources = normalizeStringArray(body.sources);
+    const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
+
+    // ✅ IMPORTANT DEFAULTS on CREATE (because these are array fields now)
+    // We default segments to ALL markets (matches your frontend default).
+    const segmentsForCreate = segments ?? ["residential", "commercial", "government"];
+    // Default sources to ["sam"] so current behavior stays the same until we add OpenGov.
+    const sourcesForCreate = sources ?? ["sam"];
+    // Default naicsCodes to [] if not provided
+    const naicsCodesForCreate = naicsCodes ?? [];
 
     // Only update what caller actually sent
     const updateData = {};
     if (providedName) updateData.name = providedName;
     if (phone !== undefined) updateData.phone = phone;
     if (industry !== undefined) updateData.industry = industry;
+
     if (location !== undefined) updateData.location = location;
+    if (serviceArea !== undefined) updateData.serviceArea = serviceArea;
+
     if (services !== undefined) updateData.services = services;
     if (keywords !== undefined) updateData.keywords = keywords;
     if (naics !== undefined) updateData.naics = naics;
+
+    // Only update arrays when provided (don’t clobber existing)
+    if (segments !== undefined) updateData.segments = segments;
+    if (sources !== undefined) updateData.sources = sources;
+    if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
     const customer = await prisma.customer.upsert({
       where: { email },
@@ -290,9 +410,16 @@ router.post("/customers", async (req, res) => {
         phone: phone ?? null,
         industry: industry ?? null,
         location: location ?? null,
+        serviceArea: serviceArea ?? null,
         services: services ?? null,
         keywords: keywords ?? null,
         naics: naics ?? null,
+
+        // ✅ required arrays on create
+        segments: segmentsForCreate,
+        sources: sourcesForCreate,
+        naicsCodes: naicsCodesForCreate,
+
         // passwordHash stays null until register
       },
     });

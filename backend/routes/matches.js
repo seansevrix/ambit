@@ -140,6 +140,9 @@ function scoreMatch(customer, opp) {
   // Customer signals
   const industryTokens = tokenize(customer.industry);
   const serviceTokens = tokenize(customer.services);
+
+  // NOTE: customer.location is still the matching field; serviceArea is stored too,
+  // but we keep behavior identical to avoid breaking anything.
   const locationTokens = tokenize(customer.location);
 
   const customerNaicsList = normalizeNaicsList(customer.naics); // ✅ multi NAICS supported
@@ -256,6 +259,9 @@ router.get("/matches/:customerId", async (req, res) => {
         naics: true,
         isActive: true,
         subscriptionStatus: true,
+
+        // ✅ NEW: segment preferences
+        segments: true,
       },
     });
 
@@ -268,7 +274,17 @@ router.get("/matches/:customerId", async (req, res) => {
       });
     }
 
-    const opportunities = await prisma.opportunity.findMany();
+    // ✅ Segment filtering (safe defaults)
+    // If older customer record has no segments saved yet, show ALL.
+    const allowedSegments =
+      Array.isArray(customer.segments) && customer.segments.length > 0
+        ? customer.segments
+        : ["residential", "commercial", "government"];
+
+    // ✅ Only pull opportunities in the customer’s selected segments
+    const opportunities = await prisma.opportunity.findMany({
+      where: { segment: { in: allowedSegments } },
+    });
 
     const raw = opportunities
       .map((opp) => {
@@ -279,10 +295,14 @@ router.get("/matches/:customerId", async (req, res) => {
           location: opp.location,
           naics: opp.naics,
 
+          segment: opp.segment, // ✅ include for frontend badges/tabs
+          source: opp.source ?? null,
+
           keywords: opp.keywords ?? null,
           agency: opp.agency ?? null,
           url: opp.url ?? null,
           postedDate: opp.postedDate ?? null,
+          dueDate: opp.dueDate ?? null,
           summary: opp.summary ?? null,
 
           score: s.score,
@@ -295,7 +315,11 @@ router.get("/matches/:customerId", async (req, res) => {
 
     const matches = dedupeMatches(raw).slice(0, limit);
 
-    return res.json({ customerId, matches });
+    return res.json({
+      customerId,
+      segments: allowedSegments, // ✅ helps frontend show what’s active
+      matches,
+    });
   } catch (err) {
     console.error("matches error:", err);
     return res.status(500).json({ message: "Failed to compute matches" });

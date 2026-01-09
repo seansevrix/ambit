@@ -69,8 +69,16 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
-// Health
-app.get("/engine/health", (req, res) => res.json({ status: "ok" }));
+/**
+ * ✅ ROOT (Render sometimes probes / during deploy)
+ * Return 200 so deploy health checks don’t fail on 404.
+ */
+app.get("/", (req, res) => {
+  res.status(200).send("ok");
+});
+
+// ✅ Health (keep)
+app.get("/engine/health", (req, res) => res.status(200).json({ status: "ok" }));
 
 /**
  * ✅ Public routes (no auth) — unsubscribe links
@@ -84,7 +92,7 @@ app.use("/engine", opportunitiesRoutes);
 app.use("/engine", matchesRoutes);
 app.use("/engine/billing", billingRoutes);
 
-// 404
+// 404 (for everything else)
 app.use((req, res) => {
   res.status(404).json({ ok: false, error: "Route not found." });
 });
