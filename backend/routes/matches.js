@@ -8,6 +8,9 @@ const MIN_SCORE = 60;        // raise/lower to change strictness
 const DEFAULT_LIMIT = 50;    // return more so "Load more" is meaningful
 const MAX_LIMIT = 200;       // safety cap
 
+// ✅ IMPORTANT: cap how many opportunities we score (prevents huge scans / raw JSON blowups)
+const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
+
 const STOP = new Set([
   "the","and","or","a","an","of","to","for","in","on","at","with","by",
   "llc","inc","co","company","services","service","solutions","group"
@@ -31,15 +34,12 @@ function splitCsv(s = "") {
 }
 
 function normalizeNaicsList(naicsStr) {
-  // accepts "237310, 238220" -> ["237310","238220"]
-  // accepts "2373" -> ["2373"] (prefix matching)
   const raw = splitCsv(naicsStr)
     .map((x) => String(x).replace(/[^0-9]/g, ""))
     .filter(Boolean)
     .map((x) => x.slice(0, 6))
     .filter((x) => x.length >= 2);
 
-  // unique, keep order
   const seen = new Set();
   const out = [];
   for (const n of raw) {
@@ -52,7 +52,6 @@ function normalizeNaicsList(naicsStr) {
 }
 
 function normalizeKeywordsList(keywordsStr) {
-  // accepts "asphalt,paving,resurfacing" -> tokens
   return splitCsv(keywordsStr).flatMap(tokenize).filter(Boolean);
 }
 
@@ -61,7 +60,7 @@ function normalize(s) {
 }
 
 function normUrl(u) {
-  return normalize(u).replace(/\/+$/, ""); // remove trailing slash
+  return normalize(u).replace(/\/+$/, "");
 }
 
 /**
@@ -85,7 +84,6 @@ function dedupeMatches(matches) {
     const fallbackSeenKey = `fallback:${fallbackKey}`;
     const key = url ? `url:${url}` : fallbackSeenKey;
 
-    // If this match has URL and we already kept a fallback duplicate, replace it.
     if (url && seen.has(fallbackSeenKey)) {
       const idx = out.findIndex((x) => {
         const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(x.naics)}`;
@@ -117,7 +115,6 @@ function dedupeMatches(matches) {
 function bestNaicsHit(customerNaicsList, oppNaicsList) {
   if (!customerNaicsList.length || !oppNaicsList.length) return null;
 
-  // exact
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c.length === o.length && c === o) {
@@ -126,7 +123,6 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
     }
   }
 
-  // prefix
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c && o && o.startsWith(c)) {
@@ -139,18 +135,13 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
 }
 
 function scoreMatch(customer, opp) {
-  // Customer signals
   const industryTokens = tokenize(customer.industry);
   const serviceTokens = tokenize(customer.services);
-
-  // NOTE: customer.location is still the matching field; serviceArea is stored too,
-  // but we keep behavior identical to avoid breaking anything.
   const locationTokens = tokenize(customer.location);
 
-  const customerNaicsList = normalizeNaicsList(customer.naics); // ✅ multi NAICS supported
+  const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
-  // Base “what they do” tokens
   const baseTokens = new Set([
     ...industryTokens,
     ...serviceTokens,
@@ -170,28 +161,25 @@ function scoreMatch(customer, opp) {
     };
   }
 
-  // Opportunity signals
   const oppTitleTokens = tokenize(opp.title);
   const oppLocTokens = tokenize(opp.location);
-  const oppNaicsList = normalizeNaicsList(opp.naics); // ✅ handles if opp.naics ever contains CSV
+  const oppNaicsList = normalizeNaicsList(opp.naics);
   const oppKeywordTokens = tokenize(opp.keywords);
   const oppSummaryTokens = tokenize(opp.summary);
 
   let score = 0;
   const reasons = [];
 
-  // 1) NAICS match (big) — exact or prefix
   const nh = bestNaicsHit(customerNaicsList, oppNaicsList);
 
   if (nh?.type === "exact") {
-    score += 65; // ensure NAICS alone clears MIN_SCORE
+    score += 65;
     reasons.push(`NAICS exact match (${nh.opp}) +65`);
   } else if (nh?.type === "prefix") {
-    score += 60; // prefix still very strong
+    score += 60;
     reasons.push(`NAICS match (${nh.customer} → ${nh.opp}) +60`);
   }
 
-  // 2) Location overlap (high)
   const locSet = new Set(locationTokens);
   let locHits = 0;
   for (const t of oppLocTokens) if (locSet.has(t)) locHits += 1;
@@ -202,7 +190,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Location overlap: ${locHits} hit(s) +${add}`);
   }
 
-  // 3) Keyword overlap (small)
   let kwHits = 0;
   for (const t of oppKeywordTokens) if (baseTokens.has(t)) kwHits += 1;
 
@@ -212,7 +199,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Keyword overlap: ${kwHits} hit(s) +${add}`);
   }
 
-  // 4) Title overlap (medium)
   let titleHits = 0;
   for (const t of oppTitleTokens) if (baseTokens.has(t)) titleHits += 1;
 
@@ -222,7 +208,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Title overlap: ${titleHits} hit(s) +${add}`);
   }
 
-  // 5) Summary overlap (tiny boost)
   let summaryHits = 0;
   for (const t of oppSummaryTokens) if (baseTokens.has(t)) summaryHits += 1;
 
@@ -237,9 +222,19 @@ function scoreMatch(customer, opp) {
   return { score, reasons, profileIncomplete: false };
 }
 
-// ✅ IMPORTANT: keep this path EXACTLY.
-// server.js mounts matchesRoutes at "/engine" so this becomes GET /engine/matches/:customerId
+// ✅ keep path EXACTLY: GET /engine/matches/:customerId?limit=50
 router.get("/matches/:customerId", async (req, res) => {
+  const debug = String(req.query.debug || "") === "1";
+
+  // helper to return stage on failure
+  const fail = (stage, err) => {
+    console.error(`matches error @${stage}:`, err?.stack || err);
+    return res.status(500).json({
+      message: "Failed to compute matches",
+      ...(debug ? { stage, error: String(err?.message || err) } : {}),
+    });
+  };
+
   try {
     const customerId = Number(req.params.customerId);
     if (!customerId || Number.isNaN(customerId)) {
@@ -251,20 +246,24 @@ router.get("/matches/:customerId", async (req, res) => {
       ? Math.max(1, Math.min(MAX_LIMIT, limitRaw))
       : DEFAULT_LIMIT;
 
-    // ✅ DO NOT select "segments" here (prod DB may not have the column yet)
-    const customer = await prisma.customer.findUnique({
-      where: { id: customerId },
-      select: {
-        id: true,
-        industry: true,
-        services: true,
-        location: true,
-        keywords: true,
-        naics: true,
-        isActive: true,
-        subscriptionStatus: true,
-      },
-    });
+    let customer;
+    try {
+      customer = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: {
+          id: true,
+          industry: true,
+          services: true,
+          location: true,
+          keywords: true,
+          naics: true,
+          isActive: true,
+          subscriptionStatus: true,
+        },
+      });
+    } catch (e) {
+      return fail("customer_findUnique", e);
+    }
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
@@ -275,8 +274,7 @@ router.get("/matches/:customerId", async (req, res) => {
       });
     }
 
-    // ✅ Try to load segments safely.
-    // If the column doesn't exist in prod, Prisma throws — we catch and default to ALL segments.
+    // ✅ Try segments safely (won’t break prod if column missing)
     let segments = null;
     try {
       const segRow = await prisma.customer.findUnique({
@@ -285,9 +283,6 @@ router.get("/matches/:customerId", async (req, res) => {
       });
       segments = segRow?.segments ?? null;
     } catch (e) {
-      console.warn(
-        `[matches] segments unavailable in DB (customerId=${customerId}) — defaulting to ALL segments`
-      );
       segments = null;
     }
 
@@ -296,48 +291,92 @@ router.get("/matches/:customerId", async (req, res) => {
         ? segments
         : ["residential", "commercial", "government"];
 
-    // ✅ Pull opportunities in allowed segments. If that filter fails for any reason, fallback to all.
+    // ✅ Only fetch fields we use (prevents huge "raw" JSON pulls)
     let opportunities = [];
     try {
       opportunities = await prisma.opportunity.findMany({
         where: { segment: { in: allowedSegments } },
+        orderBy: { postedDate: "desc" },
+        take: Math.max(1, Math.min(20000, MAX_OPPS)),
+        select: {
+          id: true,
+          title: true,
+          location: true,
+          naics: true,
+          segment: true,
+          source: true,
+          keywords: true,
+          agency: true,
+          url: true,
+          postedDate: true,
+          dueDate: true,
+          summary: true,
+        },
       });
     } catch (e) {
-      console.warn(
-        `[matches] opportunity segment filter failed — falling back to all opportunities`,
-        e?.message || e
-      );
-      opportunities = await prisma.opportunity.findMany();
+      // Fallback: still only select needed fields
+      try {
+        opportunities = await prisma.opportunity.findMany({
+          orderBy: { postedDate: "desc" },
+          take: Math.max(1, Math.min(20000, MAX_OPPS)),
+          select: {
+            id: true,
+            title: true,
+            location: true,
+            naics: true,
+            segment: true,
+            source: true,
+            keywords: true,
+            agency: true,
+            url: true,
+            postedDate: true,
+            dueDate: true,
+            summary: true,
+          },
+        });
+      } catch (e2) {
+        return fail("opportunity_findMany", e2);
+      }
     }
 
-    const raw = opportunities
-      .map((opp) => {
-        const s = scoreMatch(customer, opp);
-        return {
-          id: opp.id,
-          title: opp.title,
-          location: opp.location,
-          naics: opp.naics,
+    let raw;
+    try {
+      raw = opportunities
+        .map((opp) => {
+          const s = scoreMatch(customer, opp);
+          return {
+            id: opp.id,
+            title: opp.title,
+            location: opp.location,
+            naics: opp.naics,
 
-          segment: opp.segment,
-          source: opp.source ?? null,
+            segment: opp.segment,
+            source: opp.source ?? null,
 
-          keywords: opp.keywords ?? null,
-          agency: opp.agency ?? null,
-          url: opp.url ?? null,
-          postedDate: opp.postedDate ?? null,
-          dueDate: opp.dueDate ?? null,
-          summary: opp.summary ?? null,
+            keywords: opp.keywords ?? null,
+            agency: opp.agency ?? null,
+            url: opp.url ?? null,
+            postedDate: opp.postedDate ?? null,
+            dueDate: opp.dueDate ?? null,
+            summary: opp.summary ?? null,
 
-          score: s.score,
-          reasons: s.reasons,
-          profileIncomplete: s.profileIncomplete,
-        };
-      })
-      .filter((m) => m.score >= MIN_SCORE)
-      .sort((a, b) => b.score - a.score);
+            score: s.score,
+            reasons: s.reasons,
+            profileIncomplete: s.profileIncomplete,
+          };
+        })
+        .filter((m) => m.score >= MIN_SCORE)
+        .sort((a, b) => b.score - a.score);
+    } catch (e) {
+      return fail("scoring_map_filter_sort", e);
+    }
 
-    const matches = dedupeMatches(raw).slice(0, limit);
+    let matches;
+    try {
+      matches = dedupeMatches(raw).slice(0, limit);
+    } catch (e) {
+      return fail("dedupe_slice", e);
+    }
 
     return res.json({
       customerId,
@@ -345,8 +384,7 @@ router.get("/matches/:customerId", async (req, res) => {
       matches,
     });
   } catch (err) {
-    console.error("matches error:", err?.stack || err);
-    return res.status(500).json({ message: "Failed to compute matches" });
+    return fail("outer_try", err);
   }
 });
 
