@@ -13,11 +13,12 @@ const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
 
 const STOP = new Set([
   "the","and","or","a","an","of","to","for","in","on","at","with","by",
-  "llc","inc","co","company","services","service","solutions","group"
+  "llc","inc","co","company","services","service","solutions","group",
+  // ✅ prevents garbage tokenization when location got stringified badly
+  "object"
 ]);
 
 function tokenize(s = "") {
-  // ✅ harden against null/undefined
   if (s == null) return [];
   return String(s)
     .toLowerCase()
@@ -40,7 +41,6 @@ function normalizeNaicsList(naicsStr) {
     .map((x) => x.slice(0, 6))
     .filter((x) => x.length >= 2);
 
-  // unique, keep order
   const seen = new Set();
   const out = [];
   for (const n of raw) {
@@ -53,7 +53,6 @@ function normalizeNaicsList(naicsStr) {
 }
 
 function normalizeKeywordsList(keywordsStr) {
-  // accepts "asphalt,paving,resurfacing" -> tokens
   return splitCsv(keywordsStr).flatMap(tokenize).filter(Boolean);
 }
 
@@ -86,7 +85,6 @@ function dedupeMatches(matches) {
     const fallbackSeenKey = `fallback:${fallbackKey}`;
     const key = url ? `url:${url}` : fallbackSeenKey;
 
-    // If this match has URL and we already kept a fallback duplicate, replace it.
     if (url && seen.has(fallbackSeenKey)) {
       const idx = out.findIndex((x) => {
         const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(x.naics)}`;
@@ -118,7 +116,6 @@ function dedupeMatches(matches) {
 function bestNaicsHit(customerNaicsList, oppNaicsList) {
   if (!customerNaicsList.length || !oppNaicsList.length) return null;
 
-  // exact
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c.length === o.length && c === o) {
@@ -127,7 +124,6 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
     }
   }
 
-  // prefix
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c && o && o.startsWith(c)) {
@@ -140,18 +136,13 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
 }
 
 function scoreMatch(customer, opp) {
-  // Customer signals
   const industryTokens = tokenize(customer.industry);
   const serviceTokens = tokenize(customer.services);
-
-  // NOTE: customer.location is still the matching field; serviceArea is stored too,
-  // but we keep behavior identical to avoid breaking anything.
   const locationTokens = tokenize(customer.location);
 
-  const customerNaicsList = normalizeNaicsList(customer.naics); // ✅ multi NAICS supported
+  const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
-  // Base “what they do” tokens
   const baseTokens = new Set([
     ...industryTokens,
     ...serviceTokens,
@@ -171,28 +162,25 @@ function scoreMatch(customer, opp) {
     };
   }
 
-  // Opportunity signals
   const oppTitleTokens = tokenize(opp.title);
   const oppLocTokens = tokenize(opp.location);
-  const oppNaicsList = normalizeNaicsList(opp.naics); // ✅ handles if opp.naics ever contains CSV
+  const oppNaicsList = normalizeNaicsList(opp.naics);
   const oppKeywordTokens = tokenize(opp.keywords);
   const oppSummaryTokens = tokenize(opp.summary);
 
   let score = 0;
   const reasons = [];
 
-  // 1) NAICS match (big) — exact or prefix
   const nh = bestNaicsHit(customerNaicsList, oppNaicsList);
 
   if (nh?.type === "exact") {
-    score += 65; // ensure NAICS alone clears MIN_SCORE
+    score += 65;
     reasons.push(`NAICS exact match (${nh.opp}) +65`);
   } else if (nh?.type === "prefix") {
-    score += 60; // prefix still very strong
+    score += 60;
     reasons.push(`NAICS match (${nh.customer} → ${nh.opp}) +60`);
   }
 
-  // 2) Location overlap (high)
   const locSet = new Set(locationTokens);
   let locHits = 0;
   for (const t of oppLocTokens) if (locSet.has(t)) locHits += 1;
@@ -203,7 +191,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Location overlap: ${locHits} hit(s) +${add}`);
   }
 
-  // 3) Keyword overlap (small)
   let kwHits = 0;
   for (const t of oppKeywordTokens) if (baseTokens.has(t)) kwHits += 1;
 
@@ -213,7 +200,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Keyword overlap: ${kwHits} hit(s) +${add}`);
   }
 
-  // 4) Title overlap (medium)
   let titleHits = 0;
   for (const t of oppTitleTokens) if (baseTokens.has(t)) titleHits += 1;
 
@@ -223,7 +209,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Title overlap: ${titleHits} hit(s) +${add}`);
   }
 
-  // 5) Summary overlap (tiny boost)
   let summaryHits = 0;
   for (const t of oppSummaryTokens) if (baseTokens.has(t)) summaryHits += 1;
 
@@ -289,7 +274,7 @@ router.get("/matches/:customerId", async (req, res) => {
       });
     }
 
-    // ✅ Try segments safely (won’t break prod if column missing)
+    // ✅ Try segments safely
     let segments = null;
     try {
       const segRow = await prisma.customer.findUnique({
@@ -306,7 +291,7 @@ router.get("/matches/:customerId", async (req, res) => {
         ? segments
         : ["residential", "commercial", "government"];
 
-    // ✅ Only fetch fields we use (prevents huge "raw" JSON pulls)
+    // ✅ Only fetch fields we use
     let opportunities = [];
     try {
       opportunities = await prisma.opportunity.findMany({
@@ -329,7 +314,6 @@ router.get("/matches/:customerId", async (req, res) => {
         },
       });
     } catch (e) {
-      // Fallback: still only select needed fields
       try {
         opportunities = await prisma.opportunity.findMany({
           orderBy: { postedDate: "desc" },
@@ -360,10 +344,12 @@ router.get("/matches/:customerId", async (req, res) => {
         .map((opp) => {
           const s = scoreMatch(customer, opp);
 
-          // ✅ location can sometimes be an object; make it safe/readable
+          // ✅ location cleanup:
+          // - If location is a string but contains "[object Object]" => treat as null (data is already corrupted)
+          // - If location is an object => JSON stringify it
           const safeLocation =
             typeof opp.location === "string"
-              ? opp.location
+              ? (opp.location.includes("[object Object]") ? null : opp.location)
               : opp.location
               ? JSON.stringify(opp.location)
               : null;
