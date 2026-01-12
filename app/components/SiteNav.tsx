@@ -12,18 +12,12 @@ const NAV_LINK =
 export default function SiteNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1430]/70 backdrop-blur">
-      {/* 3-column layout keeps the middle perfectly centered */}
       <div className="mx-auto grid h-14 w-full max-w-7xl grid-cols-3 items-center px-6">
         {/* Left */}
-        <div className="justify-self-start flex items-center gap-3">
+        <div className="justify-self-start">
           <Link href="/" className="font-semibold tracking-tight text-white">
             AMBIT
           </Link>
-
-          {/* small pricing hint (desktop only) */}
-          <span className="hidden md:inline text-xs text-white/50">
-            $39.99 single • $59.99 all
-          </span>
         </div>
 
         {/* Center (desktop) */}
@@ -48,14 +42,8 @@ export default function SiteNav() {
             Log In
           </Link>
 
-          {/* Default CTA = single plan */}
           <Link href="/get-started?plan=single" className={PRIMARY_BTN}>
             Get Started
-          </Link>
-
-          {/* Subtle upgrade path */}
-          <Link href="/get-started?plan=all" className="hidden lg:inline text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50">
-            All markets →
           </Link>
         </div>
       </div>
