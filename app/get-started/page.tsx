@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import AmbitMark from "../components/AmbitMark";
 
 const API_BASE =
@@ -22,15 +22,12 @@ async function postJson(url: string, body: any) {
 
 /** NAICS helpers */
 function sanitizeNaicsToken(input: string) {
-  // digits only, max 6
   return input.replace(/[^\d]/g, "").slice(0, 6);
 }
 function isValidNaicsToken(input: string) {
-  // allow 2–6 digits (prefix matching is useful), but recommend full 6
   return /^\d{2,6}$/.test(input);
 }
 function parseNaicsList(raw: string) {
-  // split by comma; allow extra spaces
   const parts = raw
     .split(",")
     .map((p) => p.trim())
@@ -39,7 +36,6 @@ function parseNaicsList(raw: string) {
   const cleaned = parts.map(sanitizeNaicsToken).filter(Boolean);
   const valid = cleaned.filter(isValidNaicsToken);
 
-  // unique, keep order
   const seen = new Set<string>();
   const uniqueValid: string[] = [];
   for (const v of valid) {
@@ -52,7 +48,6 @@ function parseNaicsList(raw: string) {
   return {
     valid: uniqueValid,
     hasAny: uniqueValid.length > 0,
-    // "invalid" means user typed something non-empty that doesn't become a valid token
     hasInvalid:
       parts.length > 0 &&
       cleaned.some((t) => t.length > 0 && !isValidNaicsToken(t)),
@@ -61,7 +56,6 @@ function parseNaicsList(raw: string) {
 
 /** Segments / Markets */
 type SegmentKey = "residential" | "commercial" | "government";
-
 const SEGMENTS: Array<{ key: SegmentKey; label: string; hint: string }> = [
   { key: "residential", label: "Residential", hint: "Homeowner work" },
   { key: "commercial", label: "Commercial", hint: "Businesses & facilities" },
@@ -75,16 +69,25 @@ function toggleSet<T extends string>(set: Set<T>, value: T) {
   return next;
 }
 
+// Plans
+type PlanTier = "single" | "all";
+const PRICE_SINGLE = 39.99;
+const PRICE_ALL = 59.99;
+
 export default function GetStartedPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [serviceArea, setServiceArea] = useState("");
-  const [naicsInput, setNaicsInput] = useState(""); // ✅ multiple NAICS allowed
+  const [naicsInput, setNaicsInput] = useState("");
   const [keywords, setKeywords] = useState("");
 
-  // ✅ multi-select markets (default ALL on)
+  // Plan selection
+  const [plan, setPlan] = useState<PlanTier>("single");
+
+  // Markets
   const [segments, setSegments] = useState<Set<SegmentKey>>(
     () => new Set<SegmentKey>(["residential", "commercial", "government"])
   );
@@ -95,25 +98,76 @@ export default function GetStartedPage() {
   const [naicsTouched, setNaicsTouched] = useState(false);
   const [segmentsTouched, setSegmentsTouched] = useState(false);
 
+  // Load plan from query/localStorage once
+  useEffect(() => {
+    const qp = String(searchParams?.get("plan") || "").toLowerCase();
+    let next: PlanTier | null = null;
+
+    if (qp === "all") next = "all";
+    if (qp === "single") next = "single";
+
+    if (!next) {
+      try {
+        const saved = localStorage.getItem("ambit_plan");
+        if (saved === "all" || saved === "single") next = saved;
+      } catch {}
+    }
+
+    setPlan(next || "single");
+  }, [searchParams]);
+
+  // Persist plan selection
+  useEffect(() => {
+    try {
+      localStorage.setItem("ambit_plan", plan);
+    } catch {}
+  }, [plan]);
+
+  // Enforce segment rules by plan:
+  // - single: exactly 1 (clamp automatically)
+  // - all: user can choose 1–3
+  useEffect(() => {
+    if (plan !== "single") return;
+
+    setSegments((prev) => {
+      if (prev.size <= 1) return prev;
+
+      const order: SegmentKey[] = ["government", "commercial", "residential"];
+      const keep = order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
+      return new Set<SegmentKey>([keep]);
+    });
+  }, [plan]);
+
   const naicsParsed = useMemo(() => parseNaicsList(naicsInput), [naicsInput]);
   const naicsCsv = useMemo(() => naicsParsed.valid.join(","), [naicsParsed.valid]);
 
   const segmentsList = useMemo(() => Array.from(segments), [segments]);
   const segmentsCsv = useMemo(() => segmentsList.join(","), [segmentsList]);
 
-  // ✅ Keywords required ONLY on this page
-  // ✅ NAICS required (at least one valid NAICS)
-  // ✅ Segments required (at least one selected)
+  // Keywords required ONLY on this page
+  // NAICS required
+  // Segments required
   const canSubmit = useMemo(() => {
-    return (
+    const baseOk =
       companyName.trim().length >= 2 &&
       email.trim().includes("@") &&
       serviceArea.trim().length >= 2 &&
       keywords.trim().length >= 2 &&
       naicsParsed.hasAny &&
-      segments.size > 0
-    );
-  }, [companyName, email, serviceArea, keywords, naicsParsed.hasAny, segments.size]);
+      segments.size > 0;
+
+    if (!baseOk) return false;
+    if (plan === "single") return segments.size === 1;
+    return true;
+  }, [
+    companyName,
+    email,
+    serviceArea,
+    keywords,
+    naicsParsed.hasAny,
+    segments.size,
+    plan,
+  ]);
 
   async function createCustomer() {
     setErr("");
@@ -135,23 +189,31 @@ export default function GetStartedPage() {
         throw new Error("Select at least one market: Residential, Commercial, or Government.");
       }
 
-      // ✅ IMPORTANT: deployed backend expects `name`. Send both for compatibility.
-      // ✅ For multi-NAICS: send CSV in `naics` + also send `naicsCodes` array for future-proofing.
-      // ✅ Segments/Sources are optional today; backend can ignore unknown fields.
+      if (plan === "single" && segments.size !== 1) {
+        setSegmentsTouched(true);
+        throw new Error("Single market plan requires choosing exactly ONE market.");
+      }
+
+      // Save plan + email locally so your portal can use it later
+      try {
+        localStorage.setItem("ambit_plan", plan);
+        localStorage.setItem("ambit_email", mail);
+      } catch {}
+
       const payload: any = {
         name: company,
         companyName: company,
         email: mail,
         location: loc,
         serviceArea: loc,
-        naics: naicsCsv, // e.g., "237310,238220"
-        naicsCodes: naicsParsed.valid, // e.g., ["237310","238220"]
+        naics: naicsCsv,
+        naicsCodes: naicsParsed.valid,
         keywords: kw,
 
-        // NEW (safe optional fields)
-        segments: segmentsList, // ["residential","commercial","government"]
-        sources: segmentsList, // same for now; later you can map to actual sources
-        segmentCsv: segmentsCsv, // "residential,commercial,government"
+        // optional fields
+        segments: segmentsList,
+        sources: segmentsList,
+        segmentCsv: segmentsCsv,
       };
 
       const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
@@ -174,6 +236,13 @@ export default function GetStartedPage() {
       setLoading(false);
     }
   }
+
+  const priceLabel = plan === "all" ? `$${PRICE_ALL.toFixed(2)}` : `$${PRICE_SINGLE.toFixed(2)}`;
+  const planTitle = plan === "all" ? "All markets" : "Single market";
+  const planDesc =
+    plan === "all"
+      ? "Track Government + Commercial + Residential."
+      : "Track 1 lead type (choose ONE market).";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#061033] via-[#040b24] to-[#020617] text-slate-100">
@@ -213,12 +282,65 @@ export default function GetStartedPage() {
           </div>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-slate-200">
-            <span className="font-semibold text-white">Invest in Scale, Not Search.</span>{" "}
-            For just <span className="font-semibold text-white">$1.33/day</span>, AMBIT automates the
-            search process, reclaiming{" "}
-            <span className="font-semibold text-white">15–20 hours</span> of your week.
+            AMBIT scans daily and ranks opportunities by fit.{" "}
+            <span className="font-semibold text-white">$39.99/mo</span> tracks one market, and{" "}
+            <span className="font-semibold text-white">$59.99/mo</span> tracks all three.
           </p>
         </header>
+
+        {/* PLAN PICKER */}
+        <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
+          <div className="text-xs font-semibold tracking-widest text-slate-300">PLAN</div>
+          <div className="mt-2 text-2xl font-semibold text-white">Choose your coverage</div>
+          <div className="mt-2 text-sm text-slate-200">
+            <span className="font-semibold text-white">{planTitle}</span> — {planDesc}
+          </div>
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setPlan("single")}
+              className={[
+                "rounded-2xl border px-4 py-4 text-left transition",
+                plan === "single"
+                  ? "border-blue-400/60 bg-blue-500/15 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]"
+                  : "border-white/10 bg-slate-950/25 hover:bg-slate-950/35",
+              ].join(" ")}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-white">Single market</div>
+                <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
+              </div>
+              <div className="mt-1 text-xs text-slate-300">
+                Choose ONE: Residential OR Commercial OR Government
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPlan("all")}
+              className={[
+                "rounded-2xl border px-4 py-4 text-left transition",
+                plan === "all"
+                  ? "border-blue-400/60 bg-blue-500/15 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]"
+                  : "border-white/10 bg-slate-950/25 hover:bg-slate-950/35",
+              ].join(" ")}
+            >
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold text-white">All markets</div>
+                <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
+              </div>
+              <div className="mt-1 text-xs text-slate-300">
+                Government + Commercial + Residential
+              </div>
+            </button>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-slate-200">
+            Selected: <span className="font-semibold text-white">{planTitle}</span> •{" "}
+            <span className="font-semibold text-white">{priceLabel}/month</span>
+          </div>
+        </section>
 
         {/* FORM */}
         <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
@@ -271,28 +393,40 @@ export default function GetStartedPage() {
                 <div className="text-xs font-semibold tracking-widest text-slate-300">
                   MARKETS
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSegmentsTouched(true);
-                    setSegments(new Set<SegmentKey>(["residential", "commercial", "government"]));
-                  }}
-                  className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
-                >
-                  Select all
-                </button>
+
+                {plan === "all" ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSegmentsTouched(true);
+                      setSegments(new Set<SegmentKey>(["residential", "commercial", "government"]));
+                    }}
+                    className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
+                  >
+                    Select all
+                  </button>
+                ) : (
+                  <div className="text-xs font-semibold text-white/60">Single plan: choose 1</div>
+                )}
               </div>
 
               <div className="grid gap-3 sm:grid-cols-3">
                 {SEGMENTS.map((s) => {
                   const active = segments.has(s.key);
+
                   return (
                     <button
                       key={s.key}
                       type="button"
                       onClick={() => {
                         setSegmentsTouched(true);
-                        setSegments((prev) => toggleSet(prev, s.key));
+                        setSegments((prev) => {
+                          if (plan === "single") {
+                            if (prev.size === 1 && prev.has(s.key)) return prev;
+                            return new Set<SegmentKey>([s.key]);
+                          }
+                          return toggleSet(prev, s.key);
+                        });
                       }}
                       className={[
                         "rounded-2xl border px-4 py-3 text-left transition",
@@ -322,12 +456,18 @@ export default function GetStartedPage() {
               </div>
 
               <div className="mt-3 text-xs text-slate-300">
-                Choose one or more markets. You can change this later.
+                {plan === "single"
+                  ? "Single market plan allows ONE selection. Choose the market you want to track."
+                  : "Choose one or more markets. You can change this later."}
               </div>
 
               {segmentsTouched && segments.size === 0 ? (
+                <div className="mt-2 text-xs text-red-200">Select at least one market to continue.</div>
+              ) : null}
+
+              {segmentsTouched && plan === "single" && segments.size !== 1 ? (
                 <div className="mt-2 text-xs text-red-200">
-                  Select at least one market to continue.
+                  Single market plan requires exactly ONE market.
                 </div>
               ) : null}
             </div>
@@ -340,7 +480,6 @@ export default function GetStartedPage() {
                 TARGETING
               </div>
 
-              {/* ✅ NAICS (multiple) */}
               <Field label="NAICS codes (required)">
                 <input
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
@@ -380,7 +519,6 @@ export default function GetStartedPage() {
                 ) : null}
               </Field>
 
-              {/* ✅ Keywords */}
               <div className="mt-4">
                 <Field label="Keywords (required)">
                   <input
@@ -396,10 +534,9 @@ export default function GetStartedPage() {
               </div>
             </div>
 
-            {/* ✅ status panel (cleaner) */}
             <div className="rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
               Great news: we’ve found a selection of high-potential opportunities tailored to your
-              specific expertise.
+              profile.
             </div>
 
             {err ? (
@@ -422,7 +559,7 @@ export default function GetStartedPage() {
           </div>
         </section>
 
-        {/* WHAT YOU GET + PRICE */}
+        {/* WHAT YOU GET + PRICING */}
         <section className="mx-auto mt-12 max-w-5xl">
           <div className="text-center text-xs font-semibold tracking-widest text-slate-300">
             WHAT YOU GET
@@ -439,20 +576,45 @@ export default function GetStartedPage() {
             />
             <FeatureCard
               title="Wake up to new leads"
-              body="Stop manual searching. We scan while you sleep."
+              body="We scan daily and email only when there’s something worth chasing."
             />
           </div>
 
           <div className="mt-6 rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <div className="text-sm font-semibold text-white">Price</div>
-                <div className="mt-1 text-xs text-slate-300">Cancel anytime.</div>
+                <div className="text-sm font-semibold text-white">Pricing</div>
+                <div className="mt-1 text-xs text-slate-300">
+                  7-day free trial. Cancel anytime.
+                </div>
               </div>
 
-              <div className="flex items-end justify-center gap-2 sm:justify-end">
-                <div className="text-5xl font-semibold text-white tabular-nums">$39.99</div>
-                <div className="pb-2 text-sm text-slate-300">/ month</div>
+              <div className="text-sm text-white/70">
+                Selected: <span className="font-semibold text-white">{planTitle}</span>{" "}
+                <span className="mx-2 opacity-40">•</span>{" "}
+                <span className="font-semibold text-white tabular-nums">{priceLabel}/mo</span>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 md:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">Single market</div>
+                  <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
+                </div>
+                <div className="mt-1 text-sm text-slate-200">
+                  Track 1: Government OR Commercial OR Residential.
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-400/25 bg-blue-500/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">All markets</div>
+                  <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
+                </div>
+                <div className="mt-1 text-sm text-slate-200">
+                  Track all 3 lead types for maximum coverage.
+                </div>
               </div>
             </div>
 
