@@ -40,6 +40,7 @@ function normalizeNaicsList(naicsStr) {
     .map((x) => x.slice(0, 6))
     .filter((x) => x.length >= 2);
 
+  // unique, keep order
   const seen = new Set();
   const out = [];
   for (const n of raw) {
@@ -52,6 +53,7 @@ function normalizeNaicsList(naicsStr) {
 }
 
 function normalizeKeywordsList(keywordsStr) {
+  // accepts "asphalt,paving,resurfacing" -> tokens
   return splitCsv(keywordsStr).flatMap(tokenize).filter(Boolean);
 }
 
@@ -84,6 +86,7 @@ function dedupeMatches(matches) {
     const fallbackSeenKey = `fallback:${fallbackKey}`;
     const key = url ? `url:${url}` : fallbackSeenKey;
 
+    // If this match has URL and we already kept a fallback duplicate, replace it.
     if (url && seen.has(fallbackSeenKey)) {
       const idx = out.findIndex((x) => {
         const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(x.naics)}`;
@@ -115,6 +118,7 @@ function dedupeMatches(matches) {
 function bestNaicsHit(customerNaicsList, oppNaicsList) {
   if (!customerNaicsList.length || !oppNaicsList.length) return null;
 
+  // exact
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c.length === o.length && c === o) {
@@ -123,6 +127,7 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
     }
   }
 
+  // prefix
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
       if (c && o && o.startsWith(c)) {
@@ -135,13 +140,18 @@ function bestNaicsHit(customerNaicsList, oppNaicsList) {
 }
 
 function scoreMatch(customer, opp) {
+  // Customer signals
   const industryTokens = tokenize(customer.industry);
   const serviceTokens = tokenize(customer.services);
+
+  // NOTE: customer.location is still the matching field; serviceArea is stored too,
+  // but we keep behavior identical to avoid breaking anything.
   const locationTokens = tokenize(customer.location);
 
-  const customerNaicsList = normalizeNaicsList(customer.naics);
+  const customerNaicsList = normalizeNaicsList(customer.naics); // ✅ multi NAICS supported
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
+  // Base “what they do” tokens
   const baseTokens = new Set([
     ...industryTokens,
     ...serviceTokens,
@@ -161,25 +171,28 @@ function scoreMatch(customer, opp) {
     };
   }
 
+  // Opportunity signals
   const oppTitleTokens = tokenize(opp.title);
   const oppLocTokens = tokenize(opp.location);
-  const oppNaicsList = normalizeNaicsList(opp.naics);
+  const oppNaicsList = normalizeNaicsList(opp.naics); // ✅ handles if opp.naics ever contains CSV
   const oppKeywordTokens = tokenize(opp.keywords);
   const oppSummaryTokens = tokenize(opp.summary);
 
   let score = 0;
   const reasons = [];
 
+  // 1) NAICS match (big) — exact or prefix
   const nh = bestNaicsHit(customerNaicsList, oppNaicsList);
 
   if (nh?.type === "exact") {
-    score += 65;
+    score += 65; // ensure NAICS alone clears MIN_SCORE
     reasons.push(`NAICS exact match (${nh.opp}) +65`);
   } else if (nh?.type === "prefix") {
-    score += 60;
+    score += 60; // prefix still very strong
     reasons.push(`NAICS match (${nh.customer} → ${nh.opp}) +60`);
   }
 
+  // 2) Location overlap (high)
   const locSet = new Set(locationTokens);
   let locHits = 0;
   for (const t of oppLocTokens) if (locSet.has(t)) locHits += 1;
@@ -190,6 +203,7 @@ function scoreMatch(customer, opp) {
     reasons.push(`Location overlap: ${locHits} hit(s) +${add}`);
   }
 
+  // 3) Keyword overlap (small)
   let kwHits = 0;
   for (const t of oppKeywordTokens) if (baseTokens.has(t)) kwHits += 1;
 
@@ -199,6 +213,7 @@ function scoreMatch(customer, opp) {
     reasons.push(`Keyword overlap: ${kwHits} hit(s) +${add}`);
   }
 
+  // 4) Title overlap (medium)
   let titleHits = 0;
   for (const t of oppTitleTokens) if (baseTokens.has(t)) titleHits += 1;
 
@@ -208,6 +223,7 @@ function scoreMatch(customer, opp) {
     reasons.push(`Title overlap: ${titleHits} hit(s) +${add}`);
   }
 
+  // 5) Summary overlap (tiny boost)
   let summaryHits = 0;
   for (const t of oppSummaryTokens) if (baseTokens.has(t)) summaryHits += 1;
 
@@ -226,7 +242,6 @@ function scoreMatch(customer, opp) {
 router.get("/matches/:customerId", async (req, res) => {
   const debug = String(req.query.debug || "") === "1";
 
-  // helper to return stage on failure
   const fail = (stage, err) => {
     console.error(`matches error @${stage}:`, err?.stack || err);
     return res.status(500).json({
@@ -344,10 +359,19 @@ router.get("/matches/:customerId", async (req, res) => {
       raw = opportunities
         .map((opp) => {
           const s = scoreMatch(customer, opp);
+
+          // ✅ location can sometimes be an object; make it safe/readable
+          const safeLocation =
+            typeof opp.location === "string"
+              ? opp.location
+              : opp.location
+              ? JSON.stringify(opp.location)
+              : null;
+
           return {
             id: opp.id,
             title: opp.title,
-            location: opp.location,
+            location: safeLocation,
             naics: opp.naics,
 
             segment: opp.segment,
