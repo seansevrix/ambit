@@ -11,7 +11,8 @@ function getPreviewData(segment: Segment) {
   if (segment === "residential") {
     return {
       headline: "Residential opportunities (preview)",
-      sub: "See what you’ll get — one unlocked example, the rest locked until you start your trial.",
+      sub:
+        "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
       unlocked: {
         title: "Kitchen remodel + tile install (Homeowner request)",
         location: "San Diego, CA",
@@ -27,7 +28,8 @@ function getPreviewData(segment: Segment) {
   if (segment === "commercial") {
     return {
       headline: "Commercial bid opportunities (preview)",
-      sub: "One unlocked example. Start your trial to unlock full details and ongoing matches.",
+      sub:
+        "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
       unlocked: {
         title: "Apartment complex parking lot seal + striping",
         location: "Oceanside, CA",
@@ -43,7 +45,8 @@ function getPreviewData(segment: Segment) {
   // government
   return {
     headline: "Government contract matches (preview)",
-    sub: "One unlocked example. Start your trial to unlock scoring, summaries, and daily digests.",
+    sub:
+      "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock scoring, summaries, and ongoing alerts.",
     unlocked: {
       title: "HVAC preventative maintenance services",
       location: "Camp Pendleton, CA",
@@ -60,9 +63,7 @@ function LockedCard({ index }: { index: number }) {
   return (
     <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5">
       <div className="absolute right-4 top-4 text-lg">🔒</div>
-      <div className="text-sm font-semibold text-white/80">
-        Locked opportunity #{index}
-      </div>
+      <div className="text-sm font-semibold text-white/80">Locked opportunity #{index}</div>
       <div className="mt-2 text-xs text-white/55">
         Start your trial to unlock full details, scoring, and matches.
       </div>
@@ -87,11 +88,16 @@ export default async function PreviewSegmentPage({
   const segmentKey = seg as Segment;
   const data = getPreviewData(segmentKey);
 
+  // ✅ Default plan for this preview page = "single" (lowest friction)
+  // (If you want segment-specific default, tell me and I’ll switch it.)
+  const startSingleHref = "/get-started?plan=single";
+  const startAllHref = "/get-started?plan=all";
+
   return (
     <div className="mx-auto w-full max-w-7xl">
       {/* Header */}
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="text-xs font-semibold tracking-widest text-white/50">
               {titleCase(segmentKey)}
@@ -100,20 +106,52 @@ export default async function PreviewSegmentPage({
               {data.headline}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70">{data.sub}</p>
+
+            {/* ✅ NEW: quick pricing clarity */}
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">Single market</div>
+                  <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
+                </div>
+                <div className="mt-1 text-xs text-white/65">
+                  Track 1 lead type (choose Residential OR Commercial OR Government).
+                </div>
+              </div>
+
+              <div className="rounded-2xl border border-blue-400/25 bg-blue-500/10 p-4">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm font-semibold text-white">All markets</div>
+                  <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
+                </div>
+                <div className="mt-1 text-xs text-white/70">
+                  Track all 3 lead types for maximum coverage.
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-stretch gap-3 md:items-end">
+            <div className="flex items-center gap-3">
+              <Link
+                href={startSingleHref}
+                className="rounded-xl bg-[#1A4FA3] px-5 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+              >
+                Start Free Trial
+              </Link>
+              <Link
+                href="/pricing"
+                className="rounded-xl border border-white/15 bg-white/5 px-5 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+              >
+                View Pricing
+              </Link>
+            </div>
+
             <Link
-              href="/get-started"
-              className="rounded-xl bg-[#1A4FA3] px-5 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+              href={startAllHref}
+              className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
             >
-              Start Free Trial
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-xl border border-white/15 bg-white/5 px-5 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-            >
-              View Pricing
+              Want all 3 markets? Start $59.99 plan →
             </Link>
           </div>
         </div>
@@ -125,12 +163,8 @@ export default async function PreviewSegmentPage({
         <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5 md:col-span-2">
           <div className="absolute right-4 top-4 text-lg">🔓</div>
 
-          <div className="text-xs font-semibold text-white/55">
-            UNLOCKED EXAMPLE
-          </div>
-          <div className="mt-2 text-xl font-bold text-white">
-            {data.unlocked.title}
-          </div>
+          <div className="text-xs font-semibold text-white/55">UNLOCKED EXAMPLE</div>
+          <div className="mt-2 text-xl font-bold text-white">{data.unlocked.title}</div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/80">
@@ -147,20 +181,27 @@ export default async function PreviewSegmentPage({
             </span>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-white/75">
-            {data.unlocked.summary}
-          </p>
+          <p className="mt-4 text-sm leading-relaxed text-white/75">{data.unlocked.summary}</p>
 
-          <div className="mt-6 flex items-center gap-3">
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <Link
+                href={startSingleHref}
+                className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+              >
+                Unlock matches
+              </Link>
+              <span className="text-xs text-white/50">
+                Full details + scoring unlock after signup.
+              </span>
+            </div>
+
             <Link
-              href="/get-started"
-              className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+              href={startAllHref}
+              className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
             >
-              Unlock matches
+              Prefer full coverage? $59.99/mo →
             </Link>
-            <span className="text-xs text-white/50">
-              Full details + scoring unlock after signup.
-            </span>
           </div>
         </div>
 

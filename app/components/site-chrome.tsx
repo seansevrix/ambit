@@ -17,7 +17,7 @@ export function SiteHeader() {
             Pricing
           </Link>
           <Link href="/demo-matches" className="text-sm text-white/80 hover:text-white">
-            Winning Opportunities
+            Demo Matches
           </Link>
           <Link href="/login" className="text-sm text-white/80 hover:text-white">
             Log In
@@ -25,8 +25,17 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-3">
+          {/* Subtle upgrade path (desktop only) */}
           <Link
-            href="/signup"
+            href="/get-started?plan=all"
+            className="hidden md:inline text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
+          >
+            All markets ($59.99)
+          </Link>
+
+          {/* Default CTA */}
+          <Link
+            href="/get-started?plan=single"
             className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/90"
           >
             Get Started
@@ -48,6 +57,9 @@ export function SiteFooter() {
           </Link>
           <Link href="/contact" className="hover:text-white">
             Contact
+          </Link>
+          <Link href="/pricing" className="hover:text-white">
+            Pricing
           </Link>
         </div>
       </div>

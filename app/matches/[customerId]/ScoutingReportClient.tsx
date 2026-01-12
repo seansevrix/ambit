@@ -50,6 +50,11 @@ type SortKey = "score" | "newest" | "closest";
 
 const PAGE_SIZE = 10;
 
+// Pricing tiers
+type PlanTier = "single" | "all";
+const PRICE_SINGLE = 39.99;
+const PRICE_ALL = 59.99;
+
 export default function ScoutingReportClient({ customerId }: { customerId: number }) {
   const searchParams = useSearchParams();
 
@@ -61,6 +66,26 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
 
+  // ✅ Plan selection (read from localStorage if available)
+  const [plan, setPlan] = useState<PlanTier>(() => {
+    if (typeof window === "undefined") return "single";
+    try {
+      const saved = localStorage.getItem("ambit_plan");
+      return saved === "all" ? "all" : "single";
+    } catch {
+      return "single";
+    }
+  });
+
+  // ✅ Persist plan changes
+  useEffect(() => {
+    try {
+      localStorage.setItem("ambit_plan", plan);
+    } catch {
+      // ignore
+    }
+  }, [plan]);
+
   // Pagination / Load more
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
@@ -69,9 +94,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const [starredOnly, setStarredOnly] = useState(false);
 
   // Used only for "Closest location" sorting
-  const [customerLoc, setCustomerLoc] = useState<{ city?: string; state?: string } | null>(
-    null
-  );
+  const [customerLoc, setCustomerLoc] = useState<{ city?: string; state?: string } | null>(null);
 
   const storageKey = useMemo(() => `ambit_starred_matches_${customerId}`, [customerId]);
 
@@ -160,14 +183,14 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     });
   }
 
-  // ✅ Fetch customer profile for "Closest location" sorting using SELF-SERVE endpoint
+  // Fetch customer profile for "Closest location" sorting using SELF-SERVE endpoint
   useEffect(() => {
     let cancelled = false;
 
     async function loadCustomerProfile() {
       try {
         const savedEmail = localStorage.getItem("ambit_email");
-        if (!savedEmail) return; // only works after user has loaded/saved their profile once
+        if (!savedEmail) return;
 
         const url = `${API_BASE}/engine/customers/${customerId}/profile?email=${encodeURIComponent(
           savedEmail
@@ -218,7 +241,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ customerId }),
+        body: JSON.stringify({ customerId, plan }),
       });
 
       const body = (await res.json().catch(() => ({}))) as any;
@@ -265,7 +288,6 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
       return list;
     }
 
-    // Closest location (best-effort): city+state -> state -> everything else
     const city = norm(customerLoc?.city);
     const state = norm(customerLoc?.state);
 
@@ -293,6 +315,13 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const visible = useMemo(() => finalList.slice(0, visibleCount), [finalList, visibleCount]);
   const canLoadMore = visibleCount < finalList.length;
 
+  const priceLabel = plan === "all" ? `$${PRICE_ALL.toFixed(2)}` : `$${PRICE_SINGLE.toFixed(2)}`;
+  const planTitle = plan === "all" ? "All markets" : "Single market";
+  const planDesc =
+    plan === "all"
+      ? "Track government + commercial + residential."
+      : "Track 1 lead type (choose 1 segment).";
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
       {/* Header */}
@@ -306,11 +335,9 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         </div>
 
         <div className="flex flex-wrap gap-2">
-          {/* ✅ NEW: Profile editor */}
           <ProfileEditor
             customerId={customerId}
             onSaved={() => {
-              // simplest: refresh the page so matches re-run
               window.location.reload();
             }}
           />
@@ -393,6 +420,45 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
             summaries, and next steps.
           </div>
 
+          {/* Plan picker */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={() => setPlan("single")}
+              className={`rounded-2xl border p-4 text-left transition ${
+                plan === "single"
+                  ? "border-blue-400/60 bg-blue-500/10 ring-2 ring-blue-500/20"
+                  : "border-white/10 bg-slate-950/20 hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-white">Single market</div>
+                <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                Track 1 lead type (choose 1 segment).
+              </div>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setPlan("all")}
+              className={`rounded-2xl border p-4 text-left transition ${
+                plan === "all"
+                  ? "border-blue-400/60 bg-blue-500/10 ring-2 ring-blue-500/20"
+                  : "border-white/10 bg-slate-950/20 hover:bg-white/5"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-sm font-semibold text-white">All markets</div>
+                <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
+              </div>
+              <div className="mt-1 text-sm text-white/70">
+                Government + commercial + residential.
+              </div>
+            </button>
+          </div>
+
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <PaywallPill title="Match score" body="Ranked leads that fit." />
             <PaywallPill title="Plain-English summary" body="Fast BID/NO-BID." />
@@ -401,9 +467,10 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm font-semibold text-white">AMBIT Pro</div>
+              <div className="text-sm font-semibold text-white">AMBIT Pro — {planTitle}</div>
               <div className="mt-1 text-sm text-white/70">
-                <span className="font-semibold text-white tabular-nums">$39.99</span> / month — cancel anytime
+                <span className="font-semibold text-white tabular-nums">{priceLabel}</span> / month —{" "}
+                {planDesc} Cancel anytime.
               </div>
             </div>
 
@@ -412,7 +479,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                 onClick={startCheckout}
                 className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
               >
-                Subscribe $39.99/mo
+                Subscribe {priceLabel}/mo
               </button>
               <button
                 onClick={load}
@@ -511,7 +578,6 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">
-                      {/* Star */}
                       <button
                         onClick={() => toggleStar(m.id)}
                         className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
@@ -521,12 +587,10 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                         {isStarred ? "★" : "☆"}
                       </button>
 
-                      {/* Score */}
                       <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white tabular-nums">
                         {clampScore(m.score)}
                       </span>
 
-                      {/* Source */}
                       {m.url ? (
                         <a href={m.url} target="_blank" rel="noreferrer">
                           <button className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white">
@@ -544,7 +608,6 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                     </div>
                   </div>
 
-                  {/* Optional summary */}
                   {m.summary ? (
                     <div className="mt-3 text-sm text-white/70 break-words">{m.summary}</div>
                   ) : null}
@@ -553,7 +616,6 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
             })}
           </div>
 
-          {/* Load more */}
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-white/50">
               {canLoadMore ? "Load more to see additional matches." : "You’re all caught up."}
