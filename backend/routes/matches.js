@@ -14,6 +14,8 @@ const STOP = new Set([
 ]);
 
 function tokenize(s = "") {
+  // ✅ harden against null/undefined
+  if (s == null) return [];
   return String(s)
     .toLowerCase()
     .split(/[^a-z0-9]+/g)
@@ -235,7 +237,8 @@ function scoreMatch(customer, opp) {
   return { score, reasons, profileIncomplete: false };
 }
 
-// GET /engine/matches/:customerId?limit=50
+// ✅ IMPORTANT: keep this path EXACTLY.
+// server.js mounts matchesRoutes at "/engine" so this becomes GET /engine/matches/:customerId
 router.get("/matches/:customerId", async (req, res) => {
   try {
     const customerId = Number(req.params.customerId);
@@ -248,6 +251,7 @@ router.get("/matches/:customerId", async (req, res) => {
       ? Math.max(1, Math.min(MAX_LIMIT, limitRaw))
       : DEFAULT_LIMIT;
 
+    // ✅ DO NOT select "segments" here (prod DB may not have the column yet)
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
       select: {
@@ -259,9 +263,6 @@ router.get("/matches/:customerId", async (req, res) => {
         naics: true,
         isActive: true,
         subscriptionStatus: true,
-
-        // ✅ NEW: segment preferences
-        segments: true,
       },
     });
 
@@ -274,17 +275,40 @@ router.get("/matches/:customerId", async (req, res) => {
       });
     }
 
-    // ✅ Segment filtering (safe defaults)
-    // If older customer record has no segments saved yet, show ALL.
+    // ✅ Try to load segments safely.
+    // If the column doesn't exist in prod, Prisma throws — we catch and default to ALL segments.
+    let segments = null;
+    try {
+      const segRow = await prisma.customer.findUnique({
+        where: { id: customerId },
+        select: { segments: true },
+      });
+      segments = segRow?.segments ?? null;
+    } catch (e) {
+      console.warn(
+        `[matches] segments unavailable in DB (customerId=${customerId}) — defaulting to ALL segments`
+      );
+      segments = null;
+    }
+
     const allowedSegments =
-      Array.isArray(customer.segments) && customer.segments.length > 0
-        ? customer.segments
+      Array.isArray(segments) && segments.length > 0
+        ? segments
         : ["residential", "commercial", "government"];
 
-    // ✅ Only pull opportunities in the customer’s selected segments
-    const opportunities = await prisma.opportunity.findMany({
-      where: { segment: { in: allowedSegments } },
-    });
+    // ✅ Pull opportunities in allowed segments. If that filter fails for any reason, fallback to all.
+    let opportunities = [];
+    try {
+      opportunities = await prisma.opportunity.findMany({
+        where: { segment: { in: allowedSegments } },
+      });
+    } catch (e) {
+      console.warn(
+        `[matches] opportunity segment filter failed — falling back to all opportunities`,
+        e?.message || e
+      );
+      opportunities = await prisma.opportunity.findMany();
+    }
 
     const raw = opportunities
       .map((opp) => {
@@ -295,7 +319,7 @@ router.get("/matches/:customerId", async (req, res) => {
           location: opp.location,
           naics: opp.naics,
 
-          segment: opp.segment, // ✅ include for frontend badges/tabs
+          segment: opp.segment,
           source: opp.source ?? null,
 
           keywords: opp.keywords ?? null,
@@ -317,11 +341,11 @@ router.get("/matches/:customerId", async (req, res) => {
 
     return res.json({
       customerId,
-      segments: allowedSegments, // ✅ helps frontend show what’s active
+      segments: allowedSegments,
       matches,
     });
   } catch (err) {
-    console.error("matches error:", err);
+    console.error("matches error:", err?.stack || err);
     return res.status(500).json({ message: "Failed to compute matches" });
   }
 });
