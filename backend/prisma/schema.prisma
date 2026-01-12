@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 generator client {
   provider = "prisma-client-js"
 }
@@ -25,10 +27,10 @@ model Customer {
   serviceArea String? // ✅ added (frontend sends this)
   services    String?
 
-  // ✅ NEW: selected markets from onboarding (multi-select)
+  // ✅ selected markets from onboarding (multi-select)
   segments OpportunitySegment[]
 
-  // ✅ NEW: where to ingest from (future-proof)
+  // ✅ where to ingest from (future-proof)
   // ex: ["sam","opengov"] or ["opengov"]
   sources String[]
 
@@ -38,7 +40,7 @@ model Customer {
   // comma-separated (ex: 237310,238220)
   naics String?
 
-  // ✅ NEW: NAICS as a real array too (frontend sends this)
+  // ✅ NAICS as a real array too (frontend sends this)
   naicsCodes String[]
 
   // Stripe / subscription gating
@@ -47,9 +49,15 @@ model Customer {
   subscriptionStatus   String?
   isActive             Boolean @default(false)
 
-  // ✅ Digest emails (Mon/Wed/Fri)
+  // ✅ Digest settings
   digestEnabled    Boolean   @default(true)
   lastDigestSentAt DateTime?
+
+  // ✅ Existing digest email send log (daily dedupe)
+  digestEmails DigestEmail[]
+
+  // ✅ NEW: Quiet-mode log (tracks MATCH / NO_MATCH / DAY + dedupe + cooldown)
+  digestLogs DigestLog[]
 
   // ✅ Integrations
   thumbtackIntegration ThumbtackIntegration?
@@ -57,6 +65,42 @@ model Customer {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ✅ NEW: General-purpose digest log (recommended for quiet mode)
+model DigestLog {
+  id         String   @id @default(cuid())
+  customerId Int
+  type       String   // "MATCH" | "NO_MATCH" | "DAY"
+  key        String   @unique
+  meta       Json?
+  sentAt     DateTime @default(now())
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, type, sentAt])
+}
+
+model DigestEmail {
+  id         Int    @id @default(autoincrement())
+  customerId Int
+  digestDate String // "YYYY-MM-DD" (UTC day key)
+
+  status   String  @default("running") // running | sent | failed
+  resendId String?
+  error    String?
+
+  matchKey   String?
+  matchTitle String?
+  matchUrl   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([customerId, digestDate], name: "customerId_digestDate")
+  @@index([customerId, matchKey])
 }
 
 model Opportunity {
@@ -89,7 +133,7 @@ model Opportunity {
   // optional debugging payload storage
   raw Json?
 
-  // ✅ FIX: opposite relation field for ThumbtackWebhookEvent.opportunity
+  // ✅ opposite relation field for ThumbtackWebhookEvent.opportunity
   thumbtackEvents ThumbtackWebhookEvent[]
 
   createdAt DateTime @default(now())
