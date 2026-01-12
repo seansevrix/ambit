@@ -7,6 +7,12 @@ const router = express.Router();
 
 // ---- Stripe setup ----
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
+
+// ✅ NEW: two-tier pricing
+const STRIPE_PRICE_SINGLE_ID = process.env.STRIPE_PRICE_SINGLE_ID || process.env.STRIPE_PRICE_SINGLE;
+const STRIPE_PRICE_ALL_ID = process.env.STRIPE_PRICE_ALL_ID || process.env.STRIPE_PRICE_ALL;
+
+// ✅ Back-compat (if you already had one price)
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID;
 
 // ✅ Trial settings
@@ -46,14 +52,12 @@ async function ensureStripeCustomer(customer) {
 
   const existingId = customer.stripeCustomerId ? String(customer.stripeCustomerId) : null;
 
-  // ✅ If we have a saved Stripe customer id, verify it exists in THIS Stripe environment/account
   if (existingId) {
     try {
       const existing = await stripe.customers.retrieve(existingId);
       if (existing && !existing.deleted) return existing.id;
     } catch (err) {
       const code = err?.code || err?.raw?.code;
-      // Most common: resource_missing (old ID). We will recreate.
       console.warn(
         "⚠️ Saved Stripe customerId invalid or not found; recreating:",
         code || err?.message || err
@@ -61,7 +65,6 @@ async function ensureStripeCustomer(customer) {
     }
   }
 
-  // ✅ Create a fresh Stripe customer
   const created = await stripe.customers.create({
     email: customer.email || undefined,
     name: customer.companyName || customer.name || undefined,
@@ -76,17 +79,26 @@ async function ensureStripeCustomer(customer) {
   return created.id;
 }
 
+function normalizePlan(p) {
+  const plan = String(p || "").toLowerCase().trim();
+  if (plan === "all" || plan === "all3" || plan === "all_markets") return "all";
+  return "single";
+}
+
+function pickPriceId(plan) {
+  // Prefer new env vars if set
+  if (plan === "all") {
+    return STRIPE_PRICE_ALL_ID || null;
+  }
+  return STRIPE_PRICE_SINGLE_ID || STRIPE_PRICE_ID || null; // fallback to old single price
+}
+
 /**
  * POST /engine/billing/create-checkout-session
- * Body: { customerId: number }
- *
- * ✅ Creates a Stripe Checkout Session for a subscription:
- * - 7-day free trial (configurable via STRIPE_TRIAL_DAYS)
- * - Credit card REQUIRED up front (payment_method_collection: "always")
+ * Body: { customerId: number, plan?: "single" | "all" }
  */
 async function createCheckoutSession(req, res) {
   try {
-    // --- basic config checks ---
     if (!stripe) {
       return res.status(500).json({
         ok: false,
@@ -94,18 +106,26 @@ async function createCheckoutSession(req, res) {
           "Stripe is not configured on the backend. Missing STRIPE_SECRET_KEY (or STRIPE_SECRET).",
       });
     }
-    if (!STRIPE_PRICE_ID) {
-      return res.status(500).json({
-        ok: false,
-        error: "Missing STRIPE_PRICE_ID on the backend env vars.",
-      });
-    }
 
     // --- validate body ---
-    const { customerId } = req.body || {};
+    const { customerId, plan: planRaw } = req.body || {};
     const id = Number(customerId);
     if (!id || !Number.isFinite(id)) {
       return res.status(400).json({ ok: false, error: "customerId is required." });
+    }
+
+    const plan = normalizePlan(planRaw);
+
+    // --- pick price ---
+    const priceId = pickPriceId(plan);
+    if (!priceId) {
+      return res.status(500).json({
+        ok: false,
+        error:
+          plan === "all"
+            ? "Missing STRIPE_PRICE_ALL_ID on backend env vars."
+            : "Missing STRIPE_PRICE_SINGLE_ID (or STRIPE_PRICE_ID) on backend env vars.",
+      });
     }
 
     // --- load customer ---
@@ -115,15 +135,15 @@ async function createCheckoutSession(req, res) {
     const stripeCustomerId = await ensureStripeCustomer(customer);
     const frontendBase = getFrontendBaseUrl(req);
 
-    const successUrl = `${frontendBase}/matches/${id}?checkout=success`;
-    const cancelUrl = `${frontendBase}/matches/${id}?checkout=cancel`;
+    const successUrl = `${frontendBase}/matches/${id}?checkout=success&plan=${plan}`;
+    const cancelUrl = `${frontendBase}/matches/${id}?checkout=cancel&plan=${plan}`;
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: stripeCustomerId,
 
-      // ✅ $39.99/month price
-      line_items: [{ price: STRIPE_PRICE_ID, quantity: 1 }],
+      // ✅ price chosen by plan
+      line_items: [{ price: priceId, quantity: 1 }],
 
       // ✅ REQUIRE a payment method (credit card) to start the trial
       payment_method_collection: "always",
@@ -133,16 +153,16 @@ async function createCheckoutSession(req, res) {
 
       allow_promotion_codes: true,
 
-      metadata: { customerId: String(id) },
+      metadata: { customerId: String(id), plan },
       client_reference_id: String(id),
 
       subscription_data: {
         trial_period_days: TRIAL_DAYS,
-        metadata: { customerId: String(id) },
+        metadata: { customerId: String(id), plan },
       },
     });
 
-    return res.status(200).json({ ok: true, url: session.url });
+    return res.status(200).json({ ok: true, url: session.url, plan });
   } catch (err) {
     console.error("Billing create-checkout-session error:", err);
     return res.status(500).json({
@@ -156,8 +176,6 @@ async function createCheckoutSession(req, res) {
  * POST /engine/billing/create-portal-session
  * Body: { customerId?: number, email?: string }
  * Returns: { ok: true, url }
- *
- * Sends the user to Stripe’s Customer Portal where they can cancel/update billing.
  */
 async function createPortalSession(req, res) {
   try {
@@ -172,7 +190,6 @@ async function createPortalSession(req, res) {
     const { customerId, email } = req.body || {};
     let customer = null;
 
-    // Prefer customerId if provided
     if (customerId != null && customerId !== "") {
       const id = Number(customerId);
       if (!id || !Number.isFinite(id)) {
@@ -217,6 +234,6 @@ router.post("/checkout", createCheckoutSession);
 
 // Portal routes
 router.post("/create-portal-session", createPortalSession);
-router.post("/portal", createPortalSession); // optional alias
+router.post("/portal", createPortalSession);
 
 export default router;
