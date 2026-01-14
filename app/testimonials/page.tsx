@@ -28,6 +28,29 @@ const TESTIMONIALS = [
     title: "Lead Estimator, Ironclad Electrical",
     location: "California, USA",
   },
+
+  // ✅ NEW 3 (added below the current ones)
+  {
+    quote:
+      "Navigating SAM.gov and local municipality sites used to be a full-time job for my admin team. AMBIT filters out the set-asides and complex compliance jargon, delivering only the government HVAC contracts we are actually qualified to win. It’s turned a chaotic bidding process into a streamlined pipeline.",
+    name: "Sarah Chen",
+    title: "Director of Operations, Federal Air Solutions",
+    location: "Virginia, USA",
+  },
+  {
+    quote:
+      "Managing maintenance bids for property groups used to mean endless site visits and manual tracking. With AMBIT, I get an immediate heads-up on upcoming RFP cycles for apartment complexes in my region. The platform identifies the high-volume commercial work that keeps my crews busy year-round.",
+    name: "Marcus Thorne",
+    title: "President, Thorne Commercial HVAC",
+    location: "Georgia, USA",
+  },
+  {
+    quote:
+      "Our goal was to stabilize our seasonal dips by growing our service agreements. Since starting with AMBIT, we’ve added 27 recurring residential accounts every month just by targeting the right neighborhoods at the right time. We’ve stopped chasing one-off repairs and started building a predictable, subscription-based business.",
+    name: "David Holloway",
+    title: "Founder, Holloway Home Comfort",
+    location: "Arizona, USA",
+  },
 ];
 
 export default function TestimonialsPage() {
@@ -54,8 +77,8 @@ export default function TestimonialsPage() {
             </h1>
 
             <p className="mt-2 max-w-2xl text-sm text-white/70">
-              Short, clear feedback from businesses using AMBIT to find and act on government
-              opportunities faster.
+              Short, clear feedback from businesses using AMBIT to find and act
+              on government opportunities faster.
             </p>
           </div>
 
@@ -78,14 +101,15 @@ export default function TestimonialsPage() {
           </div>
           <div className="mx-auto mt-2 h-[2px] w-16 rounded-full bg-white/30" />
           <p className="mx-auto mt-3 max-w-2xl text-sm text-white/70">
-            No fluff. Just what contractors care about: relevance, clarity, and speed.
+            No fluff. Just what contractors care about: relevance, clarity, and
+            speed.
           </p>
         </div>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
             <div
-              key={t.name}
+              key={`${t.name}-${t.location}`}
               className="relative rounded-2xl border border-white/10 bg-[#0B1430]/40 px-6 pb-6 pt-10"
             >
               <div className="absolute -top-7 left-1/2 -translate-x-1/2">
@@ -123,7 +147,8 @@ export default function TestimonialsPage() {
               Get ranked leads for your trade.
             </h2>
             <p className="mt-2 text-sm text-white/70">
-              Tell us your service area. AMBIT handles the scanning and scoring.
+              Tell us your service area. AMBIT handles the scanning and
+              scoring.
             </p>
           </div>
 
