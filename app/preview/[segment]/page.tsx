@@ -90,23 +90,6 @@ const TESTIMONIALS_BY_SEGMENT: Record<Segment, Testimonial> = {
   },
 };
 
-function TestimonialCard({ t }: { t: Testimonial }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="text-xs font-semibold tracking-widest text-white/55">
-        CUSTOMER TESTIMONIAL
-      </div>
-      <p className="mt-3 text-sm leading-relaxed text-white/80">“{t.quote}”</p>
-      <div className="mt-4 text-xs text-white/60">
-        <div className="font-semibold text-white/80">{t.name}</div>
-        <div>
-          {t.title} • {t.location}
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export default async function PreviewSegmentPage({
   params,
 }: {
@@ -121,7 +104,7 @@ export default async function PreviewSegmentPage({
   const segmentKey = seg as Segment;
   const data = getPreviewData(segmentKey);
 
-  // ✅ Default plan for this preview page = "single" (lowest friction)
+  // default (lowest friction)
   const startSingleHref = "/get-started?plan=single";
 
   const t = TESTIMONIALS_BY_SEGMENT[segmentKey];
@@ -160,10 +143,10 @@ export default async function PreviewSegmentPage({
         </div>
       </div>
 
-      {/* Cards */}
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
-        {/* Unlocked (smaller/tighter) */}
-        <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 md:col-span-2">
+      {/* ✅ Side-by-side (equal width) */}
+      <div className="mt-8 grid gap-5 md:grid-cols-2">
+        {/* Unlocked example */}
+        <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="absolute right-4 top-4 text-lg">🔓</div>
 
           <div className="text-[11px] font-semibold tracking-widest text-white/55">
@@ -186,7 +169,9 @@ export default async function PreviewSegmentPage({
             </span>
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-white/75">{data.unlocked.summary}</p>
+          <p className="mt-4 text-sm leading-relaxed text-white/75">
+            {data.unlocked.summary}
+          </p>
 
           <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
@@ -201,33 +186,39 @@ export default async function PreviewSegmentPage({
           </div>
         </div>
 
-        {/* Testimonials column (replaces locked opportunities) */}
-        <div className="grid gap-5">
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
-            <div className="text-[11px] font-semibold tracking-widest text-white/55">
-              RESULTS
-            </div>
-            <div className="mt-2 text-sm font-semibold text-white/85">
-              Real contractors use AMBIT to find better-fit work faster.
-            </div>
+        {/* Testimonial (same size as unlocked) */}
+        <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+          <div className="text-[11px] font-semibold tracking-widest text-white/55">
+            CUSTOMER TESTIMONIAL
+          </div>
 
-            <div className="mt-4 flex flex-col gap-2">
-              <Link
-                href={startSingleHref}
-                className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B] text-center"
-              >
-                Start Free Trial
-              </Link>
-              <Link
-                href="/testimonials"
-                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white text-center"
-              >
-                Read More Testimonials
-              </Link>
+          <div className="mt-2 text-sm font-semibold text-white/85">
+            Read the result, then unlock the matches.
+          </div>
+
+          <p className="mt-4 text-sm leading-relaxed text-white/80">“{t.quote}”</p>
+
+          <div className="mt-4 text-xs text-white/60">
+            <div className="font-semibold text-white/80">{t.name}</div>
+            <div>
+              {t.title} • {t.location}
             </div>
           </div>
 
-          <TestimonialCard t={t} />
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
+            <Link
+              href={startSingleHref}
+              className="flex-1 rounded-xl bg-[#1A4FA3] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#15428B]"
+            >
+              Start Free Trial
+            </Link>
+            <Link
+              href="/testimonials"
+              className="flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-center text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+            >
+              Read More
+            </Link>
+          </div>
         </div>
       </div>
     </div>
