@@ -59,17 +59,50 @@ function getPreviewData(segment: Segment) {
   };
 }
 
-function LockedCard({ index }: { index: number }) {
+type Testimonial = {
+  quote: string;
+  name: string;
+  title: string;
+  location: string;
+};
+
+const TESTIMONIALS_BY_SEGMENT: Record<Segment, Testimonial> = {
+  residential: {
+    quote:
+      "Before AMBIT, our residential 'hit list' was stagnant. Now, we’re adding over 30 new maintenance agreements every single month by hitting the right doors. We’ve successfully shifted from chasing one-off repairs to building a massive, predictable monthly income stream.",
+    name: "Jeff Holloway",
+    title: "Owner, Holloway Air & Heat",
+    location: "Florida, USA",
+  },
+  commercial: {
+    quote:
+      "Our commercial portfolio was hit-or-miss until we started with AMBIT. By focusing on high-density business corridors, we’ve secured 12 new long-term commercial contracts in the last quarter alone. We’ve moved away from bidding on scraps and shifted toward high-margin, predictable monthly revenue that keeps our crews busy year-round.",
+    name: "Khalil Johnson",
+    title: "President, Johnson Commercial Solutions",
+    location: "Georgia, USA",
+  },
+  government: {
+    quote:
+      "Breaking into the public sector always felt out of reach until we partnered with AMBIT. They helped us identify and win specific municipal service bids that we used to overlook. We’ve added three major government maintenance contracts this year, giving us a level of stability and monthly recurring income we never thought possible in the plumbing industry.",
+    name: "Gustavo Hernandez",
+    title: "Founder, Hernandez Plumbing & Infrastructure",
+    location: "Texas, USA",
+  },
+};
+
+function TestimonialCard({ t }: { t: Testimonial }) {
   return (
-    <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5">
-      <div className="absolute right-4 top-4 text-lg">🔒</div>
-      <div className="text-sm font-semibold text-white/80">Locked opportunity #{index}</div>
-      <div className="mt-2 text-xs text-white/55">
-        Start your trial to unlock full details, scoring, and matches.
+    <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+      <div className="text-xs font-semibold tracking-widest text-white/55">
+        CUSTOMER TESTIMONIAL
       </div>
-      <div className="mt-4 h-2 w-2/3 rounded bg-white/10" />
-      <div className="mt-2 h-2 w-1/2 rounded bg-white/10" />
-      <div className="mt-2 h-2 w-3/4 rounded bg-white/10" />
+      <p className="mt-3 text-sm leading-relaxed text-white/80">“{t.quote}”</p>
+      <div className="mt-4 text-xs text-white/60">
+        <div className="font-semibold text-white/80">{t.name}</div>
+        <div>
+          {t.title} • {t.location}
+        </div>
+      </div>
     </div>
   );
 }
@@ -89,9 +122,9 @@ export default async function PreviewSegmentPage({
   const data = getPreviewData(segmentKey);
 
   // ✅ Default plan for this preview page = "single" (lowest friction)
-  // (If you want segment-specific default, tell me and I’ll switch it.)
   const startSingleHref = "/get-started?plan=single";
-  const startAllHref = "/get-started?plan=all";
+
+  const t = TESTIMONIALS_BY_SEGMENT[segmentKey];
 
   return (
     <div className="mx-auto w-full max-w-7xl">
@@ -106,29 +139,6 @@ export default async function PreviewSegmentPage({
               {data.headline}
             </h1>
             <p className="mt-2 max-w-2xl text-sm text-white/70">{data.sub}</p>
-
-            {/* ✅ NEW: quick pricing clarity */}
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">Single market</div>
-                  <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
-                </div>
-                <div className="mt-1 text-xs text-white/65">
-                  Track 1 lead type (choose Residential OR Commercial OR Government).
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-blue-400/25 bg-blue-500/10 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">All markets</div>
-                  <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
-                </div>
-                <div className="mt-1 text-xs text-white/70">
-                  Track all 3 lead types for maximum coverage.
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="flex flex-col items-stretch gap-3 md:items-end">
@@ -146,25 +156,20 @@ export default async function PreviewSegmentPage({
                 View Pricing
               </Link>
             </div>
-
-            <Link
-              href={startAllHref}
-              className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
-            >
-              Want all 3 markets? Start $59.99 plan →
-            </Link>
           </div>
         </div>
       </div>
 
       {/* Cards */}
       <div className="mt-8 grid gap-5 md:grid-cols-3">
-        {/* Unlocked */}
-        <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5 md:col-span-2">
+        {/* Unlocked (smaller/tighter) */}
+        <div className="relative rounded-2xl border border-white/10 bg-white/5 p-4 md:col-span-2">
           <div className="absolute right-4 top-4 text-lg">🔓</div>
 
-          <div className="text-xs font-semibold text-white/55">UNLOCKED EXAMPLE</div>
-          <div className="mt-2 text-xl font-bold text-white">{data.unlocked.title}</div>
+          <div className="text-[11px] font-semibold tracking-widest text-white/55">
+            UNLOCKED EXAMPLE
+          </div>
+          <div className="mt-2 text-lg font-bold text-white">{data.unlocked.title}</div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/80">
@@ -183,33 +188,46 @@ export default async function PreviewSegmentPage({
 
           <p className="mt-4 text-sm leading-relaxed text-white/75">{data.unlocked.summary}</p>
 
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <Link
-                href={startSingleHref}
-                className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
-              >
-                Unlock matches
-              </Link>
-              <span className="text-xs text-white/50">
-                Full details + scoring unlock after signup.
-              </span>
-            </div>
-
+          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
-              href={startAllHref}
-              className="text-xs font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/50"
+              href={startSingleHref}
+              className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
             >
-              Prefer full coverage? $59.99/mo →
+              Unlock matches
             </Link>
+            <span className="text-xs text-white/50">
+              Full details + scoring unlock after signup.
+            </span>
           </div>
         </div>
 
-        {/* Locked column */}
+        {/* Testimonials column (replaces locked opportunities) */}
         <div className="grid gap-5">
-          <LockedCard index={1} />
-          <LockedCard index={2} />
-          <LockedCard index={3} />
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
+            <div className="text-[11px] font-semibold tracking-widest text-white/55">
+              RESULTS
+            </div>
+            <div className="mt-2 text-sm font-semibold text-white/85">
+              Real contractors use AMBIT to find better-fit work faster.
+            </div>
+
+            <div className="mt-4 flex flex-col gap-2">
+              <Link
+                href={startSingleHref}
+                className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B] text-center"
+              >
+                Start Free Trial
+              </Link>
+              <Link
+                href="/testimonials"
+                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white text-center"
+              >
+                Read More Testimonials
+              </Link>
+            </div>
+          </div>
+
+          <TestimonialCard t={t} />
         </div>
       </div>
     </div>
