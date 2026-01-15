@@ -49,6 +49,10 @@ model Customer {
   subscriptionStatus   String?
   isActive             Boolean @default(false)
 
+  // ✅ NEW: No-CC trial
+  trialStartedAt DateTime?
+  trialEndsAt    DateTime?
+
   // ✅ Digest settings
   digestEnabled    Boolean   @default(true)
   lastDigestSentAt DateTime?
