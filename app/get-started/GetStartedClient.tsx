@@ -130,15 +130,9 @@ export default function GetStartedClient() {
       if (prev.size <= 1) return prev;
 
       const order: SegmentKey[] = ["government", "commercial", "residential"];
-      const keep =
-        order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
-      hookupNoop();
+      const keep = order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
       return new Set<SegmentKey>([keep]);
     });
-
-    function hookupNoop() {
-      // no-op helper to keep this effect stable in some tooling
-    }
   }, [plan]);
 
   const naicsParsed = useMemo(() => parseNaicsList(naicsInput), [naicsInput]);
@@ -148,9 +142,8 @@ export default function GetStartedClient() {
   const segmentsCsv = useMemo(() => segmentsList.join(","), [segmentsList]);
 
   const govSelected = useMemo(() => segments.has("government"), [segments]);
-  const emailLooksOk = useMemo(() => email.trim().includes("@"), [email]);
 
-  // ✅ NAICS is OPTIONAL (keywords + markets are enough to start)
+  // ✅ NAICS optional (keywords + markets are enough to start)
   const canSubmit = useMemo(() => {
     const baseOk =
       companyName.trim().length >= 2 &&
@@ -306,7 +299,6 @@ export default function GetStartedClient() {
               </div>
             </button>
 
-            {/* ✅ FIXED: badge is inline, no overlap */}
             <button
               type="button"
               onClick={() => setPlan("all")}
@@ -343,7 +335,7 @@ export default function GetStartedClient() {
         </section>
 
         {/* FORM */}
-        <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
+        <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur text-left">
           <div className="grid gap-6">
             {/* BASIC INFO */}
             <div>
@@ -353,10 +345,11 @@ export default function GetStartedClient() {
                 </div>
               </div>
 
-              <div className="grid gap-4 md:grid-cols-2">
+              {/* ✅ items-start + text-left inputs to keep them "straight" */}
+              <div className="grid items-start gap-4 md:grid-cols-2">
                 <Field label="Company name">
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     placeholder="Your company name"
@@ -367,7 +360,7 @@ export default function GetStartedClient() {
                 <Field label="Email">
                   <input
                     type="email"
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@email.com"
@@ -383,7 +376,7 @@ export default function GetStartedClient() {
               <div className="mt-4">
                 <Field label="Service area">
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={serviceArea}
                     onChange={(e) => setServiceArea(e.target.value)}
                     placeholder="City, State or Nationwide"
@@ -483,7 +476,7 @@ export default function GetStartedClient() {
 
               <Field label="NAICS codes (optional)">
                 <input
-                  className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                  className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                   value={naicsInput}
                   onChange={(e) => setNaicsInput(e.target.value)}
                   onBlur={() => setNaicsTouched(true)}
@@ -517,7 +510,7 @@ export default function GetStartedClient() {
               <div className="mt-4">
                 <Field label="Keywords (required)">
                   <input
-                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={keywords}
                     onChange={(e) => setKeywords(e.target.value)}
                     placeholder="asphalt, striping, concrete"
@@ -530,7 +523,6 @@ export default function GetStartedClient() {
               </div>
             </div>
 
-            {/* Honest next-step trust box */}
             <div className="rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
               <div className="font-semibold text-white">Next:</div>
               We’ll generate your first matches in your portal. You can refine this profile anytime.
@@ -552,7 +544,6 @@ export default function GetStartedClient() {
 
             <div className="text-center text-xs text-slate-300">
               Secure checkout by Stripe • Cancel anytime • No spam
-              {!emailLooksOk ? " • Enter a valid email to continue" : null}
             </div>
           </div>
         </section>
@@ -589,7 +580,7 @@ function Divider() {
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <label className="grid gap-2">
+    <label className="grid gap-2 text-left">
       <div className="text-xs font-semibold text-slate-200">{label}</div>
       {children}
     </label>
