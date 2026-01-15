@@ -259,6 +259,7 @@ router.get("/matches/:customerId", async (req, res) => {
           naics: true,
           isActive: true,
           subscriptionStatus: true,
+          trialEndsAt: true, // ✅ added for no-CC trial access
         },
       });
     } catch (e) {
@@ -267,10 +268,16 @@ router.get("/matches/:customerId", async (req, res) => {
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    if (!customer.isActive) {
+    // ✅ TRIAL-AWARE PAYWALL:
+    // Allow if active OR trial still running
+    const trialActive =
+      customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > Date.now();
+
+    if (!customer.isActive && !trialActive) {
       return res.status(402).json({
         message: "Subscription required",
         subscriptionStatus: customer.subscriptionStatus ?? "inactive",
+        trialEndedAt: customer.trialEndsAt ?? null,
       });
     }
 
@@ -345,8 +352,6 @@ router.get("/matches/:customerId", async (req, res) => {
           const s = scoreMatch(customer, opp);
 
           // ✅ location cleanup:
-          // - If location is a string but contains "[object Object]" => treat as null (data is already corrupted)
-          // - If location is an object => JSON stringify it
           const safeLocation =
             typeof opp.location === "string"
               ? (opp.location.includes("[object Object]") ? null : opp.location)
@@ -391,6 +396,11 @@ router.get("/matches/:customerId", async (req, res) => {
     return res.json({
       customerId,
       segments: allowedSegments,
+      // optional: return trial info so frontend can show it
+      access: {
+        isActive: Boolean(customer.isActive),
+        trialEndsAt: customer.trialEndsAt ?? null,
+      },
       matches,
     });
   } catch (err) {
