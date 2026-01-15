@@ -1,7 +1,7 @@
 // backend/routes/customers.js
 import express from "express";
 import crypto from "crypto";
-import prisma from "../lib/prisma.js"; // ✅ make sure this matches your actual file name
+import prisma from "../lib/prisma.js";
 
 const router = express.Router();
 
@@ -79,7 +79,7 @@ function normEmail(v) {
 }
 
 /**
- * ✅ New helpers: arrays + segments
+ * ✅ Array helpers
  */
 function normalizeStringArray(v) {
   if (v === null || v === undefined) return undefined;
@@ -147,9 +147,41 @@ function normalizeNaicsCodes(v) {
   return uniq.length ? uniq : undefined;
 }
 
+// ✅ Ingestion sources (NOT markets)
+const VALID_SOURCES = new Set(["sam", "opengov", "planhub", "thumbtack"]);
+
+// returns string[] of known ingestion sources, or undefined
+function normalizeSources(v) {
+  const arr = normalizeStringArray(v);
+  if (!arr) return undefined;
+
+  const cleaned = arr
+    .map((x) => cleanStr(x).toLowerCase())
+    .filter(Boolean)
+    .filter((x) => VALID_SOURCES.has(x));
+
+  const seen = new Set();
+  const uniq = [];
+  for (const x of cleaned) {
+    if (!seen.has(x)) {
+      seen.add(x);
+      uniq.push(x);
+    }
+  }
+
+  return uniq.length ? uniq : undefined;
+}
+
+// ✅ 7-day trial helper
+function buildTrialWindow(days = 7) {
+  const now = new Date();
+  const ms = days * 24 * 60 * 60 * 1000;
+  const trialEndsAt = new Date(now.getTime() + ms);
+  return { now, trialEndsAt };
+}
+
 /**
  * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
- * Allows customers to update NAICS + location (and optional keywords/services)
  *
  * GET   /engine/customers/:id/profile?email=...
  * PATCH /engine/customers/:id/profile   { email, location, naics, keywords, services, name }
@@ -175,13 +207,17 @@ router.get("/customers/:id/profile", async (req, res) => {
         name: true,
         email: true,
         location: true,
-        serviceArea: true, // ✅ include
+        serviceArea: true,
         naics: true,
-        naicsCodes: true, // ✅ include
+        naicsCodes: true,
         keywords: true,
         services: true,
-        segments: true, // ✅ include
-        sources: true, // ✅ include
+        segments: true,
+        sources: true,
+        isActive: true,
+        subscriptionStatus: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
         updatedAt: true,
       },
     });
@@ -238,7 +274,7 @@ router.patch("/customers/:id/profile", async (req, res) => {
 
     // Optional (safe)
     const segments = normalizeSegments(body.segments);
-    const sources = normalizeStringArray(body.sources);
+    const sources = normalizeSources(body.sources);
     const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
 
     const data = {};
@@ -253,7 +289,6 @@ router.patch("/customers/:id/profile", async (req, res) => {
     if (sources !== undefined) data.sources = sources;
     if (naicsCodes !== undefined) data.naicsCodes = naicsCodes;
 
-    // If they sent nothing to update
     if (Object.keys(data).length === 0) {
       return res.status(400).json({ ok: false, error: "No fields provided to update." });
     }
@@ -293,6 +328,8 @@ router.get("/customers", async (req, res) => {
         subscriptionStatus: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -332,6 +369,8 @@ router.get("/customers/:id", async (req, res) => {
         subscriptionStatus: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -345,7 +384,7 @@ router.get("/customers/:id", async (req, res) => {
   }
 });
 
-// ✅ POST /engine/customers (create or update)
+// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC)
 router.post("/customers", async (req, res) => {
   try {
     const body = req.body || {};
@@ -370,18 +409,33 @@ router.post("/customers", async (req, res) => {
     const keywords = normalizeComma(body.keywords);
     const naics = normalizeComma(body.naics);
 
-    // NEW: arrays (safe)
+    // arrays
     const segments = normalizeSegments(body.segments);
-    const sources = normalizeStringArray(body.sources);
+    const sources = normalizeSources(body.sources); // ingestion sources only
     const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
 
-    // ✅ IMPORTANT DEFAULTS on CREATE (because these are array fields now)
-    // We default segments to ALL markets (matches your frontend default).
+    // ✅ IMPORTANT DEFAULTS on CREATE
     const segmentsForCreate = segments ?? ["residential", "commercial", "government"];
-    // Default sources to ["sam"] so current behavior stays the same until we add OpenGov.
     const sourcesForCreate = sources ?? ["sam"];
-    // Default naicsCodes to [] if not provided
     const naicsCodesForCreate = naicsCodes ?? [];
+
+    // Look up existing so we can conditionally start a trial (no CC)
+    const existing = await prisma.customer.findUnique({
+      where: { email },
+      select: {
+        id: true,
+        isActive: true,
+        subscriptionStatus: true,
+        trialStartedAt: true,
+        trialEndsAt: true,
+      },
+    });
+
+    const shouldStartTrial =
+      !existing ||
+      (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
+
+    const { now, trialEndsAt } = buildTrialWindow(7);
 
     // Only update what caller actually sent
     const updateData = {};
@@ -401,6 +455,14 @@ router.post("/customers", async (req, res) => {
     if (sources !== undefined) updateData.sources = sources;
     if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
+    // ✅ Start a 7-day trial if they don’t have one and aren’t active
+    if (shouldStartTrial) {
+      updateData.trialStartedAt = now;
+      updateData.trialEndsAt = trialEndsAt;
+      // Only set subscriptionStatus if empty
+      if (!existing?.subscriptionStatus) updateData.subscriptionStatus = "TRIALING";
+    }
+
     const customer = await prisma.customer.upsert({
       where: { email },
       update: updateData,
@@ -415,10 +477,16 @@ router.post("/customers", async (req, res) => {
         keywords: keywords ?? null,
         naics: naics ?? null,
 
-        // ✅ required arrays on create
+        // required arrays on create
         segments: segmentsForCreate,
         sources: sourcesForCreate,
         naicsCodes: naicsCodesForCreate,
+
+        // trial fields (no credit card required)
+        trialStartedAt: now,
+        trialEndsAt,
+        subscriptionStatus: "TRIALING",
+        isActive: false,
 
         // passwordHash stays null until register
       },
