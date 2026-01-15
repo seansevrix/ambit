@@ -143,7 +143,7 @@ export default function GetStartedClient() {
 
   const govSelected = useMemo(() => segments.has("government"), [segments]);
 
-  // ✅ NAICS optional (keywords + markets are enough to start)
+  // NAICS optional
   const canSubmit = useMemo(() => {
     const baseOk =
       companyName.trim().length >= 2 &&
@@ -188,8 +188,8 @@ export default function GetStartedClient() {
         email: mail,
         location: loc,
         serviceArea: loc,
-        naics: naicsCsv, // can be ""
-        naicsCodes: naicsParsed.valid, // can be []
+        naics: naicsCsv,
+        naicsCodes: naicsParsed.valid,
         keywords: kw,
         segments: segmentsList,
         sources: segmentsList,
@@ -233,6 +233,25 @@ export default function GetStartedClient() {
       </div>
 
       <div className="relative mx-auto max-w-6xl px-6 py-12">
+        {/* ✅ 7-DAY FREE TRIAL BANNER */}
+        <div className="sticky top-3 z-20 mx-auto mb-8 max-w-4xl">
+          <div className="rounded-2xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-sm text-slate-100 shadow-lg backdrop-blur">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-1 text-xs font-semibold">
+                  7-day free trial
+                </span>
+                <span className="text-sm font-semibold text-white">
+                  Try AMBIT risk-free for 7 days.
+                </span>
+              </div>
+              <div className="text-xs text-slate-200">
+                Secure checkout by Stripe • Cancel anytime • No spam
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* HERO */}
         <header className="mx-auto max-w-4xl text-center">
           <div className="mx-auto flex items-center justify-center gap-3">
@@ -244,26 +263,11 @@ export default function GetStartedClient() {
             </div>
           </div>
 
-          <h1 className="mt-7 text-4xl font-semibold tracking-tight sm:text-5xl">
+          <h1 className="mt-3 text-4xl font-semibold tracking-tight sm:text-5xl">
             Create your profile
           </h1>
 
-          <div className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-semibold text-slate-200">
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              7-day free trial
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              Secure checkout (Stripe)
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              Cancel anytime
-            </span>
-            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              No spam
-            </span>
-          </div>
-
-          <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-slate-200">
+          <p className="mx-auto mt-4 max-w-3xl text-base leading-relaxed text-slate-200">
             Create a quick profile, then view your first matches in your portal.
             <span className="text-white/85"> You can refine markets, keywords, and NAICS anytime.</span>
           </p>
@@ -345,7 +349,6 @@ export default function GetStartedClient() {
                 </div>
               </div>
 
-              {/* ✅ items-start + text-left inputs to keep them "straight" */}
               <div className="grid items-start gap-4 md:grid-cols-2">
                 <Field label="Company name">
                   <input
