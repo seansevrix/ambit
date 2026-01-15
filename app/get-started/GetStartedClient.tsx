@@ -130,9 +130,15 @@ export default function GetStartedClient() {
       if (prev.size <= 1) return prev;
 
       const order: SegmentKey[] = ["government", "commercial", "residential"];
-      const keep = order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
+      const keep =
+        order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
+      hookupNoop();
       return new Set<SegmentKey>([keep]);
     });
+
+    function hookupNoop() {
+      // no-op helper to keep this effect stable in some tooling
+    }
   }, [plan]);
 
   const naicsParsed = useMemo(() => parseNaicsList(naicsInput), [naicsInput]);
@@ -144,7 +150,7 @@ export default function GetStartedClient() {
   const govSelected = useMemo(() => segments.has("government"), [segments]);
   const emailLooksOk = useMemo(() => email.trim().includes("@"), [email]);
 
-  // ✅ NAICS is now OPTIONAL (keywords + markets are enough to start)
+  // ✅ NAICS is OPTIONAL (keywords + markets are enough to start)
   const canSubmit = useMemo(() => {
     const baseOk =
       companyName.trim().length >= 2 &&
@@ -183,8 +189,6 @@ export default function GetStartedClient() {
         localStorage.setItem("ambit_email", mail);
       } catch {}
 
-      // If NAICS input exists but none valid, don't block — just ignore it.
-      // (Better conversion. Keywords still drive matching.)
       const payload: any = {
         name: company,
         companyName: company,
@@ -291,32 +295,41 @@ export default function GetStartedClient() {
                   : "border-white/10 bg-slate-950/25 hover:bg-slate-950/35",
               ].join(" ")}
             >
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold text-white">Single market</div>
-                <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
+                <div className="whitespace-nowrap text-sm font-bold text-white tabular-nums">
+                  $39.99/mo
+                </div>
               </div>
               <div className="mt-1 text-xs text-slate-300">
                 Choose ONE: Residential OR Commercial OR Government
               </div>
             </button>
 
+            {/* ✅ FIXED: badge is inline, no overlap */}
             <button
               type="button"
               onClick={() => setPlan("all")}
               className={[
-                "rounded-2xl border px-4 py-4 text-left transition relative overflow-hidden",
+                "rounded-2xl border px-4 py-4 text-left transition",
                 plan === "all"
                   ? "border-blue-400/60 bg-blue-500/15 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]"
                   : "border-white/10 bg-slate-950/25 hover:bg-slate-950/35",
               ].join(" ")}
             >
-              <div className="absolute right-3 top-3 rounded-full border border-blue-400/30 bg-blue-500/20 px-2 py-1 text-[11px] font-semibold text-white/90">
-                Most popular
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <div className="text-sm font-semibold text-white">All markets</div>
+                  <span className="whitespace-nowrap rounded-full border border-blue-400/30 bg-blue-500/20 px-2 py-1 text-[11px] font-semibold text-white/90">
+                    Most popular
+                  </span>
+                </div>
+
+                <div className="whitespace-nowrap text-sm font-bold text-white tabular-nums">
+                  $59.99/mo
+                </div>
               </div>
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold text-white">All markets</div>
-                <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
-              </div>
+
               <div className="mt-1 text-xs text-slate-300">
                 Government + Commercial + Residential
               </div>
