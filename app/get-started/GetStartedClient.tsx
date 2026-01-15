@@ -51,6 +51,7 @@ function parseNaicsList(raw: string) {
     hasInvalid:
       parts.length > 0 &&
       cleaned.some((t) => t.length > 0 && !isValidNaicsToken(t)),
+    hadInput: parts.length > 0,
   };
 }
 
@@ -140,27 +141,22 @@ export default function GetStartedClient() {
   const segmentsList = useMemo(() => Array.from(segments), [segments]);
   const segmentsCsv = useMemo(() => segmentsList.join(","), [segmentsList]);
 
+  const govSelected = useMemo(() => segments.has("government"), [segments]);
+  const emailLooksOk = useMemo(() => email.trim().includes("@"), [email]);
+
+  // ✅ NAICS is now OPTIONAL (keywords + markets are enough to start)
   const canSubmit = useMemo(() => {
     const baseOk =
       companyName.trim().length >= 2 &&
       email.trim().includes("@") &&
       serviceArea.trim().length >= 2 &&
       keywords.trim().length >= 2 &&
-      naicsParsed.hasAny &&
       segments.size > 0;
 
     if (!baseOk) return false;
     if (plan === "single") return segments.size === 1;
     return true;
-  }, [
-    companyName,
-    email,
-    serviceArea,
-    keywords,
-    naicsParsed.hasAny,
-    segments.size,
-    plan,
-  ]);
+  }, [companyName, email, serviceArea, keywords, segments.size, plan]);
 
   async function createCustomer() {
     setErr("");
@@ -171,11 +167,6 @@ export default function GetStartedClient() {
       const mail = email.trim().toLowerCase();
       const loc = serviceArea.trim();
       const kw = keywords.trim();
-
-      if (!naicsParsed.hasAny) {
-        setNaicsTouched(true);
-        throw new Error("Please enter at least one valid NAICS code (2–6 digits each).");
-      }
 
       if (segments.size === 0) {
         setSegmentsTouched(true);
@@ -192,14 +183,16 @@ export default function GetStartedClient() {
         localStorage.setItem("ambit_email", mail);
       } catch {}
 
+      // If NAICS input exists but none valid, don't block — just ignore it.
+      // (Better conversion. Keywords still drive matching.)
       const payload: any = {
         name: company,
         companyName: company,
         email: mail,
         location: loc,
         serviceArea: loc,
-        naics: naicsCsv,
-        naicsCodes: naicsParsed.valid,
+        naics: naicsCsv, // can be ""
+        naicsCodes: naicsParsed.valid, // can be []
         keywords: kw,
         segments: segmentsList,
         sources: segmentsList,
@@ -260,20 +253,22 @@ export default function GetStartedClient() {
 
           <div className="mt-5 flex flex-wrap justify-center gap-2 text-xs font-semibold text-slate-200">
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              Built for contractors
+              7-day free trial
             </span>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
-              Save hours weekly
+              Secure checkout (Stripe)
             </span>
             <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
               Cancel anytime
             </span>
+            <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 backdrop-blur">
+              No spam
+            </span>
           </div>
 
           <p className="mx-auto mt-6 max-w-3xl text-base leading-relaxed text-slate-200">
-            AMBIT scans daily and ranks opportunities by fit.{" "}
-            <span className="font-semibold text-white">$39.99/mo</span> tracks one market, and{" "}
-            <span className="font-semibold text-white">$59.99/mo</span> tracks all three.
+            Create a quick profile, then view your first matches in your portal.
+            <span className="text-white/85"> You can refine markets, keywords, and NAICS anytime.</span>
           </p>
         </header>
 
@@ -309,12 +304,15 @@ export default function GetStartedClient() {
               type="button"
               onClick={() => setPlan("all")}
               className={[
-                "rounded-2xl border px-4 py-4 text-left transition",
+                "rounded-2xl border px-4 py-4 text-left transition relative overflow-hidden",
                 plan === "all"
                   ? "border-blue-400/60 bg-blue-500/15 shadow-[0_0_0_1px_rgba(59,130,246,0.20)]"
                   : "border-white/10 bg-slate-950/25 hover:bg-slate-950/35",
               ].join(" ")}
             >
+              <div className="absolute right-3 top-3 rounded-full border border-blue-400/30 bg-blue-500/20 px-2 py-1 text-[11px] font-semibold text-white/90">
+                Most popular
+              </div>
               <div className="flex items-center justify-between">
                 <div className="text-sm font-semibold text-white">All markets</div>
                 <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
@@ -337,7 +335,9 @@ export default function GetStartedClient() {
             {/* BASIC INFO */}
             <div>
               <div className="mb-3 flex items-center justify-between">
-                <div className="text-xs font-semibold tracking-widest text-slate-300">BASIC INFO</div>
+                <div className="text-xs font-semibold tracking-widest text-slate-300">
+                  STEP 1 OF 2 • BASIC INFO
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -346,17 +346,24 @@ export default function GetStartedClient() {
                     className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
-                    placeholder="Sevrix LLC"
+                    placeholder="Your company name"
+                    autoComplete="organization"
                   />
                 </Field>
 
                 <Field label="Email">
                   <input
+                    type="email"
                     className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="you@company.com"
+                    placeholder="you@email.com"
+                    autoComplete="email"
                   />
+                  <div className="mt-2 text-xs text-slate-300">
+                    We only use this for your daily digest + login.{" "}
+                    <span className="text-white/80 font-semibold">No spam.</span>
+                  </div>
                 </Field>
               </div>
 
@@ -366,7 +373,8 @@ export default function GetStartedClient() {
                     className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                     value={serviceArea}
                     onChange={(e) => setServiceArea(e.target.value)}
-                    placeholder="San Diego, CA"
+                    placeholder="City, State or Nationwide"
+                    autoComplete="address-level2"
                   />
                 </Field>
               </div>
@@ -456,9 +464,11 @@ export default function GetStartedClient() {
 
             {/* TARGETING */}
             <div>
-              <div className="mb-3 text-xs font-semibold tracking-widest text-slate-300">TARGETING</div>
+              <div className="mb-3 text-xs font-semibold tracking-widest text-slate-300">
+                STEP 2 OF 2 • TARGETING
+              </div>
 
-              <Field label="NAICS codes (required)">
+              <Field label="NAICS codes (optional)">
                 <input
                   className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
                   value={naicsInput}
@@ -469,13 +479,24 @@ export default function GetStartedClient() {
                 />
 
                 <div className="mt-2 text-xs text-slate-300">
-                  Add as many as you want. 6 digits is best (example:{" "}
-                  <span className="font-semibold text-white">237310</span>).
+                  NAICS improves accuracy, but you can start with keywords only.{" "}
+                  {govSelected ? (
+                    <span className="text-white/80 font-semibold">
+                      (For Government matches, NAICS helps a lot.)
+                    </span>
+                  ) : null}
                 </div>
 
-                {naicsTouched && !naicsParsed.hasAny ? (
-                  <div className="mt-2 text-xs text-red-200">
-                    Enter at least one valid NAICS code (2–6 digits each).
+                {naicsTouched && naicsParsed.hadInput && !naicsParsed.hasAny ? (
+                  <div className="mt-2 text-xs text-amber-200">
+                    We couldn’t parse any valid NAICS codes — we’ll rely on keywords. Use 2–6 digits
+                    separated by commas.
+                  </div>
+                ) : null}
+
+                {naicsTouched && naicsParsed.hasInvalid ? (
+                  <div className="mt-2 text-xs text-amber-200">
+                    Some entries look invalid and will be ignored.
                   </div>
                 ) : null}
               </Field>
@@ -488,12 +509,18 @@ export default function GetStartedClient() {
                     onChange={(e) => setKeywords(e.target.value)}
                     placeholder="asphalt, striping, concrete"
                   />
+                  <div className="mt-2 text-xs text-slate-300">
+                    Think services + equipment + materials. Example: “dumpster rental, hauling,
+                    demolition”.
+                  </div>
                 </Field>
               </div>
             </div>
 
+            {/* Honest next-step trust box */}
             <div className="rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
-              Great news: we’ve found high-potential opportunities tailored to your profile.
+              <div className="font-semibold text-white">Next:</div>
+              We’ll generate your first matches in your portal. You can refine this profile anytime.
             </div>
 
             {err ? (
@@ -507,66 +534,35 @@ export default function GetStartedClient() {
               onClick={createCustomer}
               className="inline-flex items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {loading ? "Creating…" : "Show My Matches"}
+              {loading ? "Creating profile…" : "Create profile → View matches"}
             </button>
 
             <div className="text-center text-xs text-slate-300">
-              No long-term contracts. Pause or cancel in one click.
+              Secure checkout by Stripe • Cancel anytime • No spam
+              {!emailLooksOk ? " • Enter a valid email to continue" : null}
             </div>
           </div>
         </section>
 
-        {/* WHAT YOU GET + PRICING */}
+        {/* WHAT YOU GET */}
         <section className="mx-auto mt-12 max-w-5xl">
           <div className="text-center text-xs font-semibold tracking-widest text-slate-300">
             WHAT YOU GET
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <FeatureCard title="Know what’s worth chasing" body="A match score that helps you ignore the junk and move fast." />
-            <FeatureCard title="Understand it in 60 seconds" body="Plain-English summaries so you can decide quickly." />
-            <FeatureCard title="Wake up to new leads" body="We scan daily and email only when there’s something worth chasing." />
-          </div>
-
-          <div className="mt-6 rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="text-sm font-semibold text-white">Pricing</div>
-                <div className="mt-1 text-xs text-slate-300">7-day free trial. Cancel anytime.</div>
-              </div>
-
-              <div className="text-sm text-white/70">
-                Selected: <span className="font-semibold text-white">{planTitle}</span>{" "}
-                <span className="mx-2 opacity-40">•</span>{" "}
-                <span className="font-semibold text-white tabular-nums">{priceLabel}/mo</span>
-              </div>
-            </div>
-
-            <div className="mt-5 grid gap-3 md:grid-cols-2">
-              <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">Single market</div>
-                  <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
-                </div>
-                <div className="mt-1 text-sm text-slate-200">
-                  Track 1: Government OR Commercial OR Residential.
-                </div>
-              </div>
-
-              <div className="rounded-2xl border border-blue-400/25 bg-blue-500/10 p-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold text-white">All markets</div>
-                  <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
-                </div>
-                <div className="mt-1 text-sm text-slate-200">
-                  Track all 3 lead types for maximum coverage.
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-5 rounded-2xl border border-white/10 bg-slate-950/20 p-4 text-sm text-slate-200">
-              Tip: You can refine markets, NAICS, and keywords anytime to tighten matches.
-            </div>
+            <FeatureCard
+              title="Know what’s worth chasing"
+              body="A match score that helps you ignore the junk and move fast."
+            />
+            <FeatureCard
+              title="Understand it in 60 seconds"
+              body="Plain-English summaries so you can decide quickly."
+            />
+            <FeatureCard
+              title="Wake up to new leads"
+              body="We scan daily and send ranked matches. Quiet mode included."
+            />
           </div>
         </section>
       </div>
