@@ -87,8 +87,10 @@ export default function GetStartedClient() {
 
   const [plan, setPlan] = useState<PlanTier>("single");
 
-  // ✅ Start empty so user picks market first
-  const [segments, setSegments] = useState<Set<SegmentKey>>(() => new Set<SegmentKey>());
+  // ✅ keep your old behavior (default all selected), single-plan effect will reduce to 1 automatically
+  const [segments, setSegments] = useState<Set<SegmentKey>>(
+    () => new Set<SegmentKey>(["residential", "commercial", "government"])
+  );
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
@@ -126,11 +128,7 @@ export default function GetStartedClient() {
     if (plan !== "single") return;
 
     setSegments((prev) => {
-      // if user hasn't picked yet, leave empty
-      if (prev.size === 0) return prev;
-
-      // single plan must have exactly one
-      if (prev.size === 1) return prev;
+      if (prev.size <= 1) return prev;
 
       const order: SegmentKey[] = ["government", "commercial", "residential"];
       const keep =
@@ -146,8 +144,6 @@ export default function GetStartedClient() {
   const segmentsCsv = useMemo(() => segmentsList.join(","), [segmentsList]);
 
   const govSelected = useMemo(() => segments.has("government"), [segments]);
-
-  const marketSelected = segments.size > 0;
 
   // NAICS optional
   const canSubmit = useMemo(() => {
@@ -228,7 +224,7 @@ export default function GetStartedClient() {
   const planDesc =
     plan === "all"
       ? "Track Government + Commercial + Residential."
-      : "Track 1 lead type (choose ONE market).";
+      : "Track 1 lead type (see markets below).";
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-gradient-to-b from-[#061033] via-[#040b24] to-[#020617] text-slate-100">
@@ -347,11 +343,11 @@ export default function GetStartedClient() {
         {/* FORM */}
         <section className="mx-auto mt-10 max-w-4xl rounded-[32px] border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur text-left">
           <div className="grid gap-6">
-            {/* ✅ MARKETS FIRST */}
+            {/* ✅ MARKETS (moved BEFORE Step 1, but NOT gated) */}
             <div>
               <div className="mb-3 flex items-center justify-between">
                 <div className="text-xs font-semibold tracking-widest text-slate-300">
-                  START HERE • MARKET
+                  MARKET
                 </div>
 
                 {plan === "all" ? (
@@ -416,153 +412,144 @@ export default function GetStartedClient() {
 
               <div className="mt-3 text-xs text-slate-300">
                 {plan === "single"
-                  ? "Choose ONE market to continue."
+                  ? "Single market plan allows ONE selection."
                   : "Choose one or more markets. You can change this later."}
               </div>
 
-              {segmentsTouched && plan === "single" && segments.size !== 1 && segments.size > 0 ? (
+              {segmentsTouched && plan === "single" && segments.size !== 1 ? (
                 <div className="mt-2 text-xs text-red-200">
                   Single market plan requires exactly ONE market.
                 </div>
               ) : null}
-
-              {!marketSelected ? (
-                <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
-                  Select a market above to continue.
-                </div>
-              ) : null}
             </div>
 
-            {marketSelected ? (
-              <>
-                <Divider />
+            <Divider />
 
-                {/* ✅ STEP 1: BASIC INFO + TARGETING (in your requested order) */}
-                <div>
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="text-xs font-semibold tracking-widest text-slate-300">
-                      STEP 1 OF 2 • BASIC INFO
-                    </div>
-                    <div className="text-xs font-semibold text-white/60">~60 seconds</div>
-                  </div>
-
-                  <div className="grid items-start gap-4 md:grid-cols-2">
-                    <Field label="Company name">
-                      <input
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        value={companyName}
-                        onChange={(e) => setCompanyName(e.target.value)}
-                        placeholder="Your company name"
-                        autoComplete="organization"
-                      />
-                    </Field>
-
-                    <Field label="Email">
-                      <input
-                        type="email"
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@email.com"
-                        autoComplete="email"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="mt-4">
-                    <Field label="Service area">
-                      <input
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        value={serviceArea}
-                        onChange={(e) => setServiceArea(e.target.value)}
-                        placeholder="City, State or Nationwide"
-                        autoComplete="address-level2"
-                      />
-                    </Field>
-                  </div>
-
-                  <div className="mt-4">
-                    <Field label="Keywords (required)">
-                      <input
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        value={keywords}
-                        onChange={(e) => setKeywords(e.target.value)}
-                        placeholder="asphalt, striping, concrete"
-                      />
-                      <div className="mt-2 text-xs text-slate-300">
-                        Think services + equipment + materials. Example: “dumpster rental, hauling, demolition”.
-                      </div>
-                    </Field>
-                  </div>
-
-                  <div className="mt-4">
-                    <Field label="NAICS codes (optional)">
-                      <input
-                        className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-                        value={naicsInput}
-                        onChange={(e) => setNaicsInput(e.target.value)}
-                        onBlur={() => setNaicsTouched(true)}
-                        placeholder="237310, 238220, 561730"
-                        inputMode="text"
-                      />
-
-                      <div className="mt-2 text-xs text-slate-300">
-                        NAICS improves accuracy, but you can start with keywords only.{" "}
-                        {govSelected ? (
-                          <span className="text-white/80 font-semibold">
-                            (For Government matches, NAICS helps a lot.)
-                          </span>
-                        ) : null}
-                      </div>
-
-                      {naicsTouched && naicsParsed.hadInput && !naicsParsed.hasAny ? (
-                        <div className="mt-2 text-xs text-amber-200">
-                          We couldn’t parse any valid NAICS codes — we’ll rely on keywords. Use 2–6 digits separated by commas.
-                        </div>
-                      ) : null}
-
-                      {naicsTouched && naicsParsed.hasInvalid ? (
-                        <div className="mt-2 text-xs text-amber-200">
-                          Some entries look invalid and will be ignored.
-                        </div>
-                      ) : null}
-                    </Field>
-                  </div>
+            {/* ✅ STEP 1 (new order) */}
+            <div>
+              <div className="mb-3 flex items-center justify-between">
+                <div className="text-xs font-semibold tracking-widest text-slate-300">
+                  STEP 1 OF 2 • BASIC INFO
                 </div>
+              </div>
 
-                <Divider />
+              <div className="grid items-start gap-4 md:grid-cols-2">
+                <Field label="Company name">
+                  <input
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="Your company name"
+                    autoComplete="organization"
+                  />
+                </Field>
 
-                {/* ✅ STEP 2: FINISH */}
-                <div>
-                  <div className="mb-3 text-xs font-semibold tracking-widest text-slate-300">
-                    STEP 2 OF 2 • FINISH
+                <Field label="Email">
+                  <input
+                    type="email"
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@email.com"
+                    autoComplete="email"
+                  />
+                  {/* ✅ deleted the extra microcopy line */}
+                </Field>
+              </div>
+
+              <div className="mt-4">
+                <Field label="Service area">
+                  <input
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    value={serviceArea}
+                    onChange={(e) => setServiceArea(e.target.value)}
+                    placeholder="City, State or Nationwide"
+                    autoComplete="address-level2"
+                  />
+                </Field>
+              </div>
+
+              <div className="mt-4">
+                <Field label="Keywords (required)">
+                  <input
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    value={keywords}
+                    onChange={(e) => setKeywords(e.target.value)}
+                    placeholder="asphalt, striping, concrete"
+                  />
+                  <div className="mt-2 text-xs text-slate-300">
+                    Think services + equipment + materials. Example: “dumpster rental, hauling, demolition”.
+                  </div>
+                </Field>
+              </div>
+
+              <div className="mt-4">
+                <Field label="NAICS codes (optional)">
+                  <input
+                    className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-left text-sm text-white placeholder:text-slate-400 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+                    value={naicsInput}
+                    onChange={(e) => setNaicsInput(e.target.value)}
+                    onBlur={() => setNaicsTouched(true)}
+                    placeholder="237310, 238220, 561730"
+                    inputMode="text"
+                  />
+
+                  <div className="mt-2 text-xs text-slate-300">
+                    NAICS improves accuracy, but you can start with keywords only.{" "}
+                    {govSelected ? (
+                      <span className="text-white/80 font-semibold">
+                        (For Government matches, NAICS helps a lot.)
+                      </span>
+                    ) : null}
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
-                    <div className="font-semibold text-white">Next:</div>
-                    We’ll generate your first matches in your portal. You can refine this profile anytime.
-                  </div>
-
-                  {err ? (
-                    <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
-                      {err}
+                  {naicsTouched && naicsParsed.hadInput && !naicsParsed.hasAny ? (
+                    <div className="mt-2 text-xs text-amber-200">
+                      We couldn’t parse any valid NAICS codes — we’ll rely on keywords. Use 2–6 digits
+                      separated by commas.
                     </div>
                   ) : null}
 
-                  <button
-                    disabled={!canSubmit || loading}
-                    onClick={createCustomer}
-                    className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                    {loading ? "Creating profile…" : "Create profile → View matches"}
-                  </button>
+                  {naicsTouched && naicsParsed.hasInvalid ? (
+                    <div className="mt-2 text-xs text-amber-200">
+                      Some entries look invalid and will be ignored.
+                    </div>
+                  ) : null}
+                </Field>
+              </div>
+            </div>
 
-                  <div className="mt-3 text-center text-xs text-slate-300">
-                    No credit card required • Cancel anytime • No spam
-                  </div>
+            <Divider />
+
+            {/* ✅ STEP 2 (simple finish) */}
+            <div>
+              <div className="mb-3 text-xs font-semibold tracking-widest text-slate-300">
+                STEP 2 OF 2 • FINISH
+              </div>
+
+              <div className="rounded-2xl border border-white/10 bg-slate-950/20 px-4 py-3 text-sm text-slate-200">
+                <div className="font-semibold text-white">Next:</div>
+                We’ll generate your first matches in your portal. You can refine this profile anytime.
+              </div>
+
+              {err ? (
+                <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+                  {err}
                 </div>
-              </>
-            ) : null}
+              ) : null}
+
+              <button
+                disabled={!canSubmit || loading}
+                onClick={createCustomer}
+                className="mt-5 inline-flex w-full items-center justify-center rounded-2xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-600/20 hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {loading ? "Creating profile…" : "Create profile → View matches"}
+              </button>
+
+              <div className="mt-3 text-center text-xs text-slate-300">
+                No credit card required • Cancel anytime • No spam
+              </div>
+            </div>
           </div>
         </section>
 
