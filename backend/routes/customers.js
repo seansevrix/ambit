@@ -6,6 +6,49 @@ import prisma from "../lib/prisma.js";
 const router = express.Router();
 
 /**
+ * Email helpers (Resend via fetch)
+ * Required env:
+ *  - RESEND_API_KEY
+ *  - RESEND_FROM   (example: "ambit@sevrixgov.com" or "AMBIT <ambit@sevrixgov.com>")
+ *
+ * Optional env:
+ *  - ADMIN_NOTIFY_EMAIL (default: sean.s@sevrixgov.com)
+ */
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "sean.s@sevrixgov.com";
+
+async function sendResendEmail({ to, subject, html, text }) {
+  const key = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM;
+
+  if (!key || !from) {
+    console.log("[email] skipping (missing RESEND_API_KEY or RESEND_FROM)");
+    return null;
+  }
+
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${key}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from,
+      to,
+      subject,
+      html,
+      text,
+    }),
+  });
+
+  if (!res.ok) {
+    const msg = await res.text().catch(() => "");
+    throw new Error(`Resend error ${res.status}: ${msg}`);
+  }
+
+  return await res.json().catch(() => ({}));
+}
+
+/**
  * SECURITY:
  * In production, GET endpoints require an admin key.
  * Set ADMIN_API_KEY in Render, then call:
@@ -84,13 +127,11 @@ function normEmail(v) {
 function normalizeStringArray(v) {
   if (v === null || v === undefined) return undefined;
 
-  // allow ["a","b"]
   if (Array.isArray(v)) {
     const arr = v.map((x) => cleanStr(x)).filter(Boolean);
     return arr.length ? arr : undefined;
   }
 
-  // allow "a,b,c"
   const s = cleanStr(v);
   if (!s) return undefined;
   const parts = s
@@ -102,7 +143,6 @@ function normalizeStringArray(v) {
 
 const VALID_SEGMENTS = new Set(["government", "commercial", "residential"]);
 
-// returns array of enum strings (lowercase) or undefined
 function normalizeSegments(v) {
   const arr = normalizeStringArray(v);
   if (!arr) return undefined;
@@ -112,7 +152,6 @@ function normalizeSegments(v) {
     .filter(Boolean)
     .filter((x) => VALID_SEGMENTS.has(x));
 
-  // unique, keep order
   const seen = new Set();
   const uniq = [];
   for (const x of cleaned) {
@@ -125,7 +164,6 @@ function normalizeSegments(v) {
   return uniq.length ? uniq : undefined;
 }
 
-// normalize NAICS codes array (digits only, max 6)
 function normalizeNaicsCodes(v) {
   const arr = normalizeStringArray(v);
   if (!arr) return undefined;
@@ -150,7 +188,6 @@ function normalizeNaicsCodes(v) {
 // ✅ Ingestion sources (NOT markets)
 const VALID_SOURCES = new Set(["sam", "opengov", "planhub", "thumbtack"]);
 
-// returns string[] of known ingestion sources, or undefined
 function normalizeSources(v) {
   const arr = normalizeStringArray(v);
   if (!arr) return undefined;
@@ -182,12 +219,9 @@ function buildTrialWindow(days = 7) {
 
 /**
  * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
- *
- * GET   /engine/customers/:id/profile?email=...
- * PATCH /engine/customers/:id/profile   { email, location, naics, keywords, services, name }
  */
 
-// ✅ GET profile (prefill editor)
+// GET profile
 router.get("/customers/:id/profile", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -224,7 +258,6 @@ router.get("/customers/:id/profile", async (req, res) => {
 
     if (!customer) return res.status(404).json({ ok: false, error: "Not found" });
 
-    // Simple proof-of-ownership (MVP): email must match the customer record
     if (normEmail(customer.email) !== email) {
       return res.status(401).json({ ok: false, error: "Email does not match this customer." });
     }
@@ -236,7 +269,7 @@ router.get("/customers/:id/profile", async (req, res) => {
   }
 });
 
-// ✅ PATCH profile (save changes)
+// PATCH profile
 router.patch("/customers/:id/profile", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -261,10 +294,8 @@ router.patch("/customers/:id/profile", async (req, res) => {
       return res.status(401).json({ ok: false, error: "Email does not match this customer." });
     }
 
-    // Allow these fields to be updated by the customer
     const name = optionalStr(body.name) || optionalStr(body.companyName);
 
-    // Support both location and serviceArea inputs
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
     const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
 
@@ -272,7 +303,6 @@ router.patch("/customers/:id/profile", async (req, res) => {
     const keywords = normalizeComma(body.keywords);
     const services = optionalStr(body.services);
 
-    // Optional (safe)
     const segments = normalizeSegments(body.segments);
     const sources = normalizeSources(body.sources);
     const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
@@ -283,7 +313,7 @@ router.patch("/customers/:id/profile", async (req, res) => {
     if (serviceArea !== undefined) data.serviceArea = serviceArea;
     if (naics !== undefined) data.naics = naics;
     if (keywords !== undefined) data.keywords = keywords;
-    if (services !== undefined) data.services = services;
+    if (services !==undefined) data.services = services;
 
     if (segments !== undefined) data.segments = segments;
     if (sources !== undefined) data.sources = sources;
@@ -294,7 +324,6 @@ router.patch("/customers/:id/profile", async (req, res) => {
     }
 
     await prisma.customer.update({ where: { id }, data });
-
     return res.json({ ok: true });
   } catch (err) {
     console.error("PATCH /engine/customers/:id/profile error:", err);
@@ -306,7 +335,6 @@ router.patch("/customers/:id/profile", async (req, res) => {
  * ✅ ADMIN-ONLY ENDPOINTS (PROTECTED IN PROD)
  */
 
-// ✅ GET /engine/customers
 router.get("/customers", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
@@ -342,7 +370,6 @@ router.get("/customers", async (req, res) => {
   }
 });
 
-// ✅ GET /engine/customers/:id
 router.get("/customers/:id", async (req, res) => {
   try {
     if (!requireAdmin(req, res)) return;
@@ -384,23 +411,19 @@ router.get("/customers/:id", async (req, res) => {
   }
 });
 
-// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC)
+// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC) + ADMIN NOTIFY ON NEW
 router.post("/customers", async (req, res) => {
   try {
     const body = req.body || {};
-
     const email = normalizeEmail(body.email);
 
     const providedName = optionalStr(body.name) || optionalStr(body.companyName);
     const emailPrefix = email.includes("@") ? email.split("@")[0] : email;
-
-    // name is required by Prisma schema on CREATE
     const nameForCreate = providedName || emailPrefix || "Customer";
 
     const phone = optionalStr(body.phone);
     const industry = optionalStr(body.industry);
 
-    // Support both location and serviceArea inputs
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
     const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
 
@@ -409,17 +432,14 @@ router.post("/customers", async (req, res) => {
     const keywords = normalizeComma(body.keywords);
     const naics = normalizeComma(body.naics);
 
-    // arrays
     const segments = normalizeSegments(body.segments);
-    const sources = normalizeSources(body.sources); // ingestion sources only
+    const sources = normalizeSources(body.sources); // ingest sources only
     const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
 
-    // ✅ IMPORTANT DEFAULTS on CREATE
     const segmentsForCreate = segments ?? ["residential", "commercial", "government"];
-    const sourcesForCreate = sources ?? ["sam"];
+    const sourcesForCreate = sources ?? ["sam", "opengov"];
     const naicsCodesForCreate = naicsCodes ?? [];
 
-    // Look up existing so we can conditionally start a trial (no CC)
     const existing = await prisma.customer.findUnique({
       where: { email },
       select: {
@@ -431,13 +451,14 @@ router.post("/customers", async (req, res) => {
       },
     });
 
+    const isNewSignup = !existing;
+
     const shouldStartTrial =
       !existing ||
       (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
 
     const { now, trialEndsAt } = buildTrialWindow(7);
 
-    // Only update what caller actually sent
     const updateData = {};
     if (providedName) updateData.name = providedName;
     if (phone !== undefined) updateData.phone = phone;
@@ -450,16 +471,13 @@ router.post("/customers", async (req, res) => {
     if (keywords !== undefined) updateData.keywords = keywords;
     if (naics !== undefined) updateData.naics = naics;
 
-    // Only update arrays when provided (don’t clobber existing)
     if (segments !== undefined) updateData.segments = segments;
-    if (sources !== undefined) updateData.sources = sources;
+    if (sources !== undefined) updateData.sources = sources; // only if valid
     if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
-    // ✅ Start a 7-day trial if they don’t have one and aren’t active
     if (shouldStartTrial) {
       updateData.trialStartedAt = now;
       updateData.trialEndsAt = trialEndsAt;
-      // Only set subscriptionStatus if empty
       if (!existing?.subscriptionStatus) updateData.subscriptionStatus = "TRIALING";
     }
 
@@ -476,21 +494,40 @@ router.post("/customers", async (req, res) => {
         services: services ?? null,
         keywords: keywords ?? null,
         naics: naics ?? null,
-
-        // required arrays on create
         segments: segmentsForCreate,
         sources: sourcesForCreate,
         naicsCodes: naicsCodesForCreate,
-
-        // trial fields (no credit card required)
         trialStartedAt: now,
         trialEndsAt,
         subscriptionStatus: "TRIALING",
         isActive: false,
-
-        // passwordHash stays null until register
       },
     });
+
+    // ✅ Email Sean on NEW signup only (do not block response)
+    if (isNewSignup) {
+      const subject = `New AMBIT signup: ${customer.email}`;
+      const html = `
+        <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
+          <h2 style="margin:0 0 8px">New AMBIT signup</h2>
+          <p style="margin:0 0 12px"><b>${customer.email}</b> just created a profile.</p>
+          <ul style="margin:0;padding-left:18px">
+            <li><b>Name:</b> ${customer.name || "—"}</li>
+            <li><b>Location:</b> ${customer.location || customer.serviceArea || "—"}</li>
+            <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
+            <li><b>NAICS:</b> ${customer.naics || "—"}</li>
+            <li><b>Keywords:</b> ${customer.keywords || "—"}</li>
+            <li><b>Trial ends:</b> ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}</li>
+          </ul>
+        </div>
+      `;
+      sendResendEmail({
+        to: ADMIN_NOTIFY_EMAIL,
+        subject,
+        html,
+        text: `New AMBIT signup: ${customer.email}`,
+      }).catch((e) => console.error("[email] admin signup notify failed:", e?.message || e));
+    }
 
     return res.status(200).json(customer);
   } catch (err) {
