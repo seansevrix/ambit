@@ -2,10 +2,12 @@ import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
+type Segment = "Residential" | "Commercial" | "Government";
+
 type Opportunity = {
   title: string;
   location: string;
-  segment: "Residential" | "Commercial" | "Government";
+  segment: Segment;
   source: string;
   value?: string;
   naics?: string;
@@ -161,11 +163,40 @@ const OPPORTUNITIES: Opportunity[] = [
   },
 ];
 
-function badgeClasses(seg: Opportunity["segment"]) {
+function badgeClasses(seg: Segment) {
   if (seg === "Government") return "bg-emerald-600/10 text-emerald-200 border-emerald-500/20";
   if (seg === "Commercial") return "bg-indigo-600/10 text-indigo-200 border-indigo-500/20";
   return "bg-blue-600/10 text-blue-200 border-blue-500/20";
 }
+
+function interleave(opps: Opportunity[]) {
+  const buckets: Record<Segment, Opportunity[]> = {
+    Residential: [],
+    Commercial: [],
+    Government: [],
+  };
+
+  for (const o of opps) buckets[o.segment].push(o);
+
+  const order: Segment[] = ["Residential", "Commercial", "Government"];
+  const out: Opportunity[] = [];
+
+  let added = true;
+  while (added) {
+    added = false;
+    for (const seg of order) {
+      const next = buckets[seg].shift();
+      if (next) {
+        out.push(next);
+        added = true;
+      }
+    }
+  }
+
+  return out;
+}
+
+const SORTED = interleave(OPPORTUNITIES);
 
 export default function LiveOpportunitiesPage() {
   return (
@@ -199,7 +230,7 @@ export default function LiveOpportunitiesPage() {
           </div>
 
           <div className="mt-8 grid gap-4">
-            {OPPORTUNITIES.map((o, idx) => (
+            {SORTED.map((o, idx) => (
               <div
                 key={`${o.segment}-${o.title}-${idx}`}
                 className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur"
