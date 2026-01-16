@@ -1,8 +1,11 @@
 // backend/jobs/sendDigestMwf.js
-// DAILY digest job (QUIET MODE):
+// DAILY digest job (QUIET MODE + TRIAL-ENDED UPSELL):
 // - Runs every day (cron controls schedule)
-// - Sends ONLY when there is a NEW match (top 1)
-// - If there are NO new matches, sends the NO_MATCHES_TEXT only once every X days
+// - If customer is ACTIVE or TRIAL ACTIVE:
+//    - Sends ONLY when there is a NEW match (top 1)
+//    - If NO new matches: sends NO_MATCHES_TEXT only once every X days
+// - If customer is NOT active AND TRIAL ENDED:
+//    - Sends DAILY "Your matches are waiting — upgrade" email (NO match details)
 // - Prevents double-send on the same day (uses DigestLog if available; otherwise DigestEmail)
 
 import "dotenv/config";
@@ -170,6 +173,52 @@ function buildHtml({
   `;
 }
 
+// ✅ Trial-ended upsell email (NO match details)
+function buildUpsellHtml({
+  customerId,
+  email,
+  portalUrl,
+  upgradeUrl,
+  signupUrl,
+  unsubscribeUrl,
+  companyAddress,
+  supportEmail,
+}) {
+  const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
+
+  return `
+    <div style="font-family:Arial,sans-serif;line-height:1.5">
+      <h2 style="margin:0 0 10px">Your AMBIT matches are waiting</h2>
+      <div style="color:#444;margin-bottom:14px">
+        <div><strong>Customer ID:</strong> ${customerId}</div>
+        <div><strong>Registered Email:</strong> ${email}</div>
+      </div>
+
+      <p style="margin:0 0 12px">
+        Your free trial ended, so daily match delivery is paused.
+      </p>
+
+      <p style="margin:0 0 12px">
+        Upgrade to resume <strong>daily matched opportunities</strong> in your inbox.
+      </p>
+
+      <p style="margin:16px 0 0">
+        <a href="${upgradeUrl}" target="_blank"
+           style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
+          Upgrade to resume daily matches
+        </a>
+        <span style="display:inline-block;width:10px"></span>
+        <a href="${portalUrl}" target="_blank"
+           style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111;color:#111">
+          Open portal
+        </a>
+      </p>
+
+      ${footer}
+    </div>
+  `;
+}
+
 // ---------- "new match" logic (dedupe) ----------
 
 function isoDayKeyUTC(d = new Date()) {
@@ -212,6 +261,25 @@ function buildMatchKey(m) {
   return `fb:${title}|${location}|${naics}|${posted}`;
 }
 
+function trialIsActive(trialEndsAt) {
+  if (!trialEndsAt) return false;
+  const t = new Date(trialEndsAt).getTime();
+  return Number.isFinite(t) && t > Date.now();
+}
+function trialIsEnded(trialEndsAt) {
+  if (!trialEndsAt) return false;
+  const t = new Date(trialEndsAt).getTime();
+  return Number.isFinite(t) && t <= Date.now();
+}
+
+function isLikelyAnonEmail(email) {
+  const e = String(email || "").toLowerCase();
+  if (!e) return true;
+  if (e.endsWith("@ambit.local")) return true;
+  if (!e.includes("@")) return true;
+  return false;
+}
+
 async function main() {
   const FROM = process.env.EMAIL_FROM; // e.g. "AMBIT <ambit@sevrixgov.com>"
   const BACKEND_URL = process.env.BACKEND_URL; // e.g. https://ambit-0dnp.onrender.com
@@ -223,8 +291,8 @@ async function main() {
   const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
   const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "ambit@sevrixgov.com";
 
-  const FETCH_LIMIT = Number(process.env.DIGEST_FETCH_LIMIT || 50); // fetch more to find a "new" one
-  const DEDUPE_DAYS = Number(process.env.DIGEST_DEDUPE_DAYS || 60);  // how far back to remember sent matches
+  const FETCH_LIMIT = Number(process.env.DIGEST_FETCH_LIMIT || 50);
+  const DEDUPE_DAYS = Number(process.env.DIGEST_DEDUPE_DAYS || 60);
 
   // ✅ Quiet mode knob (no-match email only once every X days)
   const NO_MATCH_COOLDOWN_DAYS = Number(process.env.NO_MATCH_COOLDOWN_DAYS || 7);
@@ -237,16 +305,15 @@ async function main() {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
-  // If you added DigestLog model, Prisma client will have prisma.digestLog at runtime.
   const hasDigestLog = !!prisma.digestLog;
 
-  // ✅ Only email customers who are active AND have digest enabled
+  // ✅ Include TRIAL customers too, and handle trial-ended upsell
   const customers = await prisma.customer.findMany({
-    where: { isActive: true, digestEnabled: true },
-    select: { id: true, email: true },
+    where: { digestEnabled: true },
+    select: { id: true, email: true, isActive: true, trialEndsAt: true },
   });
 
-  console.log(`Active customers (digest enabled): ${customers.length}`);
+  console.log(`Customers (digest enabled): ${customers.length}`);
   console.log(`Using FROM: ${FROM}`);
   console.log(`Quiet mode: NO_MATCH_COOLDOWN_DAYS=${NO_MATCH_COOLDOWN_DAYS}`);
   console.log(`Using DigestLog: ${hasDigestLog ? "YES" : "NO (fallback to DigestEmail)"}`);
@@ -258,7 +325,12 @@ async function main() {
     const customerId = c.id;
 
     try {
-      // 0) Already emailed today? (only counts if we actually SENT something)
+      if (isLikelyAnonEmail(c.email)) continue;
+
+      const accessAllowed = Boolean(c.isActive) || trialIsActive(c.trialEndsAt);
+      const shouldUpsell = !c.isActive && trialIsEnded(c.trialEndsAt);
+
+      // 0) Already emailed today?
       if (hasDigestLog) {
         const dayLogKey = `DAY:${customerId}:${todayKey}`;
         const dayLog = await prisma.digestLog.findUnique({
@@ -280,12 +352,99 @@ async function main() {
         }
       }
 
-      // 1) Fetch matches
+      // 1) Trial ended -> send DAILY upsell email (no match details)
+      if (shouldUpsell) {
+        const ts = Date.now().toString();
+        const sig = signUnsub(c.email, ts, process.env.UNSUBSCRIBE_SECRET);
+
+        const unsubscribeUrl = `${UNSUB_BASE}?email=${encodeURIComponent(
+          c.email
+        )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
+
+        const portalUrl = `${APP_URL}/matches/${customerId}`;
+        const upgradeUrl = `${APP_URL}/matches/${customerId}?upgrade=1`;
+
+        const subject = "Your AMBIT matches are waiting — upgrade to resume";
+        const html = buildUpsellHtml({
+          customerId,
+          email: c.email,
+          portalUrl,
+          upgradeUrl,
+          signupUrl: SIGNUP_URL,
+          unsubscribeUrl,
+          companyAddress: COMPANY_ADDRESS,
+          supportEmail: SUPPORT_EMAIL,
+        });
+
+        const text = `Your free trial ended, so daily match delivery is paused.\nUpgrade to resume: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
+
+        const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
+        const listUnsubscribeHttp = unsubscribeUrl;
+        const listUnsubscribe = `<${listUnsubscribeHttp}>, <${listUnsubscribeMailto}>`;
+
+        await prisma.digestEmail.upsert({
+          where: { customerId_digestDate: { customerId, digestDate: todayKey } },
+          create: { customerId, digestDate: todayKey, status: "running" },
+          update: { status: "running" },
+        });
+
+        const { data, error } = await resend.emails.send({
+          from: FROM,
+          to: c.email,
+          subject,
+          text,
+          html,
+          headers: {
+            "List-Unsubscribe": listUnsubscribe,
+            "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+          },
+        });
+
+        if (error) {
+          console.error(`❌ Resend error (UPSELL) for ${c.email}:`, error);
+          await prisma.digestEmail.update({
+            where: { customerId_digestDate: { customerId, digestDate: todayKey } },
+            data: { status: "failed", error: safe(error?.message || error) },
+          });
+          continue;
+        }
+
+        await prisma.digestEmail.update({
+          where: { customerId_digestDate: { customerId, digestDate: todayKey } },
+          data: {
+            status: "sent",
+            resendId: data?.id || null,
+            matchKey: "UPSELL",
+            matchTitle: null,
+            matchUrl: upgradeUrl,
+          },
+        });
+
+        if (hasDigestLog) {
+          try {
+            await prisma.digestLog.createMany({
+              data: [
+                { customerId, type: "DAY", key: `DAY:${customerId}:${todayKey}`, meta: { date: todayKey, kind: "UPSELL" } },
+                { customerId, type: "UPSELL", key: `UPSELL:${customerId}:${todayKey}`, meta: { date: todayKey, upgradeUrl } },
+              ],
+            });
+          } catch {}
+        }
+
+        console.log(`✅ Sent UPSELL: ${c.email} (resendId=${data?.id || "n/a"})`);
+        continue;
+      }
+
+      // 2) Active or trial active -> normal digest logic
+      if (!accessAllowed) {
+        // Not active, no trial -> do nothing
+        continue;
+      }
+
+      // 3) Fetch matches
       const resp = await fetch(`${BACKEND_URL}/engine/matches/${customerId}?limit=${FETCH_LIMIT}`);
       if (!resp.ok) {
         console.error(`Matches fetch failed for customer ${customerId}: ${resp.status}`);
-
-        // If a DigestEmail row exists (from older runs), mark failed, otherwise ignore
         try {
           await prisma.digestEmail.update({
             where: { customerId_digestDate: { customerId, digestDate: todayKey } },
@@ -298,7 +457,7 @@ async function main() {
       const payload = await resp.json();
       const allMatches = extractMatches(payload);
 
-      // 2) Load recently sent match keys (dedupe)
+      // 4) Load recently sent match keys (dedupe)
       let sentSet = new Set();
 
       if (hasDigestLog) {
@@ -322,7 +481,7 @@ async function main() {
         sentSet = new Set(sent.map((x) => x.matchKey).filter(Boolean));
       }
 
-      // 3) Pick the TOP "new" match (first unsent)
+      // 5) Pick the TOP "new" match
       let picked = null;
       let pickedKey = null;
 
@@ -337,7 +496,7 @@ async function main() {
 
       const hasNewMatch = !!picked;
 
-      // 4) If no new match: enforce cooldown
+      // 6) If no new match: enforce cooldown
       if (!hasNewMatch) {
         let lastNoMatchAt = null;
 
@@ -365,12 +524,12 @@ async function main() {
                 1
               )}d < ${NO_MATCH_COOLDOWN_DAYS}d). Skipping email.`
             );
-            continue; // ✅ do not send anything
+            continue;
           }
         }
       }
 
-      // 5) Build email (either match or (allowed) no-match)
+      // 7) Build email (either match or allowed no-match)
       const matchesToSend = picked ? [picked] : [];
 
       const titleForSubject =
@@ -388,8 +547,8 @@ async function main() {
       )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
 
       const text = hasNewMatch
-        ? `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\nYou have 1 new top match.\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`
-        : `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\nReason: You signed up for AMBIT alerts at ${SIGNUP_URL}\n`;
+        ? `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\nYou have 1 new top match.\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\n`
+        : `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\n`;
 
       const html = buildHtml({
         customerId,
@@ -406,15 +565,14 @@ async function main() {
       const listUnsubscribeHttp = unsubscribeUrl;
       const listUnsubscribe = `<${listUnsubscribeHttp}>, <${listUnsubscribeMailto}>`;
 
-      // 6) Create "running" record only when we are about to send
-      // (prevents "running" rows on cooldown skips)
+      // Create "running" record only when we are about to send
       await prisma.digestEmail.upsert({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
         create: { customerId, digestDate: todayKey, status: "running" },
         update: { status: "running" },
       });
 
-      // 7) Send
+      // 8) Send
       const { data, error } = await resend.emails.send({
         from: FROM,
         to: c.email,
@@ -436,7 +594,7 @@ async function main() {
         continue;
       }
 
-      // 8) Mark sent + store match key/title/url (matchKey null means no-match email)
+      // 9) Mark sent + store match key/title/url (matchKey null means no-match email)
       await prisma.digestEmail.update({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
         data: {
@@ -448,7 +606,7 @@ async function main() {
         },
       });
 
-      // 9) Also write DigestLog entries if available (for quiet mode auditing)
+      // 10) Also write DigestLog entries if available
       if (hasDigestLog) {
         const dayLogKey = `DAY:${customerId}:${todayKey}`;
 
@@ -484,7 +642,6 @@ async function main() {
         try {
           await prisma.digestLog.createMany({ data: rows });
         } catch (e) {
-          // If createMany fails due to unique collisions, it just means we already logged it.
           console.warn(`[digest] digestLog createMany warning: ${e?.message || e}`);
         }
       }
@@ -499,9 +656,7 @@ async function main() {
           where: { customerId_digestDate: { customerId, digestDate: todayKey } },
           data: { status: "failed", error: safe(err?.message || err) },
         });
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
   }
 }
