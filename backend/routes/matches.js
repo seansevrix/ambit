@@ -12,8 +12,10 @@ const MAX_LIMIT = 200;       // safety cap
 const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
 
 // ✅ Location relevance tuning (simple, no geocoding)
-const OUT_OF_AREA_PENALTY = 25; // subtract if state mismatch
-const STRICT_IN_AREA_ONLY = String(process.env.MATCHES_STRICT_IN_AREA || "") === "1";
+const OUT_OF_AREA_PENALTY = 25; // subtract if NOT nearby
+// ✅ NEW: strict nearby-only filter (state + neighboring states)
+// set MATCHES_STRICT_NEARBY=1 to filter out far-away states
+const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
 
 const STOP = new Set([
   "the","and","or","a","an","of","to","for","in","on","at","with","by",
@@ -83,6 +85,45 @@ const STATE_NAME_TO_CODE = {
   "district of columbia": "DC",
 };
 
+// ✅ Neighboring-state map (good enough without geocoding)
+// You can expand this later; this covers the common cases.
+// If a state isn't listed, strict-nearby will fall back to "same state only".
+const NEIGHBORS = {
+  CA: ["OR", "NV", "AZ"],
+  OR: ["WA", "ID", "NV", "CA"],
+  WA: ["ID", "OR"],
+  NV: ["OR", "ID", "UT", "AZ", "CA"],
+  AZ: ["CA", "NV", "UT", "NM"],
+  ID: ["WA", "OR", "NV", "UT", "WY", "MT"],
+  UT: ["ID", "NV", "AZ", "CO", "WY", "NM"],
+  NM: ["AZ", "UT", "CO", "OK", "TX"],
+  CO: ["WY", "NE", "KS", "OK", "NM", "UT"],
+  TX: ["NM", "OK", "AR", "LA"],
+  FL: ["GA", "AL"],
+  GA: ["FL", "AL", "TN", "NC", "SC"],
+  NC: ["SC", "GA", "TN", "VA"],
+  VA: ["NC", "WV", "MD", "DC", "KY", "TN"],
+  MD: ["VA", "WV", "PA", "DE", "DC"],
+  DC: ["MD", "VA"],
+  PA: ["NY", "NJ", "DE", "MD", "WV", "OH"],
+  NY: ["NJ", "PA", "CT", "MA", "VT"],
+  NJ: ["NY", "PA", "DE"],
+  OH: ["PA", "WV", "KY", "IN", "MI"],
+  IN: ["MI", "OH", "KY", "IL"],
+  IL: ["WI", "IN", "KY", "MO", "IA"],
+  // add more as needed
+};
+
+function isNearbyState(customerState, oppState) {
+  if (!customerState || !oppState) return null; // unknown
+  if (customerState === oppState) return true;
+
+  const neighbors = NEIGHBORS[customerState] || [];
+  if (neighbors.includes(oppState)) return true;
+
+  return false;
+}
+
 function tokenize(s = "") {
   if (s == null) return [];
   return String(s)
@@ -137,7 +178,6 @@ function extractStateCode(locationStr) {
   const raw = String(locationStr || "").trim();
   if (!raw) return null;
 
-  // Try: ", CA" or " CA " etc
   const upper = raw.toUpperCase();
 
   // token-based scan for 2-letter codes
@@ -148,7 +188,6 @@ function extractStateCode(locationStr) {
 
   // full state name
   const lower = raw.toLowerCase();
-  // look for multiword names first by scanning keys
   for (const name of Object.keys(STATE_NAME_TO_CODE)) {
     if (lower.includes(name)) return STATE_NAME_TO_CODE[name];
   }
@@ -313,21 +352,34 @@ function scoreMatch(customer, opp) {
     reasons.push(`Summary overlap: ${summaryHits} hit(s) +${add}`);
   }
 
-  // ✅ State-based relevance penalty (no geocoding)
+  // ✅ Nearby-state logic (no geocoding)
   const custState = extractStateCode(customerLocStr);
   const oppState = extractStateCode(opp.location);
 
-  if (custState && oppState && custState !== oppState) {
-    score -= OUT_OF_AREA_PENALTY;
-    reasons.push(`Out of area (${oppState} vs ${custState}) -${OUT_OF_AREA_PENALTY}`);
+  if (custState && oppState) {
+    const nearby = isNearbyState(custState, oppState);
+
+    // penalize only if we can detect both states and it is NOT nearby
+    if (nearby === false) {
+      score -= OUT_OF_AREA_PENALTY;
+      reasons.push(`Out of area (${oppState} vs ${custState}) -${OUT_OF_AREA_PENALTY}`);
+    }
   }
 
   if (score < 0) score = 0;
   if (score > 100) score = 100;
 
-  const inArea = !custState || !oppState ? null : custState === oppState;
+  const nearbyFlag =
+    !custState || !oppState ? null : isNearbyState(custState, oppState);
 
-  return { score, reasons, profileIncomplete: false, inArea, custState, oppState };
+  return {
+    score,
+    reasons,
+    profileIncomplete: false,
+    nearby: nearbyFlag,
+    custState,
+    oppState
+  };
 }
 
 // ✅ keep path EXACTLY: GET /engine/matches/:customerId?limit=50
@@ -362,7 +414,7 @@ router.get("/matches/:customerId", async (req, res) => {
           industry: true,
           services: true,
           location: true,
-          serviceArea: true, // ✅ include for local relevance
+          serviceArea: true,
           keywords: true,
           naics: true,
           isActive: true,
@@ -452,7 +504,7 @@ router.get("/matches/:customerId", async (req, res) => {
       }
     }
 
-    // Determine customer's state (for strict filtering option)
+    // Determine customer's state for strict nearby filtering
     const customerLocStr = customer.location || customer.serviceArea || "";
     const custState = extractStateCode(customerLocStr);
 
@@ -470,12 +522,12 @@ router.get("/matches/:customerId", async (req, res) => {
               ? JSON.stringify(opp.location)
               : null;
 
-          // Optional strict filter: only keep in-area when we can detect both states
-          if (STRICT_IN_AREA_ONLY && custState) {
+          // ✅ Strict nearby-only filter:
+          // If we can detect state and it's not nearby, drop it.
+          if (STRICT_NEARBY_ONLY && custState) {
             const oppState = extractStateCode(safeLocation);
-            if (oppState && oppState !== custState) {
-              return null;
-            }
+            const nearby = isNearbyState(custState, oppState);
+            if (oppState && nearby === false) return null;
           }
 
           return {
@@ -499,7 +551,7 @@ router.get("/matches/:customerId", async (req, res) => {
             profileIncomplete: s.profileIncomplete,
 
             // Optional debug/meta
-            inArea: s.inArea ?? null,
+            nearby: s.nearby ?? null,
             customerState: s.custState ?? null,
             oppState: s.oppState ?? null,
           };
