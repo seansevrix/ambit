@@ -39,10 +39,6 @@ function pick(obj, keys) {
   return null;
 }
 
-// Supports payload shapes:
-// A) { matches: [...] }
-// B) array itself
-// Also supports entries shaped like { opportunity: {...} }
 function extractMatches(payload) {
   const raw = Array.isArray(payload) ? payload : payload?.matches;
   if (!Array.isArray(raw)) return [];
@@ -77,6 +73,7 @@ function buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEma
   `;
 }
 
+// Existing digest HTML (top match or no match)
 function buildHtml({
   customerId,
   email,
@@ -113,7 +110,6 @@ function buildHtml({
     `;
   }
 
-  // "top match once a day" -> default 1
   const max = Number(process.env.DIGEST_MAX_MATCHES || 1);
 
   const cards = matches
@@ -219,10 +215,7 @@ function buildUpsellHtml({
   `;
 }
 
-// ---------- "new match" logic (dedupe) ----------
-
 function isoDayKeyUTC(d = new Date()) {
-  // "YYYY-MM-DD" UTC
   return d.toISOString().slice(0, 10);
 }
 
@@ -293,8 +286,6 @@ async function main() {
 
   const FETCH_LIMIT = Number(process.env.DIGEST_FETCH_LIMIT || 50);
   const DEDUPE_DAYS = Number(process.env.DIGEST_DEDUPE_DAYS || 60);
-
-  // ✅ Quiet mode knob (no-match email only once every X days)
   const NO_MATCH_COOLDOWN_DAYS = Number(process.env.NO_MATCH_COOLDOWN_DAYS || 7);
 
   if (!process.env.RESEND_API_KEY) throw new Error("Missing RESEND_API_KEY");
@@ -305,18 +296,14 @@ async function main() {
 
   const resend = new Resend(process.env.RESEND_API_KEY);
 
+  // DigestLog exists in your schema; this is still safe.
   const hasDigestLog = !!prisma.digestLog;
 
-  // ✅ Include TRIAL customers too, and handle trial-ended upsell
+  // ✅ Include trial customers too
   const customers = await prisma.customer.findMany({
     where: { digestEnabled: true },
     select: { id: true, email: true, isActive: true, trialEndsAt: true },
   });
-
-  console.log(`Customers (digest enabled): ${customers.length}`);
-  console.log(`Using FROM: ${FROM}`);
-  console.log(`Quiet mode: NO_MATCH_COOLDOWN_DAYS=${NO_MATCH_COOLDOWN_DAYS}`);
-  console.log(`Using DigestLog: ${hasDigestLog ? "YES" : "NO (fallback to DigestEmail)"}`);
 
   const todayKey = isoDayKeyUTC(new Date());
   const since = new Date(Date.now() - DEDUPE_DAYS * 24 * 60 * 60 * 1000);
@@ -337,22 +324,16 @@ async function main() {
           where: { key: dayLogKey },
           select: { id: true },
         });
-        if (dayLog) {
-          console.log(`Already sent today (DigestLog) for customer ${customerId} — skipping.`);
-          continue;
-        }
+        if (dayLog) continue;
       } else {
         const existing = await prisma.digestEmail.findUnique({
           where: { customerId_digestDate: { customerId, digestDate: todayKey } },
           select: { status: true },
         });
-        if (existing?.status === "sent") {
-          console.log(`Already sent today (DigestEmail) for customer ${customerId} — skipping.`);
-          continue;
-        }
+        if (existing?.status === "sent") continue;
       }
 
-      // 1) Trial ended -> send DAILY upsell email (no match details)
+      // 1) Trial ended -> DAILY upsell email (no match details)
       if (shouldUpsell) {
         const ts = Date.now().toString();
         const sig = signUnsub(c.email, ts, process.env.UNSUBSCRIBE_SECRET);
@@ -401,7 +382,6 @@ async function main() {
         });
 
         if (error) {
-          console.error(`❌ Resend error (UPSELL) for ${c.email}:`, error);
           await prisma.digestEmail.update({
             where: { customerId_digestDate: { customerId, digestDate: todayKey } },
             data: { status: "failed", error: safe(error?.message || error) },
@@ -431,28 +411,15 @@ async function main() {
           } catch {}
         }
 
-        console.log(`✅ Sent UPSELL: ${c.email} (resendId=${data?.id || "n/a"})`);
         continue;
       }
 
       // 2) Active or trial active -> normal digest logic
-      if (!accessAllowed) {
-        // Not active, no trial -> do nothing
-        continue;
-      }
+      if (!accessAllowed) continue;
 
       // 3) Fetch matches
       const resp = await fetch(`${BACKEND_URL}/engine/matches/${customerId}?limit=${FETCH_LIMIT}`);
-      if (!resp.ok) {
-        console.error(`Matches fetch failed for customer ${customerId}: ${resp.status}`);
-        try {
-          await prisma.digestEmail.update({
-            where: { customerId_digestDate: { customerId, digestDate: todayKey } },
-            data: { status: "failed", error: `matches_fetch_${resp.status}` },
-          });
-        } catch {}
-        continue;
-      }
+      if (!resp.ok) continue;
 
       const payload = await resp.json();
       const allMatches = extractMatches(payload);
@@ -518,20 +485,12 @@ async function main() {
 
         if (lastNoMatchAt) {
           const diffDays = daysBetween(new Date(lastNoMatchAt), new Date());
-          if (diffDays < NO_MATCH_COOLDOWN_DAYS) {
-            console.log(
-              `Quiet mode: no-match cooldown active for customer ${customerId} (${diffDays.toFixed(
-                1
-              )}d < ${NO_MATCH_COOLDOWN_DAYS}d). Skipping email.`
-            );
-            continue;
-          }
+          if (diffDays < NO_MATCH_COOLDOWN_DAYS) continue;
         }
       }
 
-      // 7) Build email (either match or allowed no-match)
+      // 7) Send digest (match or allowed no-match)
       const matchesToSend = picked ? [picked] : [];
-
       const titleForSubject =
         picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])).slice(0, 70) : "";
 
@@ -554,7 +513,7 @@ async function main() {
         customerId,
         email: c.email,
         matches: matchesToSend,
-        appUrl: APP_URL,
+        appUrl: `${APP_URL}/matches/${customerId}`,
         signupUrl: SIGNUP_URL,
         unsubscribeUrl,
         companyAddress: COMPANY_ADDRESS,
@@ -565,14 +524,12 @@ async function main() {
       const listUnsubscribeHttp = unsubscribeUrl;
       const listUnsubscribe = `<${listUnsubscribeHttp}>, <${listUnsubscribeMailto}>`;
 
-      // Create "running" record only when we are about to send
       await prisma.digestEmail.upsert({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
         create: { customerId, digestDate: todayKey, status: "running" },
         update: { status: "running" },
       });
 
-      // 8) Send
       const { data, error } = await resend.emails.send({
         from: FROM,
         to: c.email,
@@ -586,7 +543,6 @@ async function main() {
       });
 
       if (error) {
-        console.error(`❌ Resend error for ${c.email}:`, error);
         await prisma.digestEmail.update({
           where: { customerId_digestDate: { customerId, digestDate: todayKey } },
           data: { status: "failed", error: safe(error?.message || error) },
@@ -594,7 +550,6 @@ async function main() {
         continue;
       }
 
-      // 9) Mark sent + store match key/title/url (matchKey null means no-match email)
       await prisma.digestEmail.update({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
         data: {
@@ -606,7 +561,6 @@ async function main() {
         },
       });
 
-      // 10) Also write DigestLog entries if available
       if (hasDigestLog) {
         const dayLogKey = `DAY:${customerId}:${todayKey}`;
 
@@ -641,14 +595,8 @@ async function main() {
 
         try {
           await prisma.digestLog.createMany({ data: rows });
-        } catch (e) {
-          console.warn(`[digest] digestLog createMany warning: ${e?.message || e}`);
-        }
+        } catch {}
       }
-
-      console.log(
-        `✅ Sent: ${c.email} (${hasNewMatch ? "NEW MATCH" : "NO MATCH"}; resendId=${data?.id || "n/a"})`
-      );
     } catch (err) {
       console.error(`Digest failed for customer ${customerId}:`, err?.message || err);
       try {
