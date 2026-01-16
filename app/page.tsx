@@ -79,7 +79,7 @@ export default function HomePage() {
                 Start Free Trial
               </Link>
               <a href="#preview" className={SECONDARY}>
-                See sample matches →
+                View Live Leads
               </a>
             </div>
           </div>

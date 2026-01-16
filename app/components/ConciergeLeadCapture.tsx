@@ -128,7 +128,6 @@ export default function ConciergeLeadCapture() {
     "government",
   ]);
 
-  // Keywords = one clean input only (no chip row)
   const [keywordText, setKeywordText] = useState("");
   const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
 
@@ -164,7 +163,7 @@ export default function ConciergeLeadCapture() {
     setError(null);
 
     if (!company.trim()) return setError("Company is required.");
-    if (!email.trim()) return setError("Email is required.");
+    if (!email.trim()) return setError("Work Email is required.");
     if (!area.trim()) return setError("Service area is required.");
 
     try {
@@ -215,7 +214,7 @@ export default function ConciergeLeadCapture() {
                 <input
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Company name"
+                  placeholder="Your Company Name"
                   className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
                 />
               </div>
@@ -225,7 +224,7 @@ export default function ConciergeLeadCapture() {
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Email address"
+                  placeholder="Work Email"
                   type="email"
                   className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
                 />
@@ -243,7 +242,7 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Keywords (moved directly under service area) */}
+            {/* Keywords */}
             <div>
               <div className="text-xs font-semibold text-white/80">Keywords</div>
               <input
@@ -255,7 +254,7 @@ export default function ConciergeLeadCapture() {
               <div className="mt-2 text-xs text-white/60">Comma-separated</div>
             </div>
 
-            {/* Markets (moved to bottom, right before CTA) */}
+            {/* Markets */}
             <div className="pt-1">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Markets</div>
@@ -310,7 +309,7 @@ export default function ConciergeLeadCapture() {
                 )}
                 style={{ backgroundColor: BRAND }}
               >
-                {submitting ? "Sending…" : "Get my 3 matches"}
+                {submitting ? "Sending…" : "Send Me 3 Matches"}
               </button>
 
               <div className="mt-2 text-center text-xs text-white/70">
