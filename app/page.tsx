@@ -1,4 +1,5 @@
 import Link from "next/link";
+import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
 
 const PRIMARY =
   "inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#15428B]";
@@ -38,6 +39,7 @@ function TrialBanner() {
             7 Day Free Trial
           </div>
           <div className="text-sm font-bold text-white">Start free today. Cancel anytime.</div>
+          <div className="text-xs text-white/70">No credit card required</div>
         </div>
 
         <Link href="/get-started" className={PRIMARY}>
@@ -82,7 +84,7 @@ export default function HomePage() {
 
             <div className="mt-7 flex flex-col gap-3 sm:flex-row">
               <Link href="/get-started" className={PRIMARY}>
-                Get Started
+                Start Free Trial
               </Link>
               <Link href="/opportunities" className={SECONDARY}>
                 Preview
@@ -110,6 +112,9 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* CONCIERGE LEAD CAPTURE (Formspree) */}
+      <ConciergeLeadCapture />
 
       {/* TESTIMONIALS */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
