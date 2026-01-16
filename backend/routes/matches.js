@@ -13,7 +13,8 @@ const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
 
 // ✅ Location relevance tuning (simple, no geocoding)
 const OUT_OF_AREA_PENALTY = 25; // subtract if NOT nearby
-// ✅ NEW: strict nearby-only filter (state + neighboring states)
+
+// ✅ Strict nearby-only filter (state + neighboring states)
 // set MATCHES_STRICT_NEARBY=1 to filter out far-away states
 const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
 
@@ -85,9 +86,13 @@ const STATE_NAME_TO_CODE = {
   "district of columbia": "DC",
 };
 
+// Reverse map for token normalization (code -> name)
+const CODE_TO_STATE_NAME = Object.entries(STATE_NAME_TO_CODE).reduce((acc, [name, code]) => {
+  if (!acc[code]) acc[code] = name;
+  return acc;
+}, {});
+
 // ✅ Neighboring-state map (good enough without geocoding)
-// You can expand this later; this covers the common cases.
-// If a state isn't listed, strict-nearby will fall back to "same state only".
 const NEIGHBORS = {
   CA: ["OR", "NV", "AZ"],
   OR: ["WA", "ID", "NV", "CA"],
@@ -111,7 +116,6 @@ const NEIGHBORS = {
   OH: ["PA", "WV", "KY", "IN", "MI"],
   IN: ["MI", "OH", "KY", "IL"],
   IL: ["WI", "IN", "KY", "MO", "IA"],
-  // add more as needed
 };
 
 function isNearbyState(customerState, oppState) {
@@ -119,9 +123,7 @@ function isNearbyState(customerState, oppState) {
   if (customerState === oppState) return true;
 
   const neighbors = NEIGHBORS[customerState] || [];
-  if (neighbors.includes(oppState)) return true;
-
-  return false;
+  return neighbors.includes(oppState);
 }
 
 function tokenize(s = "") {
@@ -193,6 +195,52 @@ function extractStateCode(locationStr) {
   }
 
   return null;
+}
+
+/**
+ * UI polish: convert full state names to abbreviations.
+ * e.g. "Oceanside, California" -> "Oceanside, CA"
+ */
+function abbreviateStateInLocation(locationStr) {
+  const raw = String(locationStr || "").trim();
+  if (!raw) return raw;
+
+  // If we can find a state code, normalize the string to use the code.
+  const code = extractStateCode(raw);
+  if (!code) return raw;
+
+  let out = raw;
+
+  // Replace state names with their codes (case-insensitive).
+  // Handles multiword names by allowing flexible whitespace.
+  for (const [name, c] of Object.entries(STATE_NAME_TO_CODE)) {
+    const pattern = name.replace(/\s+/g, "\\s+");
+    const re = new RegExp(pattern, "ig");
+    out = out.replace(re, c);
+  }
+
+  // Clean up: if it contains the code but not as a separated token, leave it.
+  // If it contains both "CA" and "California" we already replaced.
+  return out;
+}
+
+/**
+ * Matching polish: add both state name + abbreviation tokens so "CA" and "California"
+ * overlap during scoring.
+ */
+function locationTokensWithState(locStr) {
+  const base = tokenize(locStr);
+  const code = extractStateCode(locStr);
+  if (!code) return base;
+
+  const extra = [code.toLowerCase()];
+
+  const stateName = CODE_TO_STATE_NAME[code];
+  if (stateName) {
+    extra.push(...tokenize(stateName));
+  }
+
+  return Array.from(new Set([...base, ...extra]));
 }
 
 /**
@@ -272,7 +320,9 @@ function scoreMatch(customer, opp) {
 
   // Use location OR serviceArea for location relevance
   const customerLocStr = customer.location || customer.serviceArea || "";
-  const locationTokens = tokenize(customerLocStr);
+
+  // ✅ Better: normalize tokens with state name + code
+  const locationTokens = locationTokensWithState(customerLocStr);
 
   const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
@@ -293,11 +343,17 @@ function scoreMatch(customer, opp) {
       score: 0,
       reasons: ["Customer profile missing industry/services/location/keywords/naics."],
       profileIncomplete: true,
+      nearby: null,
+      custState: null,
+      oppState: null,
     };
   }
 
   const oppTitleTokens = tokenize(opp.title);
-  const oppLocTokens = tokenize(opp.location);
+
+  // ✅ Better: normalize opp location tokens with state name + code
+  const oppLocTokens = locationTokensWithState(opp.location);
+
   const oppNaicsList = normalizeNaicsList(opp.naics);
   const oppKeywordTokens = tokenize(opp.keywords);
   const oppSummaryTokens = tokenize(opp.summary);
@@ -359,7 +415,6 @@ function scoreMatch(customer, opp) {
   if (custState && oppState) {
     const nearby = isNearbyState(custState, oppState);
 
-    // penalize only if we can detect both states and it is NOT nearby
     if (nearby === false) {
       score -= OUT_OF_AREA_PENALTY;
       reasons.push(`Out of area (${oppState} vs ${custState}) -${OUT_OF_AREA_PENALTY}`);
@@ -512,8 +567,6 @@ router.get("/matches/:customerId", async (req, res) => {
     try {
       raw = opportunities
         .map((opp) => {
-          const s = scoreMatch(customer, opp);
-
           // ✅ location cleanup
           const safeLocation =
             typeof opp.location === "string"
@@ -522,10 +575,15 @@ router.get("/matches/:customerId", async (req, res) => {
               ? JSON.stringify(opp.location)
               : null;
 
+          // ✅ UI polish: abbreviate state names in output
+          const prettyLocation = safeLocation ? abbreviateStateInLocation(safeLocation) : null;
+
+          // score using cleaned + prettified location
+          const s = scoreMatch(customer, { ...opp, location: prettyLocation });
+
           // ✅ Strict nearby-only filter:
-          // If we can detect state and it's not nearby, drop it.
           if (STRICT_NEARBY_ONLY && custState) {
-            const oppState = extractStateCode(safeLocation);
+            const oppState = extractStateCode(prettyLocation);
             const nearby = isNearbyState(custState, oppState);
             if (oppState && nearby === false) return null;
           }
@@ -533,7 +591,7 @@ router.get("/matches/:customerId", async (req, res) => {
           return {
             id: opp.id,
             title: opp.title,
-            location: safeLocation,
+            location: prettyLocation,
             naics: opp.naics,
 
             segment: opp.segment,
