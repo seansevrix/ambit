@@ -11,7 +11,8 @@ function getPreviewData(segment: Segment) {
   if (segment === "residential") {
     return {
       headline: "Residential opportunities (preview)",
-      sub: "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
+      sub:
+        "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
       unlocked: {
         title: "Kitchen remodel + tile install (Homeowner request)",
         location: "San Diego, CA",
@@ -27,7 +28,8 @@ function getPreviewData(segment: Segment) {
   if (segment === "commercial") {
     return {
       headline: "Commercial bid opportunities (preview)",
-      sub: "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
+      sub:
+        "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock full matches and ongoing alerts.",
       unlocked: {
         title: "Apartment complex parking lot seal + striping",
         location: "Oceanside, CA",
@@ -43,7 +45,8 @@ function getPreviewData(segment: Segment) {
   // government
   return {
     headline: "Government contract matches (preview)",
-    sub: "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock scoring, summaries, and ongoing alerts.",
+    sub:
+      "This is a sample feed — one unlocked example shows the level of detail you’ll get. Start your free trial to unlock scoring, summaries, and ongoing alerts.",
     unlocked: {
       title: "HVAC preventative maintenance services",
       location: "Camp Pendleton, CA",
@@ -104,91 +107,52 @@ export default async function PreviewSegmentPage({
   const segmentKey = seg as Segment;
   const data = getPreviewData(segmentKey);
 
-  // default (lowest friction)
   const startSingleHref = "/get-started?plan=single";
-
   const t = TESTIMONIALS_BY_SEGMENT[segmentKey];
 
   return (
     <div className="mx-auto w-full max-w-7xl">
-      {/* Trial banner */}
+      {/* Banner (info-only) */}
       <div className="mb-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
-        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold tracking-widest text-white/80">
-              FREE TRIAL
-            </span>
-            <div className="text-xs font-semibold text-white/80">{TRIAL_BANNER_TEXT}</div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link
-              href={startSingleHref}
-              className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-xs font-semibold text-white hover:bg-[#15428B]"
-            >
-              Start Free Trial
-            </Link>
-            <Link
-              href="/pricing"
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-            >
-              Pricing
-            </Link>
+        <div className="flex flex-col gap-2 md:flex-row md:items-center">
+          <span className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold tracking-widest text-white/80">
+            FREE TRIAL
+          </span>
+          <div className="text-xs font-semibold text-white/80 md:ml-2">
+            {TRIAL_BANNER_TEXT}
           </div>
         </div>
       </div>
 
-      {/* Header */}
+      {/* Hero */}
       <div className="rounded-3xl border border-white/10 bg-white/5 p-8">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           <div>
             <div className="text-xs font-semibold tracking-widest text-white/50">
               {titleCase(segmentKey)}
             </div>
-
             <h1 className="mt-2 text-3xl font-bold leading-tight text-white md:text-4xl">
               {data.headline}
             </h1>
-
             <p className="mt-2 max-w-2xl text-sm text-white/70">{data.sub}</p>
-
-            {/* Secondary banner line (tight + clean) */}
-            <div className="mt-4 inline-flex flex-wrap items-center gap-2 text-xs text-white/70">
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
-                7-day free trial
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
-                No credit card required
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
-                Cancel anytime
-              </span>
-              <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1">
-                No spam
-              </span>
-            </div>
           </div>
 
-          <div className="flex flex-col items-stretch gap-3 md:items-end">
-            <div className="flex items-center gap-3">
-              <Link
-                href={startSingleHref}
-                className="rounded-xl bg-[#1A4FA3] px-5 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
-              >
-                Start Free Trial
-              </Link>
-              <Link
-                href="/pricing"
-                className="rounded-xl border border-white/15 bg-white/5 px-5 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-              >
-                View Pricing
-              </Link>
+          {/* ONE primary CTA */}
+          <div className="flex flex-col items-stretch gap-2 md:items-end">
+            <Link
+              href={startSingleHref}
+              className="rounded-xl bg-[#1A4FA3] px-5 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+            >
+              Start Free Trial
+            </Link>
+            <div className="text-xs text-white/50">
+              No credit card required • Cancel anytime
             </div>
           </div>
         </div>
       </div>
 
-      {/* ✅ Side-by-side (equal width) */}
+      {/* ✅ Side-by-side */}
       <div className="mt-8 grid gap-5 md:grid-cols-2">
         {/* Unlocked example */}
         <div className="relative rounded-2xl border border-white/10 bg-white/5 p-5">
@@ -197,7 +161,6 @@ export default async function PreviewSegmentPage({
           <div className="text-[11px] font-semibold tracking-widest text-white/55">
             UNLOCKED EXAMPLE
           </div>
-
           <div className="mt-2 text-lg font-bold text-white">{data.unlocked.title}</div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
@@ -232,14 +195,14 @@ export default async function PreviewSegmentPage({
           </div>
         </div>
 
-        {/* Testimonial (same size as unlocked) */}
+        {/* Testimonial (no Start Free Trial here) */}
         <div className="rounded-2xl border border-white/10 bg-white/5 p-5">
           <div className="text-[11px] font-semibold tracking-widest text-white/55">
             CUSTOMER TESTIMONIAL
           </div>
 
           <div className="mt-2 text-sm font-semibold text-white/85">
-            Read the result, then unlock the matches.
+            Proof it works — then unlock your matches.
           </div>
 
           <p className="mt-4 text-sm leading-relaxed text-white/80">“{t.quote}”</p>
@@ -251,16 +214,10 @@ export default async function PreviewSegmentPage({
             </div>
           </div>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row">
-            <Link
-              href={startSingleHref}
-              className="flex-1 rounded-xl bg-[#1A4FA3] px-4 py-2 text-center text-sm font-semibold text-white hover:bg-[#15428B]"
-            >
-              Start Free Trial
-            </Link>
+          <div className="mt-5">
             <Link
               href="/testimonials"
-              className="flex-1 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-center text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+              className="block rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-center text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
             >
               Read More
             </Link>
