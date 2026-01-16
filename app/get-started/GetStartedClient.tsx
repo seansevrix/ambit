@@ -130,7 +130,8 @@ export default function GetStartedClient() {
       if (prev.size <= 1) return prev;
 
       const order: SegmentKey[] = ["government", "commercial", "residential"];
-      const keep = order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
+      const keep =
+        order.find((k) => prev.has(k)) || Array.from(prev)[0] || "government";
       return new Set<SegmentKey>([keep]);
     });
   }, [plan]);
@@ -192,7 +193,7 @@ export default function GetStartedClient() {
         naicsCodes: naicsParsed.valid,
         keywords: kw,
         segments: segmentsList,
-        sources: segmentsList,
+        // ✅ DO NOT send `sources` from the frontend (backend controls ingest sources)
         segmentCsv: segmentsCsv,
       };
 
@@ -242,11 +243,11 @@ export default function GetStartedClient() {
                   7-day free trial
                 </span>
                 <span className="text-sm font-semibold text-white">
-                  Try AMBIT risk-free for 7 days.
+                  Try AMBIT free for 7 days.
                 </span>
               </div>
               <div className="text-xs text-slate-200">
-                Secure checkout by Stripe • Cancel anytime • No spam
+                No credit card required • Cancel anytime • No spam
               </div>
             </div>
           </div>
@@ -546,7 +547,7 @@ export default function GetStartedClient() {
             </button>
 
             <div className="text-center text-xs text-slate-300">
-              Secure checkout by Stripe • Cancel anytime • No spam
+              No credit card required • Cancel anytime • No spam
             </div>
           </div>
         </section>

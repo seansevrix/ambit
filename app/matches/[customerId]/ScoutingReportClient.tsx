@@ -7,21 +7,32 @@ import ProfileEditor from "./ProfileEditor";
 type Match = {
   id: number;
   title: string;
-  location: string;
+  location: string | null;
   naics: string | null;
   keywords: string | null;
   agency: string | null;
   url: string | null;
   postedDate: string | null;
+  dueDate?: string | null;
   summary: string | null;
   score: number;
   reasons: string[];
   profileIncomplete: boolean;
+
+  // optional debug/meta from backend
+  nearby?: boolean | null;
+  customerState?: string | null;
+  oppState?: string | null;
 };
 
 type MatchesResponse = {
   customerId: number;
   matches: Match[];
+  access?: {
+    isActive: boolean;
+    trialEndsAt: string | null;
+  };
+  segments?: string[];
 };
 
 type ProfileResponse = {
@@ -31,9 +42,11 @@ type ProfileResponse = {
     email?: string | null;
     name?: string | null;
     location?: string | null;
+    serviceArea?: string | null;
     naics?: string | null;
     keywords?: string | null;
     services?: string | null;
+    segments?: string[];
   };
   error?: string;
 };
@@ -47,7 +60,6 @@ const API_BASE = (
 const CHECKOUT_PATH = "/engine/billing/create-checkout-session";
 
 type SortKey = "score" | "newest" | "closest";
-
 const PAGE_SIZE = 10;
 
 // Pricing tiers
@@ -55,12 +67,84 @@ type PlanTier = "single" | "all";
 const PRICE_SINGLE = 39.99;
 const PRICE_ALL = 59.99;
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// UI: state name -> abbreviation (fallback)
+const STATE_NAME_TO_CODE: Record<string, string> = {
+  "alabama": "AL",
+  "alaska": "AK",
+  "arizona": "AZ",
+  "arkansas": "AR",
+  "california": "CA",
+  "colorado": "CO",
+  "connecticut": "CT",
+  "delaware": "DE",
+  "florida": "FL",
+  "georgia": "GA",
+  "hawaii": "HI",
+  "idaho": "ID",
+  "illinois": "IL",
+  "indiana": "IN",
+  "iowa": "IA",
+  "kansas": "KS",
+  "kentucky": "KY",
+  "louisiana": "LA",
+  "maine": "ME",
+  "maryland": "MD",
+  "massachusetts": "MA",
+  "michigan": "MI",
+  "minnesota": "MN",
+  "mississippi": "MS",
+  "missouri": "MO",
+  "montana": "MT",
+  "nebraska": "NE",
+  "nevada": "NV",
+  "new hampshire": "NH",
+  "new jersey": "NJ",
+  "new mexico": "NM",
+  "new york": "NY",
+  "north carolina": "NC",
+  "north dakota": "ND",
+  "ohio": "OH",
+  "oklahoma": "OK",
+  "oregon": "OR",
+  "pennsylvania": "PA",
+  "rhode island": "RI",
+  "south carolina": "SC",
+  "south dakota": "SD",
+  "tennessee": "TN",
+  "texas": "TX",
+  "utah": "UT",
+  "vermont": "VT",
+  "virginia": "VA",
+  "washington": "WA",
+  "west virginia": "WV",
+  "wisconsin": "WI",
+  "wyoming": "WY",
+  "district of columbia": "DC",
+};
+
+function abbreviateState(location: string) {
+  let out = location;
+  for (const [name, code] of Object.entries(STATE_NAME_TO_CODE)) {
+    const pattern = name.replace(/\s+/g, "\\s+");
+    const re = new RegExp(pattern, "ig");
+    out = out.replace(re, code);
+  }
+  return out;
+}
+
 export default function ScoutingReportClient({ customerId }: { customerId: number }) {
   const searchParams = useSearchParams();
 
   const [data, setData] = useState<MatchesResponse | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Paywall / trial ended
   const [needsSub, setNeedsSub] = useState(false);
+  const [trialEndedAt, setTrialEndedAt] = useState<string | null>(null);
+  const [subStatus, setSubStatus] = useState<string | null>(null);
+
   const [errMsg, setErrMsg] = useState<string>("");
 
   const [q, setQ] = useState("");
@@ -81,9 +165,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   useEffect(() => {
     try {
       localStorage.setItem("ambit_plan", plan);
-    } catch {
-      // ignore
-    }
+    } catch {}
   }, [plan]);
 
   // Pagination / Load more
@@ -100,10 +182,24 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
 
   const matches = useMemo(() => data?.matches || [], [data]);
 
+  const access = data?.access;
+  const trialEndsAt = access?.trialEndsAt || null;
+  const isActive = Boolean(access?.isActive);
+
+  const daysLeft = useMemo(() => {
+    if (!trialEndsAt) return null;
+    const end = new Date(trialEndsAt).getTime();
+    if (!Number.isFinite(end)) return null;
+    const diff = end - Date.now();
+    return Math.ceil(diff / DAY_MS);
+  }, [trialEndsAt]);
+
   async function load() {
     setLoading(true);
     setErrMsg("");
     setNeedsSub(false);
+    setTrialEndedAt(null);
+    setSubStatus(null);
 
     try {
       const res = await fetch(`${API_BASE}/engine/matches/${customerId}`, {
@@ -116,6 +212,8 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
       if (res.status === 402) {
         setNeedsSub(true);
         setErrMsg(body?.message || "Subscription required");
+        setTrialEndedAt(body?.trialEndedAt || null);
+        setSubStatus(body?.subscriptionStatus || null);
         setData(null);
         return;
       }
@@ -168,9 +266,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   function persistStarred(next: Set<number>) {
     try {
       localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
-    } catch {
-      // ignore
-    }
+    } catch {}
   }
 
   function toggleStar(matchId: number) {
@@ -204,14 +300,12 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         const body = (await res.json().catch(() => ({}))) as ProfileResponse;
         if (!res.ok || !body?.ok || !body.customer) return;
 
-        const loc = (body.customer.location || "").trim();
+        const loc = (body.customer.location || body.customer.serviceArea || "").trim();
         if (!loc) return;
 
         const parsed = parseCityState(loc);
         if (!cancelled) setCustomerLoc(parsed);
-      } catch {
-        // ignore
-      }
+      } catch {}
     }
 
     loadCustomerProfile();
@@ -262,7 +356,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     return matches.filter((m) => {
       const haystack = [
         m.title,
-        m.location,
+        m.location || "",
         m.naics || "",
         m.agency || "",
         m.keywords || "",
@@ -322,8 +416,48 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
       ? "Track government + commercial + residential."
       : "Track 1 lead type (choose 1 segment).";
 
+  const showTrialBar = !loading && !needsSub && !isActive && !!trialEndsAt;
+
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
+      {/* Trial status bar */}
+      {showTrialBar ? (
+        <div className="mb-6 rounded-2xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-white">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-sm">
+              <span className="font-semibold">Free trial</span>{" "}
+              {typeof daysLeft === "number" ? (
+                <span className="text-white/80">
+                  ends in <span className="font-semibold">{Math.max(daysLeft, 0)}</span>{" "}
+                  {Math.max(daysLeft, 0) === 1 ? "day" : "days"}
+                </span>
+              ) : (
+                <span className="text-white/80">active</span>
+              )}
+              <span className="mx-2 opacity-40">•</span>
+              <span className="text-white/80">
+                After trial, email delivery pauses until you upgrade.
+              </span>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={startCheckout}
+                className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/90"
+              >
+                Upgrade now
+              </button>
+              <button
+                onClick={load}
+                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 hover:bg-white/10"
+              >
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div className="min-w-0">
@@ -413,11 +547,23 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
         </Panel>
       ) : needsSub ? (
         <Panel>
-          <div className="text-xs font-semibold text-white/60">SUBSCRIPTION</div>
-          <div className="mt-2 text-2xl font-semibold text-white">Unlock your matches</div>
+          <div className="text-xs font-semibold text-white/60">TRIAL ENDED / SUBSCRIPTION</div>
+          <div className="mt-2 text-2xl font-semibold text-white">Your matches are waiting</div>
           <div className="mt-2 max-w-2xl text-sm text-white/70">
-            This account is inactive. Subscribe to activate and unlock ranked opportunities,
-            summaries, and next steps.
+            Your free trial has ended, so daily email delivery is paused. Upgrade to resume daily
+            matches in your inbox and keep access to new ranked opportunities.
+          </div>
+
+          <div className="mt-2 text-xs text-white/45">
+            {trialEndedAt ? (
+              <>Trial ended: <span className="text-white/70">{formatDate(trialEndedAt)}</span></>
+            ) : null}
+            {subStatus ? (
+              <>
+                <span className="mx-2 opacity-40">•</span>
+                Status: <span className="text-white/70">{subStatus}</span>
+              </>
+            ) : null}
           </div>
 
           {/* Plan picker */}
@@ -462,7 +608,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             <PaywallPill title="Match score" body="Ranked leads that fit." />
             <PaywallPill title="Plain-English summary" body="Fast BID/NO-BID." />
-            <PaywallPill title="Daily digest" body="No dashboard babysitting." />
+            <PaywallPill title="Daily digest" body="Delivered every morning." />
           </div>
 
           <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -479,7 +625,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                 onClick={startCheckout}
                 className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
               >
-                Subscribe {priceLabel}/mo
+                Upgrade {priceLabel}/mo
               </button>
               <button
                 onClick={load}
@@ -515,7 +661,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           <div className="mt-1 text-sm text-white/70">
             {starredOnly
               ? "Star opportunities to save them here."
-              : "Try clearing search or expanding NAICS/keywords/location (use Edit profile)."}
+              : "Try expanding NAICS/keywords/location (use Edit profile)."}
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -551,6 +697,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           <div className="mt-4 grid gap-3">
             {visible.map((m) => {
               const isStarred = starred.has(m.id);
+              const prettyLocation = m.location ? abbreviateState(m.location) : "—";
 
               return (
                 <div
@@ -569,11 +716,17 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                       <div className="mt-1 text-xs text-white/60 break-words">
                         <span className="uppercase tracking-wide">{m.agency || "Unknown agency"}</span>
                         <span className="mx-2 opacity-40">•</span>
-                        <span>{m.location}</span>
+                        <span>{prettyLocation}</span>
                         <span className="mx-2 opacity-40">•</span>
                         <span>NAICS {m.naics || "—"}</span>
                         <span className="mx-2 opacity-40">•</span>
                         <span>Posted {formatDate(m.postedDate)}</span>
+                        {m.dueDate ? (
+                          <>
+                            <span className="mx-2 opacity-40">•</span>
+                            <span>Due {formatDate(m.dueDate)}</span>
+                          </>
+                        ) : null}
                       </div>
                     </div>
 
@@ -678,14 +831,14 @@ function clampScore(x: number) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function formatDate(iso: string | null) {
+function formatDate(iso: string | null | undefined) {
   if (!iso) return "—";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
   return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-function toTime(iso: string | null) {
+function toTime(iso: string | null | undefined) {
   if (!iso) return 0;
   const t = new Date(iso).getTime();
   return Number.isFinite(t) ? t : 0;
@@ -710,9 +863,9 @@ function parseCityState(input: string) {
   return { city: raw };
 }
 
-function locationRank(matchLocation: string, cityN: string, stateN: string) {
+function locationRank(matchLocation: string | null | undefined, cityN: string, stateN: string) {
   if (!cityN && !stateN) return 2;
-  const loc = norm(matchLocation);
+  const loc = norm(matchLocation || "");
   const hasState = !!stateN && loc.includes(stateN);
   const hasCity = !!cityN && loc.includes(cityN);
   if (hasCity && hasState) return 0;
