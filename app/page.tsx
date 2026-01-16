@@ -56,65 +56,39 @@ export default function HomePage() {
       {/* TRIAL BANNER (non-blocking) */}
       <TrialBanner />
 
-      {/* HERO */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-10 shadow-[0_0_0_1px_rgba(255,255,255,0.04)]">
-        <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-          <div>
-            <div className="inline-flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                Residential
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                Commercial
-              </span>
-              <span className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                Government
-              </span>
-            </div>
+      {/* SCREENSHOT-STYLE HERO + GLASS PANEL */}
+      <section className="relative overflow-hidden rounded-3xl border border-white/10">
+        {/* Background layers (no image required; optional image hook included) */}
+        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.35),transparent_60%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#08122B] via-[#070F22] to-[#060A16]" />
 
-            <h1 className="mt-4 text-5xl font-semibold tracking-tight leading-[1.05]">
-              Work opportunities matched to your business.
+        {/* Optional photo background: drop an image into /public/hero.jpg and uncomment below */}
+        {/* <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-25" /> */}
+
+        <div className="relative px-6 py-14 sm:px-10">
+          <div className="mx-auto max-w-5xl text-center">
+            <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+              Get more local contracts.
             </h1>
-
-            <p className="mt-4 max-w-xl text-white/70">
-              Tell AMBIT what you do and where you work. We find relevant jobs across residential,
-              commercial, and government sources, score the fit, and deliver a clear scouting report
-              — so you spend less time searching and more time winning work.
+            <p className="mt-3 text-sm text-white/70 sm:text-base">
+              Qualified opportunities sent to you — not your competitors.
             </p>
 
-            <div className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/get-started" className={PRIMARY}>
                 Start Free Trial
               </Link>
-              <Link href="/opportunities" className={SECONDARY}>
-                Preview
-              </Link>
-            </div>
-
-            <div className="mt-6 text-sm text-white/70">
-              Already a customer?{" "}
-              <Link className="text-white underline underline-offset-4" href="/login">
-                Log in
-              </Link>
+              <a href="#preview" className={SECONDARY}>
+                See sample matches →
+              </a>
             </div>
           </div>
 
-          <div className="grid gap-4">
-            <InfoCard title="1) Build your profile" body="Add your company info, trades, and service area." />
-            <InfoCard
-              title="2) Choose your markets"
-              body="Residential, commercial, government — pick one or run all three."
-            />
-            <InfoCard
-              title="3) Get matched work"
-              body="See ranked opportunities, quick summaries, and your match history anytime."
-            />
+          <div id="preview" className="mx-auto mt-10 max-w-6xl">
+            <ConciergeLeadCapture />
           </div>
         </div>
       </section>
-
-      {/* CONCIERGE LEAD CAPTURE (Formspree) */}
-      <ConciergeLeadCapture />
 
       {/* TESTIMONIALS */}
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
@@ -161,15 +135,6 @@ export default function HomePage() {
           ))}
         </div>
       </section>
-    </div>
-  );
-}
-
-function InfoCard({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-5 hover:bg-[#0B1430]/55 transition">
-      <div className="text-sm font-semibold text-white">{title}</div>
-      <div className="mt-1 text-sm text-white/70">{body}</div>
     </div>
   );
 }
