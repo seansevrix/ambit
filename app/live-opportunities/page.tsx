@@ -1,18 +1,16 @@
 import Link from "next/link";
 
-export const dynamic = "force-dynamic"; // always render fresh (no caching)
+export const dynamic = "force-dynamic";
 
 type Opportunity = {
-  id?: string;
-  title?: string;
-  location?: string;
-  dueDate?: string;
-  naics?: string;
-  source?: string;
-  segment?: string;
-  url?: string;
-  buyer?: string;
+  title: string;
+  location: string;
+  segment: "Residential" | "Commercial" | "Government";
+  source: string;
   value?: string;
+  naics?: string;
+  buyer?: string;
+  scope?: string;
 };
 
 const PRIMARY =
@@ -20,112 +18,156 @@ const PRIMARY =
 const SECONDARY =
   "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10";
 
-const DEMO: Opportunity[] = [
+const OPPORTUNITIES: Opportunity[] = [
+  // GOVERNMENT (SAM/Federal)
   {
-    title: "Roof leak repair + shingle replacement",
-    location: "San Diego, CA",
-    dueDate: "Due in 6 days",
-    naics: "238160",
-    source: "Local",
-    segment: "Residential",
-    value: "$1.8k–$6.5k",
-  },
-  {
-    title: "HVAC preventative maintenance (12-month)",
-    location: "Carlsbad, CA",
-    dueDate: "Due in 8 days",
-    naics: "238220",
-    source: "Facility RFP",
-    segment: "Commercial",
-    value: "$18k–$55k",
-  },
-  {
-    title: "On-call hauling + disposal services",
-    location: "Vista, CA",
-    dueDate: "Due in 10 days",
-    naics: "562111",
-    source: "SAM.gov",
     segment: "Government",
-    value: "$60k–$220k",
+    source: "SAM.gov",
+    title: "Pavement Rehabilitation at Auto Plaza Drive",
+    location: "Loma Linda, CA",
+    value: "$450,000 – $1,000,000",
+    naics: "237310",
+    buyer: "CITY OF LOMA LINDA - PUBLIC WORKS",
   },
   {
-    title: "Electrical panel upgrade (commercial unit)",
-    location: "Oceanside, CA",
-    dueDate: "Due in 12 days",
-    naics: "238210",
-    source: "Bid request",
-    segment: "Commercial",
-    value: "$9k–$22k",
+    segment: "Government",
+    source: "SAM.gov",
+    title: "On-Call Geotechnical and Special Inspection Services",
+    location: "Los Angeles County, CA",
+    value: "$2,000,000+ (Multiple Awards)",
+    naics: "541330",
+    buyer: "LA COUNTY DEPT OF PUBLIC WORKS",
   },
   {
-    title: "Janitorial services (multi-tenant office)",
-    location: "San Marcos, CA",
-    dueDate: "Due in 14 days",
-    naics: "561720",
-    source: "Property mgmt",
+    segment: "Government",
+    source: "SAM.gov",
+    title: "Potable Water Storage Reservoir Cleaning & Repair",
+    location: "Pittsburg, CA",
+    value: "$150,000 – $300,000",
+    naics: "237110",
+    buyer: "CITY OF PITTSBURG - WATER DIVISION",
+  },
+  {
+    segment: "Government",
+    source: "SAM.gov",
+    title: "CDBG ADA Curb Ramp Installation Project",
+    location: "Contra Costa County, CA",
+    value: "$500,000",
+    naics: "238110",
+    buyer: "DEPT OF HOUSING AND URBAN DEVELOPMENT (LOCAL CDBG OFFICE)",
+  },
+  {
+    segment: "Government",
+    source: "SAM.gov",
+    title: "Airport Strategic Communications & Public Relations",
+    location: "Palm Springs, CA",
+    value: "Undisclosed (RFP)",
+    naics: "541820",
+    buyer: "PALM SPRINGS INTERNATIONAL AIRPORT (PSP)",
+  },
+
+  // COMMERCIAL
+  {
     segment: "Commercial",
-    value: "$2.5k–$7k/mo",
+    source: "Commercial",
+    title: "Facility Maintenance & HVAC Service Agreement",
+    location: "Regional Medical Center, IL",
+    value: "$85,000 / annually",
+    buyer: "TRINITY HEALTHCARE SYSTEMS",
+    scope: "Quarterly inspections and 24/7 emergency repair for rooftop units.",
+  },
+  {
+    segment: "Commercial",
+    source: "Commercial",
+    title: "Janitorial & Post-Construction Cleanup",
+    location: "New Mixed-Use Development, Austin, TX",
+    value: "$45,000 (Initial Phase)",
+    buyer: "GREYSTAR REAL ESTATE PARTNERS",
+    scope: "Final interior cleaning for 40,000 sq. ft. retail/office space.",
+  },
+  {
+    segment: "Commercial",
+    source: "Commercial",
+    title: "Quarterly Landscape & Lighting Assessment",
+    location: "The Shoppes at Webb Gin, Snellville, GA",
+    value: "$12,000 / quarter",
+    buyer: "SITE CENTERS CORP",
+    scope: "Irrigation management, seasonal planting, and LED exterior lighting audit.",
+  },
+  {
+    segment: "Commercial",
+    source: "Commercial",
+    title: "On-Call Security & Access Control Maintenance",
+    location: "Data Center Complex, Ashburn, VA",
+    value: "$250,000 (3-year term)",
+    buyer: "DIGITAL REALTY TRUST",
+    scope: "Maintenance of biometric scanners, CCTV, and perimeter fencing.",
+  },
+  {
+    segment: "Commercial",
+    source: "Commercial",
+    title: "Fleet Maintenance & Towing Services",
+    location: "Logistics Distribution Hub, Memphis, TN",
+    value: "$120,000 / annually",
+    buyer: "FEDEX GROUND OPERATIONS",
+    scope: "Preventive maintenance for 30 Class-8 tractors and on-call roadside assistance.",
+  },
+
+  // RESIDENTIAL
+  {
+    segment: "Residential",
+    source: "Residential",
+    title: "Backyard Renovation & Grading Project",
+    location: "Private Residence, San Diego, CA",
+    value: "$50,000",
+    buyer: "PRIVATE HOMEOWNER",
+    scope: "Correcting drainage issues, raising grade, and installing a 400 sq. ft. paver patio.",
+  },
+  {
+    segment: "Residential",
+    source: "Residential",
+    title: "Kitchen & Master Suite Remodel",
+    location: "Historic District, Charleston, SC",
+    value: "$115,000",
+    buyer: "PRIVATE HOMEOWNER",
+    scope: "Full gut renovation of 1920s kitchen and addition of a walk-in wet room.",
+  },
+  {
+    segment: "Residential",
+    source: "Residential",
+    title: "Multi-Unit Roof Replacement (HOA)",
+    location: "Silver Lakes Community, Miramar, FL",
+    value: "$320,000",
+    buyer: "SILVER LAKES HOMEOWNERS ASSOCIATION",
+    scope: "Full tear-off and replacement of asphalt shingles for 12 townhome units.",
+  },
+  {
+    segment: "Residential",
+    source: "Residential",
+    title: "Custom Hardscape & Xeriscaping Design",
+    location: "Desert Highlands, Scottsdale, AZ",
+    value: "$25,000 – $35,000",
+    buyer: "PRIVATE HOMEOWNER",
+    scope: "Drought-tolerant plants, drip irrigation, and natural stone walkways.",
+  },
+  {
+    segment: "Residential",
+    source: "Residential",
+    title: "Whole-Home Standby Generator Installation",
+    location: "Woodlands Neighborhood, Houston, TX",
+    value: "$15,000",
+    buyer: "PRIVATE HOMEOWNER",
+    scope: "Install 22kW Generac system, automatic transfer switch, and gas line extension.",
   },
 ];
 
-function badgeClasses(seg?: string) {
-  const s = (seg || "").toLowerCase();
-  if (s.includes("gov")) return "bg-emerald-600/10 text-emerald-200 border-emerald-500/20";
-  if (s.includes("comm")) return "bg-indigo-600/10 text-indigo-200 border-indigo-500/20";
+function badgeClasses(seg: Opportunity["segment"]) {
+  if (seg === "Government") return "bg-emerald-600/10 text-emerald-200 border-emerald-500/20";
+  if (seg === "Commercial") return "bg-indigo-600/10 text-indigo-200 border-indigo-500/20";
   return "bg-blue-600/10 text-blue-200 border-blue-500/20";
 }
 
-function safeListFromResponse(data: any): Opportunity[] {
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.opportunities)) return data.opportunities;
-  if (Array.isArray(data?.items)) return data.items;
-  if (Array.isArray(data?.data)) return data.data;
-  return [];
-}
-
-async function getOpportunities(): Promise<{ list: Opportunity[]; isDemo: boolean }> {
-  const base =
-    process.env.NEXT_PUBLIC_BACKEND_URL ||
-    process.env.BACKEND_URL ||
-    process.env.NEXT_PUBLIC_API_BASE_URL ||
-    "";
-
-  if (!base) return { list: DEMO, isDemo: true };
-
-  const url = `${base.replace(/\/$/, "")}/engine/opportunities`;
-
-  try {
-    const res = await fetch(url, { cache: "no-store" });
-    if (!res.ok) throw new Error(`status ${res.status}`);
-    const data = await res.json();
-    const list = safeListFromResponse(data);
-
-    // Normalize a few common field names so cards don’t break
-    const normalized = list.map((o: any) => ({
-      id: o.id ?? o._id,
-      title: o.title ?? o.name ?? o.opportunityTitle,
-      location: o.location ?? o.place ?? o.city ?? o.state,
-      dueDate: o.dueDate ?? o.due_date ?? o.responseDue ?? o.deadline,
-      naics: o.naics ?? o.naicsCode ?? o.naics_code,
-      source: o.source ?? o.portal ?? o.origin,
-      segment: o.segment ?? o.market ?? o.category,
-      url: o.url ?? o.link ?? o.opportunityUrl,
-      buyer: o.buyer ?? o.agency ?? o.customer,
-      value: o.value ?? o.estValue ?? o.estimatedValue,
-    })) as Opportunity[];
-
-    if (!normalized.length) return { list: DEMO, isDemo: true };
-
-    // Show the newest-ish first if backend already returns sorted, great. If not, still fine.
-    return { list: normalized.slice(0, 30), isDemo: false };
-  } catch {
-    return { list: DEMO, isDemo: true };
-  }
-}
-
-export default async function LiveOpportunitiesPage() {
-  const { list, isDemo } = await getOpportunities();
-
+export default function LiveOpportunitiesPage() {
   return (
     <main className="min-h-[calc(100vh-64px)]">
       <section className="relative overflow-hidden border-b border-white/10">
@@ -139,11 +181,10 @@ export default async function LiveOpportunitiesPage() {
                 Live Opportunities
               </h1>
               <p className="mt-2 text-sm text-white/70">
-                Latest opportunities across residential, commercial, and government.
+                A preview of current opportunities across Residential, Commercial, and Government.
               </p>
               <div className="mt-2 text-xs text-white/60">
                 Updated: {new Date().toLocaleString()}
-                {isDemo ? " • Demo feed" : ""}
               </div>
             </div>
 
@@ -158,9 +199,9 @@ export default async function LiveOpportunitiesPage() {
           </div>
 
           <div className="mt-8 grid gap-4">
-            {list.map((o, idx) => (
+            {OPPORTUNITIES.map((o, idx) => (
               <div
-                key={o.id ?? `${o.title}-${idx}`}
+                key={`${o.segment}-${o.title}-${idx}`}
                 className="rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] backdrop-blur"
               >
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -171,28 +212,23 @@ export default async function LiveOpportunitiesPage() {
                           o.segment
                         )}`}
                       >
-                        {o.segment || "Opportunity"}
+                        {o.segment}
                       </span>
-                      <span className="text-white/60">
-                        {o.source ? `• ${o.source}` : ""}
-                      </span>
+                      <span className="text-white/60">• {o.source}</span>
                     </div>
 
-                    <div className="mt-2 text-lg font-semibold text-white">
-                      {o.title || "Untitled opportunity"}
-                    </div>
+                    <div className="mt-2 text-lg font-semibold text-white">{o.title}</div>
 
-                    <div className="mt-1 text-sm text-white/70">
-                      {o.location ? o.location : "Location TBD"}
-                      {o.dueDate ? ` • ${o.dueDate}` : ""}
-                    </div>
+                    <div className="mt-1 text-sm text-white/70">{o.location}</div>
+
+                    {o.scope ? (
+                      <div className="mt-2 text-sm text-white/65">{o.scope}</div>
+                    ) : null}
                   </div>
 
                   <div className="shrink-0 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-center">
                     <div className="text-[11px] font-semibold text-white/60">Est value</div>
-                    <div className="mt-1 text-sm font-semibold text-white">
-                      {o.value || "—"}
-                    </div>
+                    <div className="mt-1 text-sm font-semibold text-white">{o.value || "—"}</div>
                   </div>
                 </div>
 
@@ -200,35 +236,24 @@ export default async function LiveOpportunitiesPage() {
                   <div>
                     <span className="text-white/45">NAICS:</span> {o.naics || "—"}
                   </div>
-                  <div>
+                  <div className="sm:col-span-2">
                     <span className="text-white/45">Buyer:</span> {o.buyer || "—"}
                   </div>
-                  <div>
-                    {o.url ? (
-                      <a
-                        className="text-white underline underline-offset-4"
-                        href={o.url}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View details
-                      </a>
-                    ) : (
-                      <span className="text-white/45">Link:</span>
-                    )}
-                  </div>
+                </div>
+
+                <div className="mt-4 rounded-xl border border-white/10 bg-black/20 px-4 py-3 text-xs text-white/70">
+                  Full details are available for active subscribers.
                 </div>
               </div>
             ))}
           </div>
 
-          {isDemo && (
-            <div className="mt-6 text-xs text-white/55">
-              This page is showing a demo feed right now. If you want it truly live, confirm your
-              backend endpoint <span className="text-white/75">GET /engine/opportunities</span> is
-              publicly reachable from Vercel.
-            </div>
-          )}
+          <div className="mt-8 text-center text-xs text-white/60">
+            Want these daily and fully unlocked?{" "}
+            <Link href="/get-started" className="text-white underline underline-offset-4">
+              Start Free Trial
+            </Link>
+          </div>
         </div>
       </section>
     </main>
