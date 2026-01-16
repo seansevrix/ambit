@@ -8,11 +8,8 @@ type MarketKey = "residential" | "commercial" | "government";
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xdaaaapj";
 const BRAND = "#1A4FA3";
 
-const MARKET_LABEL: Record<MarketKey, string> = {
-  residential: "Residential",
-  commercial: "Commercial",
-  government: "Government",
-};
+// Locked: always all 3 markets
+const LOCKED_MARKETS: MarketKey[] = ["residential", "commercial", "government"];
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -122,41 +119,14 @@ export default function ConciergeLeadCapture() {
   const [email, setEmail] = useState("");
   const [area, setArea] = useState("");
 
-  const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>([
-    "residential",
-    "commercial",
-    "government",
-  ]);
-
   const [keywordText, setKeywordText] = useState("");
   const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const allSelected = selectedMarkets.length === 3;
-
-  const marketsHuman = useMemo(
-    () => selectedMarkets.map((m) => MARKET_LABEL[m]).join(", "),
-    [selectedMarkets]
-  );
-
-  function toggleMarket(m: MarketKey) {
-    setSelectedMarkets((prev) => {
-      const set = new Set(prev);
-      if (set.has(m)) set.delete(m);
-      else set.add(m);
-
-      const next = Array.from(set) as MarketKey[];
-      if (next.length === 0) return ["residential", "commercial", "government"];
-      next.sort((a, b) => a.localeCompare(b));
-      return next;
-    });
-  }
-
-  function setAllMarkets() {
-    setSelectedMarkets(["residential", "commercial", "government"]);
-  }
+  // locked markets string for submission
+  const marketsHuman = "Residential, Commercial, Government";
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -202,9 +172,6 @@ export default function ConciergeLeadCapture() {
         {/* LEFT */}
         <div>
           <div className="text-lg font-semibold text-white">Get 3 matches in 24 hours</div>
-          <div className="mt-1 text-sm text-white/70">
-            We’ll hand-pick 1 Residential, 1 Commercial, and 1 Government opportunity for your area.
-          </div>
 
           <form onSubmit={onSubmit} className="mt-5 space-y-4">
             {/* Company + Email */}
@@ -251,51 +218,22 @@ export default function ConciergeLeadCapture() {
                 placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-              <div className="mt-2 text-xs text-white/60">Comma-separated</div>
             </div>
 
-            {/* Markets */}
+            {/* Markets (locked display, not editable) */}
             <div className="pt-1">
-              <div className="flex items-center justify-between">
-                <div className="text-xs font-semibold text-white/80">Markets</div>
-                <button
-                  type="button"
-                  onClick={setAllMarkets}
-                  className={cx(
-                    "rounded-xl px-3 py-1 text-xs font-semibold",
-                    allSelected
-                      ? "bg-white/15 text-white/70"
-                      : "bg-white/10 text-white hover:bg-white/15"
-                  )}
-                >
-                  All
-                </button>
-              </div>
-
+              <div className="text-xs font-semibold text-white/80">Markets</div>
               <div className="mt-3 flex flex-wrap gap-2">
-                {(["residential", "commercial", "government"] as MarketKey[]).map((m) => {
-                  const on = selectedMarkets.includes(m);
-                  return (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => toggleMarket(m)}
-                      className={cx(
-                        "rounded-2xl border px-4 py-2 text-sm font-semibold transition",
-                        on
-                          ? "border-white/30 bg-[#0B1430]/40 text-white"
-                          : "border-white/20 bg-white/10 text-white/80 hover:bg-white/15"
-                      )}
-                    >
-                      {MARKET_LABEL[m]}
-                    </button>
-                  );
-                })}
+                {LOCKED_MARKETS.map((m) => (
+                  <span
+                    key={m}
+                    className="rounded-2xl border border-white/25 bg-white/10 px-4 py-2 text-sm font-semibold text-white"
+                    title="Included"
+                  >
+                    {m === "residential" ? "Residential" : m === "commercial" ? "Commercial" : "Government"}
+                  </span>
+                ))}
               </div>
-
-              {!allSelected && (
-                <div className="mt-2 text-xs text-white/60">Selected: {marketsHuman}</div>
-              )}
             </div>
 
             {/* CTA */}
