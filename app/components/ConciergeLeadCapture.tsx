@@ -14,18 +14,6 @@ const MARKET_LABEL: Record<MarketKey, string> = {
   government: "Government",
 };
 
-const SUGGESTED_KEYWORDS = [
-  "HVAC",
-  "Landscaping",
-  "Concrete",
-  "Electrical",
-  "Plumbing",
-  "Demolition",
-  "Trucking",
-  "Janitorial",
-  "Roofing",
-];
-
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -140,7 +128,7 @@ export default function ConciergeLeadCapture() {
     "government",
   ]);
 
-  // Single text field (no Add button). User can type comma-separated.
+  // Keywords = one clean input only (no chip row)
   const [keywordText, setKeywordText] = useState("");
   const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
 
@@ -255,8 +243,20 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Markets */}
+            {/* Keywords (moved directly under service area) */}
             <div>
+              <div className="text-xs font-semibold text-white/80">Keywords</div>
+              <input
+                value={keywordText}
+                onChange={(e) => setKeywordText(e.target.value)}
+                placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
+              <div className="mt-2 text-xs text-white/60">Comma-separated</div>
+            </div>
+
+            {/* Markets (moved to bottom, right before CTA) */}
+            <div className="pt-1">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Markets</div>
                 <button
@@ -297,50 +297,6 @@ export default function ConciergeLeadCapture() {
               {!allSelected && (
                 <div className="mt-2 text-xs text-white/60">Selected: {marketsHuman}</div>
               )}
-            </div>
-
-            {/* Keywords (no Add button) */}
-            <div>
-              <div className="text-xs font-semibold text-white/80">Keywords</div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {SUGGESTED_KEYWORDS.map((k) => {
-                  const on = keywords.some((x) => x.toLowerCase() === k.toLowerCase());
-
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => {
-                        // toggle keyword in the comma-separated input
-                        const next = on
-                          ? keywords.filter((x) => x.toLowerCase() !== k.toLowerCase())
-                          : [...keywords, k];
-
-                        setKeywordText(next.join(", "));
-                      }}
-                      className={cx(
-                        "rounded-2xl border px-3 py-1.5 text-xs font-semibold transition",
-                        on
-                          ? "border-white/30 bg-white/20 text-white"
-                          : "border-white/20 bg-white/10 text-white/75 hover:bg-white/15"
-                      )}
-                      aria-pressed={on}
-                    >
-                      {k}
-                    </button>
-                  );
-                })}
-              </div>
-
-              <input
-                value={keywordText}
-                onChange={(e) => setKeywordText(e.target.value)}
-                placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
-                className="mt-3 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-              />
-
-              <div className="mt-2 text-xs text-white/60">Comma-separated</div>
             </div>
 
             {/* CTA */}
