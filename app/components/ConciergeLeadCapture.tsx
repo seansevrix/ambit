@@ -35,7 +35,7 @@ function normalizeKeywords(list: string[]) {
     .map((k) => k.trim())
     .filter(Boolean)
     .map((k) => k.replace(/\s+/g, " "))
-    .slice(0, 8);
+    .slice(0, 12);
 
   const seen = new Set<string>();
   const out: string[] = [];
@@ -46,6 +46,15 @@ function normalizeKeywords(list: string[]) {
     out.push(k);
   }
   return out;
+}
+
+function splitKeywordText(text: string) {
+  return normalizeKeywords(
+    String(text || "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  );
 }
 
 function MatchPill({ score }: { score: number }) {
@@ -96,10 +105,7 @@ function SampleCard({
             <span className="text-slate-500">• {source}</span>
           </div>
 
-          <div className="mt-1 truncate text-sm font-semibold text-slate-900">
-            {title}
-          </div>
-
+          <div className="mt-1 truncate text-sm font-semibold text-slate-900">{title}</div>
           <div className="mt-1 text-xs text-slate-600">{meta}</div>
         </div>
 
@@ -127,7 +133,6 @@ export default function ConciergeLeadCapture() {
   const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [area, setArea] = useState("");
-  const [radius, setRadius] = useState("25");
 
   const [selectedMarkets, setSelectedMarkets] = useState<MarketKey[]>([
     "residential",
@@ -135,8 +140,9 @@ export default function ConciergeLeadCapture() {
     "government",
   ]);
 
-  const [keywordInput, setKeywordInput] = useState("");
-  const [keywords, setKeywords] = useState<string[]>([]);
+  // Single text field (no Add button). User can type comma-separated.
+  const [keywordText, setKeywordText] = useState("");
+  const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -165,21 +171,11 @@ export default function ConciergeLeadCapture() {
     setSelectedMarkets(["residential", "commercial", "government"]);
   }
 
-  function addKeyword(raw: string) {
-    const next = normalizeKeywords([...keywords, raw]);
-    setKeywords(next);
-    setKeywordInput("");
-  }
-
-  function removeKeyword(k: string) {
-    setKeywords((prev) => prev.filter((x) => x.toLowerCase() !== k.toLowerCase()));
-  }
-
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
 
-    if (!company.trim()) return setError("Company name is required.");
+    if (!company.trim()) return setError("Company is required.");
     if (!email.trim()) return setError("Email is required.");
     if (!area.trim()) return setError("Service area is required.");
 
@@ -191,7 +187,6 @@ export default function ConciergeLeadCapture() {
       fd.append("email", email.trim());
       fd.append("_replyto", email.trim());
       fd.append("service_area", area.trim());
-      fd.append("radius_miles", String(radius || "").trim());
       fd.append("markets", marketsHuman);
       fd.append("keywords", keywords.join(", "));
       fd.append("_gotcha", "");
@@ -219,21 +214,20 @@ export default function ConciergeLeadCapture() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT */}
         <div>
-          <div className="text-lg font-semibold text-white">Preview your matches</div>
+          <div className="text-lg font-semibold text-white">Get 3 matches in 24 hours</div>
           <div className="mt-1 text-sm text-white/70">
-            Tell us your service area + keywords. We’ll email your first{" "}
-            <span className="font-semibold text-white">3 real matches</span> within 24 hours.
+            We’ll hand-pick 1 Residential, 1 Commercial, and 1 Government opportunity for your area.
           </div>
 
           <form onSubmit={onSubmit} className="mt-5 space-y-4">
             {/* Company + Email */}
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <div className="text-xs font-semibold text-white/80">Company name</div>
+                <div className="text-xs font-semibold text-white/80">Company</div>
                 <input
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Your company"
+                  placeholder="Company name"
                   className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
                 />
               </div>
@@ -243,37 +237,22 @@ export default function ConciergeLeadCapture() {
                 <input
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@company.com"
+                  placeholder="Email address"
                   type="email"
                   className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
                 />
               </div>
             </div>
 
-            {/* Service area + radius */}
-            <div className="grid gap-3 sm:grid-cols-[1fr_140px]">
-              <div>
-                <div className="text-xs font-semibold text-white/80">Service area</div>
-                <input
-                  value={area}
-                  onChange={(e) => setArea(e.target.value)}
-                  placeholder="City or county (ex: San Diego, CA)"
-                  className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-                />
-              </div>
-
-              <div>
-                <div className="text-xs font-semibold text-white/80">Radius</div>
-                <div className="mt-2 rounded-2xl border border-white/20 bg-white/90 px-4 py-3">
-                  <input
-                    value={radius}
-                    onChange={(e) => setRadius(e.target.value)}
-                    inputMode="numeric"
-                    className="w-full bg-transparent text-sm font-semibold text-slate-900 outline-none"
-                  />
-                  <div className="mt-1 text-[11px] text-slate-500">miles</div>
-                </div>
-              </div>
+            {/* Service area */}
+            <div>
+              <div className="text-xs font-semibold text-white/80">Service area</div>
+              <input
+                value={area}
+                onChange={(e) => setArea(e.target.value)}
+                placeholder="City or county"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
             </div>
 
             {/* Markets */}
@@ -290,7 +269,7 @@ export default function ConciergeLeadCapture() {
                       : "bg-white/10 text-white hover:bg-white/15"
                   )}
                 >
-                  All markets
+                  All
                 </button>
               </div>
 
@@ -315,23 +294,31 @@ export default function ConciergeLeadCapture() {
                 })}
               </div>
 
-              <div className="mt-2 text-xs text-white/60">
-                {allSelected ? "All markets selected." : `Selected: ${marketsHuman}`}
-              </div>
+              {!allSelected && (
+                <div className="mt-2 text-xs text-white/60">Selected: {marketsHuman}</div>
+              )}
             </div>
 
-            {/* Keywords */}
+            {/* Keywords (no Add button) */}
             <div>
-              <div className="text-xs font-semibold text-white/80">Keywords (optional)</div>
+              <div className="text-xs font-semibold text-white/80">Keywords</div>
 
               <div className="mt-3 flex flex-wrap gap-2">
                 {SUGGESTED_KEYWORDS.map((k) => {
                   const on = keywords.some((x) => x.toLowerCase() === k.toLowerCase());
+
                   return (
                     <button
                       key={k}
                       type="button"
-                      onClick={() => (on ? removeKeyword(k) : addKeyword(k))}
+                      onClick={() => {
+                        // toggle keyword in the comma-separated input
+                        const next = on
+                          ? keywords.filter((x) => x.toLowerCase() !== k.toLowerCase())
+                          : [...keywords, k];
+
+                        setKeywordText(next.join(", "));
+                      }}
                       className={cx(
                         "rounded-2xl border px-3 py-1.5 text-xs font-semibold transition",
                         on
@@ -346,44 +333,14 @@ export default function ConciergeLeadCapture() {
                 })}
               </div>
 
-              <div className="mt-3 flex gap-2">
-                <input
-                  value={keywordInput}
-                  onChange={(e) => setKeywordInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      if (keywordInput.trim()) addKeyword(keywordInput);
-                    }
-                  }}
-                  placeholder="Add a keyword (press Enter)"
-                  className="w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-                />
-                <button
-                  type="button"
-                  onClick={() => keywordInput.trim() && addKeyword(keywordInput)}
-                  className="rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-sm"
-                  style={{ backgroundColor: BRAND }}
-                >
-                  Add
-                </button>
-              </div>
+              <input
+                value={keywordText}
+                onChange={(e) => setKeywordText(e.target.value)}
+                placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
+                className="mt-3 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
 
-              {keywords.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {keywords.map((k) => (
-                    <button
-                      key={k}
-                      type="button"
-                      onClick={() => removeKeyword(k)}
-                      className="rounded-2xl border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white/80 hover:bg-white/15"
-                      title="Remove"
-                    >
-                      {k} <span className="text-white/60">×</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+              <div className="mt-2 text-xs text-white/60">Comma-separated</div>
             </div>
 
             {/* CTA */}
@@ -397,11 +354,11 @@ export default function ConciergeLeadCapture() {
                 )}
                 style={{ backgroundColor: BRAND }}
               >
-                {submitting ? "Sending…" : "Send me 3 matches"}
+                {submitting ? "Sending…" : "Get my 3 matches"}
               </button>
 
               <div className="mt-2 text-center text-xs text-white/70">
-                No credit card required • 3 matches in 24 hours
+                3 matches in 24 hours • Free
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
@@ -455,7 +412,7 @@ export default function ConciergeLeadCapture() {
           </div>
 
           <div className="mt-3 text-xs text-white/65">
-            These are samples. Your first 3 real matches will be hand-picked and emailed.
+            Samples only. Your first 3 real matches are hand-picked and emailed.
           </div>
         </div>
       </div>
