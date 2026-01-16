@@ -90,8 +90,9 @@ const TESTIMONIALS_BY_SEGMENT: Record<Segment, Testimonial> = {
   },
 };
 
+// ✅ cleaner, tighter banner copy
 const TRIAL_BANNER_TEXT =
-  "7-day free trial - Try AMBIT free for 7 days - No credit card required - Cancel anytime - No spam";
+  "7-day free trial • No credit card required • Cancel anytime • No spam";
 
 export default async function PreviewSegmentPage({
   params,
