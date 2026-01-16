@@ -58,7 +58,6 @@ export default function HomePage() {
 
       {/* SCREENSHOT-STYLE HERO + GLASS PANEL */}
       <section className="relative overflow-hidden rounded-3xl border border-white/10">
-        {/* Background layers (no image required; optional image hook included) */}
         <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.35),transparent_60%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#08122B] via-[#070F22] to-[#060A16]" />
 
@@ -78,9 +77,9 @@ export default function HomePage() {
               <Link href="/get-started" className={PRIMARY}>
                 Start Free Trial
               </Link>
-              <a href="#preview" className={SECONDARY}>
+              <Link href="/live-opportunities" className={SECONDARY}>
                 View Live Leads
-              </a>
+              </Link>
             </div>
           </div>
 
