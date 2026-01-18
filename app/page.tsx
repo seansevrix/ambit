@@ -3,8 +3,8 @@ import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
 
 const PRIMARY =
   "inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#15428B]";
-const SECONDARY =
-  "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10";
+const LINK =
+  "text-sm font-semibold text-white/75 hover:text-white transition";
 
 const TESTIMONIALS = [
   {
@@ -30,34 +30,9 @@ const TESTIMONIALS = [
   },
 ];
 
-function TrialBanner() {
-  return (
-    <section className="rounded-2xl border border-[#6EA8FF] bg-white/5 p-4 shadow-[0_0_0_1px_rgba(110,168,255,0.35)] sm:rounded-3xl">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-1 text-center sm:text-left">
-          <div className="mx-auto inline-flex w-fit items-center rounded-full border border-[#6EA8FF] bg-[#1A4FA3]/25 px-3 py-1 text-xs font-bold text-white sm:mx-0">
-            7 Day Free Trial
-          </div>
-          <div className="text-sm font-bold text-white">
-            Start free today. Cancel anytime.
-          </div>
-          <div className="text-xs text-white/70">No credit card required</div>
-        </div>
-
-        <Link href="/get-started" className={`${PRIMARY} w-full sm:w-auto`}>
-          Start Free Trial
-        </Link>
-      </div>
-    </section>
-  );
-}
-
 export default function HomePage() {
   return (
     <div className="space-y-8 overflow-x-hidden sm:space-y-12">
-      {/* TRIAL BANNER (non-blocking) */}
-      <TrialBanner />
-
       {/* HERO + GLASS PANEL */}
       <section className="relative overflow-hidden rounded-2xl border border-white/10 sm:rounded-3xl">
         <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.35),transparent_60%)]" />
@@ -68,19 +43,26 @@ export default function HomePage() {
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
               Get more local contracts.
             </h1>
+
             <p className="mt-3 text-sm text-white/70 sm:text-base">
               Qualified opportunities sent to you — not your competitors.
             </p>
 
+            <p className="mt-3 text-xs text-white/65 sm:text-sm">
+              Get <span className="text-white font-semibold">3 free matches</span> in 24 hours.
+              <span className="mx-2 text-white/35">•</span>
+              No credit card
+              <span className="mx-2 text-white/35">•</span>
+              Unsubscribe anytime
+            </p>
+
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/get-started" className={`${PRIMARY} w-full sm:w-auto`}>
-                Start Free Trial
+              <Link href="/#preview" className={`${PRIMARY} w-full sm:w-auto`}>
+                Get 3 free matches
               </Link>
-              <Link
-                href="/live-opportunities"
-                className={`${SECONDARY} w-full sm:w-auto`}
-              >
-                View Live Leads
+
+              <Link href="/live-opportunities" className={LINK}>
+                View Live Leads →
               </Link>
             </div>
           </div>
@@ -98,9 +80,11 @@ export default function HomePage() {
             <div className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
               TESTIMONIALS
             </div>
+
             <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Built for contractors. Proven in the field.
             </h2>
+
             <p className="mt-2 max-w-2xl text-sm text-white/70">
               Real feedback from businesses using AMBIT to find and act on residential, commercial,
               and government opportunities faster.
@@ -108,7 +92,10 @@ export default function HomePage() {
           </div>
 
           <div className="flex">
-            <Link href="/testimonials" className={`${SECONDARY} w-full sm:w-auto`}>
+            <Link
+              href="/testimonials"
+              className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
+            >
               See all testimonials
             </Link>
           </div>
@@ -116,7 +103,10 @@ export default function HomePage() {
 
         <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
-            <div key={t.name} className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6">
+            <div
+              key={t.name}
+              className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6"
+            >
               <p className="text-sm leading-relaxed text-white/75">
                 <span className="text-white/40">“</span>
                 {t.quote}
