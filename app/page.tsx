@@ -32,17 +32,19 @@ const TESTIMONIALS = [
 
 function TrialBanner() {
   return (
-    <section className="rounded-3xl border border-[#6EA8FF] bg-white/5 p-4 shadow-[0_0_0_1px_rgba(110,168,255,0.35)]">
+    <section className="rounded-2xl border border-[#6EA8FF] bg-white/5 p-4 shadow-[0_0_0_1px_rgba(110,168,255,0.35)] sm:rounded-3xl">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col gap-1">
-          <div className="inline-flex w-fit items-center rounded-full border border-[#6EA8FF] bg-[#1A4FA3]/25 px-3 py-1 text-xs font-bold text-white">
+        <div className="flex flex-col gap-1 text-center sm:text-left">
+          <div className="mx-auto inline-flex w-fit items-center rounded-full border border-[#6EA8FF] bg-[#1A4FA3]/25 px-3 py-1 text-xs font-bold text-white sm:mx-0">
             7 Day Free Trial
           </div>
-          <div className="text-sm font-bold text-white">Start free today. Cancel anytime.</div>
+          <div className="text-sm font-bold text-white">
+            Start free today. Cancel anytime.
+          </div>
           <div className="text-xs text-white/70">No credit card required</div>
         </div>
 
-        <Link href="/get-started" className={PRIMARY}>
+        <Link href="/get-started" className={`${PRIMARY} w-full sm:w-auto`}>
           Start Free Trial
         </Link>
       </div>
@@ -52,21 +54,18 @@ function TrialBanner() {
 
 export default function HomePage() {
   return (
-    <div className="space-y-12">
+    <div className="space-y-8 overflow-x-hidden sm:space-y-12">
       {/* TRIAL BANNER (non-blocking) */}
       <TrialBanner />
 
-      {/* SCREENSHOT-STYLE HERO + GLASS PANEL */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10">
+      {/* HERO + GLASS PANEL */}
+      <section className="relative overflow-hidden rounded-2xl border border-white/10 sm:rounded-3xl">
         <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.35),transparent_60%)]" />
         <div className="absolute inset-0 bg-gradient-to-b from-[#08122B] via-[#070F22] to-[#060A16]" />
 
-        {/* Optional photo background: drop an image into /public/hero.jpg and uncomment below */}
-        {/* <div className="absolute inset-0 bg-[url('/hero.jpg')] bg-cover bg-center opacity-25" /> */}
-
-        <div className="relative px-6 py-14 sm:px-10">
+        <div className="relative px-4 py-10 sm:px-10 sm:py-14">
           <div className="mx-auto max-w-5xl text-center">
-            <h1 className="text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
               Get more local contracts.
             </h1>
             <p className="mt-3 text-sm text-white/70 sm:text-base">
@@ -74,29 +73,32 @@ export default function HomePage() {
             </p>
 
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/get-started" className={PRIMARY}>
+              <Link href="/get-started" className={`${PRIMARY} w-full sm:w-auto`}>
                 Start Free Trial
               </Link>
-              <Link href="/live-opportunities" className={SECONDARY}>
+              <Link
+                href="/live-opportunities"
+                className={`${SECONDARY} w-full sm:w-auto`}
+              >
                 View Live Leads
               </Link>
             </div>
           </div>
 
-          <div id="preview" className="mx-auto mt-10 max-w-6xl">
+          <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
             <ConciergeLeadCapture />
           </div>
         </div>
       </section>
 
       {/* TESTIMONIALS */}
-      <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
+      <section className="rounded-2xl border border-white/10 bg-white/5 p-6 sm:rounded-3xl sm:p-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div>
             <div className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
               TESTIMONIALS
             </div>
-            <h2 className="mt-3 text-2xl font-semibold tracking-tight text-white">
+            <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Built for contractors. Proven in the field.
             </h2>
             <p className="mt-2 max-w-2xl text-sm text-white/70">
@@ -105,14 +107,14 @@ export default function HomePage() {
             </p>
           </div>
 
-          <div className="flex gap-3">
-            <Link href="/testimonials" className={SECONDARY}>
+          <div className="flex">
+            <Link href="/testimonials" className={`${SECONDARY} w-full sm:w-auto`}>
               See all testimonials
             </Link>
           </div>
         </div>
 
-        <div className="mt-10 grid gap-6 lg:grid-cols-3">
+        <div className="mt-8 grid gap-6 lg:mt-10 lg:grid-cols-3">
           {TESTIMONIALS.map((t) => (
             <div key={t.name} className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6">
               <p className="text-sm leading-relaxed text-white/75">
