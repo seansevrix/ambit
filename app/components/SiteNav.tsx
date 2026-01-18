@@ -1,15 +1,12 @@
 import Link from "next/link";
 
 const PRIMARY_BTN =
-  // mobile: smaller + no-wrap, desktop: original sizing
   "shrink-0 whitespace-nowrap rounded-xl bg-[#1A4FA3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#15428B] sm:px-4 sm:text-sm";
 
 const GHOST_BTN =
-  // mobile: smaller + no-wrap, desktop: original sizing
   "shrink-0 whitespace-nowrap rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm";
 
-const NAV_LINK =
-  "text-sm font-semibold text-white/75 hover:text-white transition";
+const NAV_LINK = "text-sm font-semibold text-white/75 hover:text-white transition";
 
 export default function SiteNav() {
   return (
@@ -42,15 +39,13 @@ export default function SiteNav() {
         {/* Right */}
         <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
           <Link href="/login" className={GHOST_BTN}>
-            {/* mobile label shorter */}
             <span className="sm:hidden">Login</span>
             <span className="hidden sm:inline">Log In</span>
           </Link>
 
-          <Link href="/get-started?plan=single" className={PRIMARY_BTN}>
-            {/* mobile label shorter */}
-            <span className="sm:hidden">Start</span>
-            <span className="hidden sm:inline">Get Started</span>
+          <Link href="/#preview" className={PRIMARY_BTN}>
+            <span className="sm:hidden">3 Matches</span>
+            <span className="hidden sm:inline">Get 3 free matches</span>
           </Link>
         </div>
       </div>

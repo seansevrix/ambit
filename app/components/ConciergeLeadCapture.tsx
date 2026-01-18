@@ -1,15 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-
-type MarketKey = "residential" | "commercial" | "government";
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xdaaaapj";
 const BRAND = "#1A4FA3";
-
-// Locked: always all 3 markets
-const LOCKED_MARKETS: MarketKey[] = ["residential", "commercial", "government"];
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
@@ -115,24 +110,22 @@ function SampleCard({
 export default function ConciergeLeadCapture() {
   const router = useRouter();
 
-  const [company, setCompany] = useState("");
   const [email, setEmail] = useState("");
   const [area, setArea] = useState("");
-
   const [keywordText, setKeywordText] = useState("");
+
   const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // locked markets string for submission
+  // Always include all markets behind the scenes
   const marketsHuman = "Residential, Commercial, Government";
 
-  async function onSubmit(e: React.FormEvent) {
+  async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (!company.trim()) return setError("Company is required.");
     if (!email.trim()) return setError("Work Email is required.");
     if (!area.trim()) return setError("Service area is required.");
 
@@ -140,14 +133,15 @@ export default function ConciergeLeadCapture() {
       setSubmitting(true);
 
       const fd = new FormData();
-      fd.append("company", company.trim());
       fd.append("email", email.trim());
       fd.append("_replyto", email.trim());
       fd.append("service_area", area.trim());
       fd.append("markets", marketsHuman);
       fd.append("keywords", keywords.join(", "));
       fd.append("_gotcha", "");
-      fd.append("_subject", `AMBIT lead: ${company.trim()} (${area.trim()})`);
+
+      // Keep subject clean & useful for you
+      fd.append("_subject", `AMBIT lead: ${email.trim()} (${area.trim()})`);
 
       const res = await fetch(FORMSPREE_ENDPOINT, {
         method: "POST",
@@ -172,32 +166,24 @@ export default function ConciergeLeadCapture() {
         {/* LEFT */}
         <div className="min-w-0">
           <div className="text-base font-semibold text-white sm:text-lg">
-            Get 3 matches in 24 hours
+            Get 3 free matches in 24 hours
+          </div>
+
+          <div className="mt-2 text-xs text-white/70">
+            No credit card • Unsubscribe anytime • We only email when we find matches
           </div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
-            {/* Company + Email */}
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-white/80">Company</div>
-                <input
-                  value={company}
-                  onChange={(e) => setCompany(e.target.value)}
-                  placeholder="Your Company Name"
-                  className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-                />
-              </div>
-
-              <div className="min-w-0">
-                <div className="text-xs font-semibold text-white/80">Email</div>
-                <input
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="Work Email"
-                  type="email"
-                  className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-                />
-              </div>
+            {/* Email */}
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-white/80">Work Email</div>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Work Email"
+                type="email"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
             </div>
 
             {/* Service area */}
@@ -211,35 +197,18 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Keywords */}
+            {/* Keywords (optional) */}
             <div className="min-w-0">
-              <div className="text-xs font-semibold text-white/80">Keywords</div>
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-white/80">Keywords</div>
+                <div className="text-xs text-white/55">Optional</div>
+              </div>
               <input
                 value={keywordText}
                 onChange={(e) => setKeywordText(e.target.value)}
                 placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-            </div>
-
-            {/* Markets (locked display, not editable) */}
-            <div className="pt-1">
-              <div className="text-xs font-semibold text-white/80">Markets</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {LOCKED_MARKETS.map((m) => (
-                  <span
-                    key={m}
-                    className="rounded-2xl border border-white/25 bg-white/10 px-3 py-2 text-xs font-semibold text-white sm:px-4 sm:text-sm"
-                    title="Included"
-                  >
-                    {m === "residential"
-                      ? "Residential"
-                      : m === "commercial"
-                      ? "Commercial"
-                      : "Government"}
-                  </span>
-                ))}
-              </div>
             </div>
 
             {/* CTA */}
@@ -253,11 +222,11 @@ export default function ConciergeLeadCapture() {
                 )}
                 style={{ backgroundColor: BRAND }}
               >
-                {submitting ? "Sending…" : "Send Me 3 Matches"}
+                {submitting ? "Sending…" : "Send me 3 matches"}
               </button>
 
               <div className="mt-2 text-center text-xs text-white/70">
-                3 matches in 24 hours • Free
+                Free • 3 matches in 24 hours
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
@@ -311,7 +280,7 @@ export default function ConciergeLeadCapture() {
           </div>
 
           <div className="mt-3 text-xs text-white/65">
-            Samples only. Your first 3 real matches are hand-picked and emailed.
+            Samples only. Your first 3 real matches are emailed within 24 hours.
           </div>
         </div>
       </div>
