@@ -43,9 +43,9 @@ export default function SiteNav() {
             <span className="hidden sm:inline">Log In</span>
           </Link>
 
-          <Link href="/#preview" className={PRIMARY_BTN}>
-            <span className="sm:hidden">3 Matches</span>
-            <span className="hidden sm:inline">Get 3 free matches</span>
+          {/* Primary CTA */}
+          <Link href="/get-started" className={PRIMARY_BTN}>
+            Sign Up
           </Link>
         </div>
       </div>
