@@ -41,26 +41,22 @@ export default function HomePage() {
         <div className="relative px-4 py-10 sm:px-10 sm:py-14">
           <div className="mx-auto max-w-5xl text-center">
             <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-              Get more local contracts.
+              Exclusive Local Contracts, Delivered.
             </h1>
 
             <p className="mt-3 text-sm text-white/70 sm:text-base">
-              Qualified opportunities sent to you — not your competitors.
+              Get 3 matches — residential • commercial • government.
             </p>
 
             <p className="mt-3 text-xs text-white/65 sm:text-sm">
-              Get <span className="text-white font-semibold">3 free matches</span> in 24 hours.
-              <span className="mx-2 text-white/35">•</span>
               No credit card
+              <span className="mx-2 text-white/35">•</span>
+              trusted by 200+ local pros
               <span className="mx-2 text-white/35">•</span>
               Unsubscribe anytime
             </p>
 
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/#preview" className={`${PRIMARY} w-full sm:w-auto`}>
-                Get 3 free matches
-              </Link>
-
               <Link href="/live-opportunities" className={LINK}>
                 View Live Leads →
               </Link>
