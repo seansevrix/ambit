@@ -4,9 +4,9 @@ import prisma from "../lib/prisma.js";
 const router = express.Router();
 
 // ✅ SIMPLE TUNING KNOBS
-const MIN_SCORE = 60;        // raise/lower to change strictness
-const DEFAULT_LIMIT = 50;    // return more so "Load more" is meaningful
-const MAX_LIMIT = 200;       // safety cap
+const MIN_SCORE = 60; // raise/lower to change strictness
+const DEFAULT_LIMIT = 50; // return more so "Load more" is meaningful
+const MAX_LIMIT = 200; // safety cap
 
 // ✅ IMPORTANT: cap how many opportunities we score (prevents huge scans / raw JSON blowups)
 const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
@@ -19,17 +19,84 @@ const OUT_OF_AREA_PENALTY = 25; // subtract if NOT nearby
 const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
 
 const STOP = new Set([
-  "the","and","or","a","an","of","to","for","in","on","at","with","by",
-  "llc","inc","co","company","services","service","solutions","group",
+  "the",
+  "and",
+  "or",
+  "a",
+  "an",
+  "of",
+  "to",
+  "for",
+  "in",
+  "on",
+  "at",
+  "with",
+  "by",
+  "llc",
+  "inc",
+  "co",
+  "company",
+  "services",
+  "service",
+  "solutions",
+  "group",
   // ✅ prevents garbage tokenization when location got stringified badly
-  "object"
+  "object",
 ]);
 
 // Minimal US state code helpers
 const STATE_CODES = new Set([
-  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME","MD",
-  "MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA","RI","SC",
-  "SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC"
+  "AL",
+  "AK",
+  "AZ",
+  "AR",
+  "CA",
+  "CO",
+  "CT",
+  "DE",
+  "FL",
+  "GA",
+  "HI",
+  "ID",
+  "IL",
+  "IN",
+  "IA",
+  "KS",
+  "KY",
+  "LA",
+  "ME",
+  "MD",
+  "MA",
+  "MI",
+  "MN",
+  "MS",
+  "MO",
+  "MT",
+  "NE",
+  "NV",
+  "NH",
+  "NJ",
+  "NM",
+  "NY",
+  "NC",
+  "ND",
+  "OH",
+  "OK",
+  "OR",
+  "PA",
+  "RI",
+  "SC",
+  "SD",
+  "TN",
+  "TX",
+  "UT",
+  "VT",
+  "VA",
+  "WA",
+  "WV",
+  "WI",
+  "WY",
+  "DC",
 ]);
 
 const STATE_NAME_TO_CODE = {
@@ -121,7 +188,6 @@ const NEIGHBORS = {
 function isNearbyState(customerState, oppState) {
   if (!customerState || !oppState) return null; // unknown
   if (customerState === oppState) return true;
-
   const neighbors = NEIGHBORS[customerState] || [];
   return neighbors.includes(oppState);
 }
@@ -205,22 +271,18 @@ function abbreviateStateInLocation(locationStr) {
   const raw = String(locationStr || "").trim();
   if (!raw) return raw;
 
-  // If we can find a state code, normalize the string to use the code.
   const code = extractStateCode(raw);
   if (!code) return raw;
 
   let out = raw;
 
   // Replace state names with their codes (case-insensitive).
-  // Handles multiword names by allowing flexible whitespace.
   for (const [name, c] of Object.entries(STATE_NAME_TO_CODE)) {
     const pattern = name.replace(/\s+/g, "\\s+");
     const re = new RegExp(pattern, "ig");
     out = out.replace(re, c);
   }
 
-  // Clean up: if it contains the code but not as a separated token, leave it.
-  // If it contains both "CA" and "California" we already replaced.
   return out;
 }
 
@@ -327,16 +389,10 @@ function scoreMatch(customer, opp) {
   const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
-  const baseTokens = new Set([
-    ...industryTokens,
-    ...serviceTokens,
-    ...customerKeywordTokens,
-  ]);
+  const baseTokens = new Set([...industryTokens, ...serviceTokens, ...customerKeywordTokens]);
 
   const hasAnything =
-    baseTokens.size > 0 ||
-    locationTokens.length > 0 ||
-    customerNaicsList.length > 0;
+    baseTokens.size > 0 || locationTokens.length > 0 || customerNaicsList.length > 0;
 
   if (!hasAnything) {
     return {
@@ -350,8 +406,6 @@ function scoreMatch(customer, opp) {
   }
 
   const oppTitleTokens = tokenize(opp.title);
-
-  // ✅ Better: normalize opp location tokens with state name + code
   const oppLocTokens = locationTokensWithState(opp.location);
 
   const oppNaicsList = normalizeNaicsList(opp.naics);
@@ -414,7 +468,6 @@ function scoreMatch(customer, opp) {
 
   if (custState && oppState) {
     const nearby = isNearbyState(custState, oppState);
-
     if (nearby === false) {
       score -= OUT_OF_AREA_PENALTY;
       reasons.push(`Out of area (${oppState} vs ${custState}) -${OUT_OF_AREA_PENALTY}`);
@@ -424,8 +477,7 @@ function scoreMatch(customer, opp) {
   if (score < 0) score = 0;
   if (score > 100) score = 100;
 
-  const nearbyFlag =
-    !custState || !oppState ? null : isNearbyState(custState, oppState);
+  const nearbyFlag = !custState || !oppState ? null : isNearbyState(custState, oppState);
 
   return {
     score,
@@ -433,7 +485,7 @@ function scoreMatch(customer, opp) {
     profileIncomplete: false,
     nearby: nearbyFlag,
     custState,
-    oppState
+    oppState,
   };
 }
 
@@ -483,15 +535,20 @@ router.get("/matches/:customerId", async (req, res) => {
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    // ✅ TRIAL-AWARE PAYWALL
+    // ✅ TRIAL-AWARE PAYWALL (NO CC trial counts as access)
+    const now = Date.now();
     const trialActive =
-      customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > Date.now();
+      customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now;
 
-    if (!customer.isActive && !trialActive) {
+    const accessAllowed = Boolean(customer.isActive) || Boolean(trialActive);
+
+    if (!accessAllowed) {
       return res.status(402).json({
+        ok: false,
         message: "Subscription required",
         subscriptionStatus: customer.subscriptionStatus ?? "inactive",
         trialEndedAt: customer.trialEndsAt ?? null,
+        trialEnded: Boolean(customer.trialEndsAt),
       });
     }
 
@@ -503,7 +560,7 @@ router.get("/matches/:customerId", async (req, res) => {
         select: { segments: true },
       });
       segments = segRow?.segments ?? null;
-    } catch (e) {
+    } catch {
       segments = null;
     }
 
@@ -570,13 +627,17 @@ router.get("/matches/:customerId", async (req, res) => {
           // ✅ location cleanup
           const safeLocation =
             typeof opp.location === "string"
-              ? (opp.location.includes("[object Object]") ? null : opp.location)
+              ? opp.location.includes("[object Object]")
+                ? null
+                : opp.location
               : opp.location
               ? JSON.stringify(opp.location)
               : null;
 
           // ✅ UI polish: abbreviate state names in output
-          const prettyLocation = safeLocation ? abbreviateStateInLocation(safeLocation) : null;
+          const prettyLocation = safeLocation
+            ? abbreviateStateInLocation(safeLocation)
+            : null;
 
           // score using cleaned + prettified location
           const s = scoreMatch(customer, { ...opp, location: prettyLocation });
@@ -633,7 +694,9 @@ router.get("/matches/:customerId", async (req, res) => {
       segments: allowedSegments,
       access: {
         isActive: Boolean(customer.isActive),
+        subscriptionStatus: customer.subscriptionStatus ?? null,
         trialEndsAt: customer.trialEndsAt ?? null,
+        trialActive: Boolean(trialActive),
       },
       matches,
     });
