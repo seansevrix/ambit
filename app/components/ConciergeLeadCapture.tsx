@@ -244,17 +244,6 @@ export default function ConciergeLeadCapture() {
             Start your 7-day free trial
           </div>
 
-          <div className="mt-2 text-xs text-white/70">
-            No credit card • Daily matches for 7 days • First matches start within 24 hours
-          </div>
-
-          {/* transparency + safety */}
-          <div className="mt-2 text-xs text-white/60">
-            Sources: SAM.gov, OpenGov, local portals
-            <span className="mx-2 text-white/35">•</span>
-            No spam. No data resale.
-          </div>
-
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
             {/* Email */}
             <div className="min-w-0">
@@ -327,7 +316,7 @@ export default function ConciergeLeadCapture() {
                 {submitting ? "Starting…" : "Start free trial"}
               </button>
 
-              <div className="mt-2 text-center text-xs text-white/70">
+              <div className="mt-3 text-center text-xs text-white/70">
                 No credit card required • Residential + Commercial + Government
               </div>
 
