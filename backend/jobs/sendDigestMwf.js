@@ -1,11 +1,13 @@
 // backend/jobs/sendDigestMwf.js
-// DAILY digest job (QUIET MODE + TRIAL-ENDED UPSELL):
+// DAILY digest job (QUIET MODE + TRIAL-ENDED NUDGE):
 // - Runs every day (cron controls schedule)
-// - If customer is ACTIVE or TRIAL ACTIVE:
+// - If customer is ACTIVE:
 //    - Sends ONLY when there is a NEW match (top 1)
 //    - If NO new matches: sends NO_MATCHES_TEXT only once every X days
+// - If customer is TRIAL ACTIVE (no-CC trial):
+//    - Sends DAILY (even if no new match)
 // - If customer is NOT active AND TRIAL ENDED:
-//    - Sends DAILY "Your matches are waiting — upgrade" email (NO match details)
+//    - Sends DAILY "Finish signing up to receive more matches" email (NO match details)
 // - Prevents double-send on the same day (uses DigestLog if available; otherwise DigestEmail)
 
 import "dotenv/config";
@@ -169,7 +171,7 @@ function buildHtml({
   `;
 }
 
-// ✅ Trial-ended upsell email (NO match details)
+// ✅ Trial-ended email (NO match details) — wording changed to “Finish signing up”
 function buildUpsellHtml({
   customerId,
   email,
@@ -184,29 +186,29 @@ function buildUpsellHtml({
 
   return `
     <div style="font-family:Arial,sans-serif;line-height:1.5">
-      <h2 style="margin:0 0 10px">Your AMBIT matches are waiting</h2>
+      <h2 style="margin:0 0 10px">Finish signing up to receive more matches</h2>
       <div style="color:#444;margin-bottom:14px">
         <div><strong>Customer ID:</strong> ${customerId}</div>
         <div><strong>Registered Email:</strong> ${email}</div>
       </div>
 
       <p style="margin:0 0 12px">
-        Your free trial ended, so daily match delivery is paused.
+        Your 7-day free trial ended, so daily match delivery is paused.
       </p>
 
       <p style="margin:0 0 12px">
-        Upgrade to resume <strong>daily matched opportunities</strong> in your inbox.
+        Finish signing up to resume <strong>daily matched opportunities</strong> in your inbox.
       </p>
 
       <p style="margin:16px 0 0">
         <a href="${upgradeUrl}" target="_blank"
            style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
-          Upgrade to resume daily matches
+          Finish signing up
         </a>
         <span style="display:inline-block;width:10px"></span>
         <a href="${portalUrl}" target="_blank"
            style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111;color:#111">
-          Open portal
+          Open AMBIT
         </a>
       </p>
 
@@ -265,6 +267,16 @@ function trialIsEnded(trialEndsAt) {
   return Number.isFinite(t) && t <= Date.now();
 }
 
+function trialDayNumber(trialEndsAt, totalDays = 7) {
+  if (!trialEndsAt) return null;
+  const end = new Date(trialEndsAt).getTime();
+  if (!Number.isFinite(end)) return null;
+  const msRemaining = end - Date.now();
+  const remaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000)); // ceil keeps Day 1 clean
+  const day = totalDays - remaining + 1;
+  return Math.max(1, Math.min(totalDays, day));
+}
+
 function isLikelyAnonEmail(email) {
   const e = String(email || "").toLowerCase();
   if (!e) return true;
@@ -278,7 +290,8 @@ async function main() {
   const BACKEND_URL = process.env.BACKEND_URL; // e.g. https://ambit-0dnp.onrender.com
   const APP_URL = process.env.FRONTEND_URL || "https://ambitco.app";
 
-  const SIGNUP_URL = process.env.SIGNUP_URL || `${APP_URL}/get-started`;
+  // ✅ Homepage is now the funnel (default)
+  const SIGNUP_URL = process.env.SIGNUP_URL || APP_URL;
   const UNSUB_BASE = process.env.UNSUBSCRIBE_BASE_URL || `${BACKEND_URL}/public/unsubscribe`;
 
   const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
@@ -314,7 +327,10 @@ async function main() {
     try {
       if (isLikelyAnonEmail(c.email)) continue;
 
-      const accessAllowed = Boolean(c.isActive) || trialIsActive(c.trialEndsAt);
+      const isTrial = !c.isActive && trialIsActive(c.trialEndsAt);
+      const trialDay = isTrial ? trialDayNumber(c.trialEndsAt, 7) : null;
+
+      const accessAllowed = Boolean(c.isActive) || isTrial;
       const shouldUpsell = !c.isActive && trialIsEnded(c.trialEndsAt);
 
       // 0) Already emailed today?
@@ -333,7 +349,7 @@ async function main() {
         if (existing?.status === "sent") continue;
       }
 
-      // 1) Trial ended -> DAILY upsell email (no match details)
+      // 1) Trial ended -> DAILY “finish signup” email (no match details)
       if (shouldUpsell) {
         const ts = Date.now().toString();
         const sig = signUnsub(c.email, ts, process.env.UNSUBSCRIBE_SECRET);
@@ -345,7 +361,7 @@ async function main() {
         const portalUrl = `${APP_URL}/matches/${customerId}`;
         const upgradeUrl = `${APP_URL}/matches/${customerId}?upgrade=1`;
 
-        const subject = "Your AMBIT matches are waiting — upgrade to resume";
+        const subject = "Finish signing up to receive more matches";
         const html = buildUpsellHtml({
           customerId,
           email: c.email,
@@ -357,7 +373,7 @@ async function main() {
           supportEmail: SUPPORT_EMAIL,
         });
 
-        const text = `Your free trial ended, so daily match delivery is paused.\nUpgrade to resume: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
+        const text = `Your 7-day free trial ended, so daily match delivery is paused.\nFinish signing up: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
 
         const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
         const listUnsubscribeHttp = unsubscribeUrl;
@@ -394,7 +410,7 @@ async function main() {
           data: {
             status: "sent",
             resendId: data?.id || null,
-            matchKey: "UPSELL",
+            matchKey: "TRIAL_ENDED_NUDGE",
             matchTitle: null,
             matchUrl: upgradeUrl,
           },
@@ -404,7 +420,7 @@ async function main() {
           try {
             await prisma.digestLog.createMany({
               data: [
-                { customerId, type: "DAY", key: `DAY:${customerId}:${todayKey}`, meta: { date: todayKey, kind: "UPSELL" } },
+                { customerId, type: "DAY", key: `DAY:${customerId}:${todayKey}`, meta: { date: todayKey, kind: "TRIAL_ENDED" } },
                 { customerId, type: "UPSELL", key: `UPSELL:${customerId}:${todayKey}`, meta: { date: todayKey, upgradeUrl } },
               ],
             });
@@ -418,11 +434,24 @@ async function main() {
       if (!accessAllowed) continue;
 
       // 3) Fetch matches
-      const resp = await fetch(`${BACKEND_URL}/engine/matches/${customerId}?limit=${FETCH_LIMIT}`);
-      if (!resp.ok) continue;
+      let allMatches = [];
+      try {
+        const resp = await fetch(`${BACKEND_URL}/engine/matches/${customerId}?limit=${FETCH_LIMIT}`);
 
-      const payload = await resp.json();
-      const allMatches = extractMatches(payload);
+        // ✅ If matches endpoint fails:
+        // - ACTIVE: skip (avoid noise)
+        // - TRIAL: still send a daily email (no-match content)
+        if (!resp.ok) {
+          if (!isTrial) continue;
+          allMatches = [];
+        } else {
+          const payload = await resp.json();
+          allMatches = extractMatches(payload);
+        }
+      } catch (e) {
+        if (!isTrial) continue;
+        allMatches = [];
+      }
 
       // 4) Load recently sent match keys (dedupe)
       let sentSet = new Set();
@@ -463,8 +492,9 @@ async function main() {
 
       const hasNewMatch = !!picked;
 
-      // 6) If no new match: enforce cooldown
-      if (!hasNewMatch) {
+      // 6) If no new match: enforce cooldown (ACTIVE ONLY)
+      // ✅ Trial users get a DAILY email during the 7-day trial.
+      if (!hasNewMatch && !isTrial) {
         let lastNoMatchAt = null;
 
         if (hasDigestLog) {
@@ -496,6 +526,8 @@ async function main() {
 
       const subject = hasNewMatch
         ? `AMBIT — New match: ${titleForSubject || new Date().toLocaleDateString("en-US")}`
+        : isTrial
+        ? `AMBIT — Trial day ${trialDay || 1}/7`
         : `AMBIT — No new matches`;
 
       const ts = Date.now().toString();
@@ -552,13 +584,13 @@ async function main() {
 
       await prisma.digestEmail.update({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
-        data: {
-          status: "sent",
-          resendId: data?.id || null,
-          matchKey: pickedKey,
-          matchTitle: picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])) : null,
-          matchUrl: picked ? safe(pick(picked, ["url", "link", "samUrl"])) : null,
-        },
+          data: {
+            status: "sent",
+            resendId: data?.id || null,
+            matchKey: pickedKey,
+            matchTitle: picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])) : null,
+            matchUrl: picked ? safe(pick(picked, ["url", "link", "samUrl"])) : null,
+          },
       });
 
       if (hasDigestLog) {
@@ -569,7 +601,7 @@ async function main() {
             customerId,
             type: "DAY",
             key: dayLogKey,
-            meta: { date: todayKey, kind: hasNewMatch ? "MATCH" : "NO_MATCH" },
+            meta: { date: todayKey, kind: hasNewMatch ? "MATCH" : "NO_MATCH", trial: isTrial },
           },
         ];
 
@@ -589,7 +621,7 @@ async function main() {
             customerId,
             type: "NO_MATCH",
             key: `NO_MATCH:${customerId}:${todayKey}`,
-            meta: { date: todayKey },
+            meta: { date: todayKey, trial: isTrial },
           });
         }
 
