@@ -12,9 +12,17 @@ const router = express.Router();
  *  - RESEND_FROM   (example: "ambit@sevrixgov.com" or "AMBIT <ambit@sevrixgov.com>")
  *
  * Optional env:
- *  - ADMIN_NOTIFY_EMAIL (default: sean.s@sevrixgov.com)
+ *  - ADMIN_NOTIFY_EMAIL (default: ambit@sevrixgov.com)
+ *  - ADMIN_NOTIFY_ON_REPEAT=1  (also notify admin on repeat submits)
+ *  - APP_URL / FRONTEND_URL (used for links in welcome email)
  */
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "sean.s@sevrixgov.com";
+const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.com";
+const ADMIN_NOTIFY_ON_REPEAT = String(process.env.ADMIN_NOTIFY_ON_REPEAT || "") === "1";
+
+const APP_URL =
+  process.env.FRONTEND_URL ||
+  process.env.APP_URL ||
+  "https://www.ambitco.app";
 
 async function sendResendEmail({ to, subject, html, text }) {
   const key = process.env.RESEND_API_KEY;
@@ -313,7 +321,7 @@ router.patch("/customers/:id/profile", async (req, res) => {
     if (serviceArea !== undefined) data.serviceArea = serviceArea;
     if (naics !== undefined) data.naics = naics;
     if (keywords !== undefined) data.keywords = keywords;
-    if (services !==undefined) data.services = services;
+    if (services !== undefined) data.services = services;
 
     if (segments !== undefined) data.segments = segments;
     if (sources !== undefined) data.sources = sources;
@@ -411,7 +419,7 @@ router.get("/customers/:id", async (req, res) => {
   }
 });
 
-// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC) + ADMIN NOTIFY ON NEW
+// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC) + WELCOME + ADMIN NOTIFY
 router.post("/customers", async (req, res) => {
   try {
     const body = req.body || {};
@@ -504,8 +512,59 @@ router.post("/customers", async (req, res) => {
       },
     });
 
-    // ✅ Email Sean on NEW signup only (do not block response)
+    // ✅ Welcome email to customer (NEW signup only)
     if (isNewSignup) {
+      const subject = "Welcome to AMBIT — your 7-day free trial starts now";
+      const matchesUrl = `${APP_URL}/matches/${customer.id}`;
+
+      const html = `
+        <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
+          <h2 style="margin:0 0 8px">Welcome to AMBIT 👋</h2>
+          <p style="margin:0 0 12px">
+            Your <b>7-day free trial</b> is active. You’ll receive <b>daily matched opportunities</b>
+            across <b>Residential • Commercial • Government</b>.
+          </p>
+
+          <p style="margin:0 0 12px">
+            Want to see your matches now?
+          </p>
+
+          <p style="margin:16px 0 0">
+            <a href="${matchesUrl}" target="_blank"
+              style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
+              View my matches
+            </a>
+          </p>
+
+          <p style="margin:14px 0 0;color:#444;font-size:13px">
+            Trial ends: <b>${customer.trialEndsAt ? new Date(customer.trialEndsAt).toLocaleString("en-US") : "—"}</b>
+          </p>
+
+          <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
+          <div style="color:#666;font-size:12px;line-height:1.5">
+            You’re receiving this because you signed up at
+            <a href="${APP_URL}" target="_blank" style="color:#111">${APP_URL}</a>.
+            <br/>
+            Questions? Reply to this email.
+          </div>
+        </div>
+      `;
+
+      const text =
+        `Welcome to AMBIT!\n\n` +
+        `Your 7-day free trial is active. You'll receive daily matched opportunities.\n\n` +
+        `View matches: ${matchesUrl}\n`;
+
+      sendResendEmail({
+        to: customer.email,
+        subject,
+        html,
+        text,
+      }).catch((e) => console.error("[email] welcome send failed:", e?.message || e));
+    }
+
+    // ✅ Admin notify on new signup (and optionally on repeats)
+    if (isNewSignup || ADMIN_NOTIFY_ON_REPEAT) {
       const subject = `New AMBIT signup: ${customer.email}`;
       const html = `
         <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
@@ -521,6 +580,7 @@ router.post("/customers", async (req, res) => {
           </ul>
         </div>
       `;
+
       sendResendEmail({
         to: ADMIN_NOTIFY_EMAIL,
         subject,
