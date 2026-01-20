@@ -3,13 +3,17 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-const FORMSPREE_ENDPOINT = "https://formspree.io/f/xdaaaapj";
 const BRAND = "#1A4FA3";
+const API_BASE =
+  (process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://localhost:5001")?.replace(/\/$/, "");
 
 function cx(...classes: Array<string | false | null | undefined>) {
   return classes.filter(Boolean).join(" ");
 }
 
+/** Keyword helpers */
 function normalizeKeywords(list: string[]) {
   const cleaned = list
     .map((k) => k.trim())
@@ -35,6 +39,57 @@ function splitKeywordText(text: string) {
       .map((s) => s.trim())
       .filter(Boolean)
   );
+}
+
+/** NAICS helpers */
+function sanitizeNaicsToken(input: string) {
+  return input.replace(/[^\d]/g, "").slice(0, 6);
+}
+function isValidNaicsToken(input: string) {
+  return /^\d{2,6}$/.test(input);
+}
+function parseNaicsList(raw: string) {
+  const parts = raw
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const cleaned = parts.map(sanitizeNaicsToken).filter(Boolean);
+  const valid = cleaned.filter(isValidNaicsToken);
+
+  const seen = new Set<string>();
+  const uniqueValid: string[] = [];
+  for (const v of valid) {
+    if (!seen.has(v)) {
+      seen.add(v);
+      uniqueValid.push(v);
+    }
+  }
+
+  return uniqueValid;
+}
+
+function guessCompanyFromEmail(email: string) {
+  const domain = (email.split("@")[1] || "").trim();
+  const base = (domain.split(".")[0] || "").trim();
+  const cleaned = base.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
+  if (!cleaned) return "New AMBIT Trial";
+  return cleaned
+    .split(" ")
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ");
+}
+
+async function postJson(url: string, body: any) {
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => ({}));
+  return { res, json };
 }
 
 function MatchPill({ score }: { score: number }) {
@@ -110,49 +165,73 @@ function SampleCard({
 export default function ConciergeLeadCapture() {
   const router = useRouter();
 
+  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [area, setArea] = useState("");
   const [keywordText, setKeywordText] = useState("");
+  const [naicsInput, setNaicsInput] = useState("");
 
-  const keywords = useMemo(() => splitKeywordText(keywordText), [keywordText]);
+  const keywordsList = useMemo(() => splitKeywordText(keywordText), [keywordText]);
+  const naicsCodes = useMemo(() => parseNaicsList(naicsInput), [naicsInput]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Always include all markets behind the scenes
-  const marketsHuman = "Residential, Commercial, Government";
+  const segments = ["residential", "commercial", "government"];
+  const segmentsCsv = segments.join(",");
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
 
-    if (!email.trim()) return setError("Work Email is required.");
-    if (!area.trim()) return setError("Service area is required.");
+    const mail = email.trim().toLowerCase();
+    const loc = area.trim();
+    const kw = keywordsList.join(", ");
+
+    if (!mail) return setError("Work Email is required.");
+    if (!mail.includes("@")) return setError("Enter a valid email.");
+    if (!loc) return setError("Service area is required.");
+    if (!kw) return setError("Keywords are required. (Comma-separated is fine.)");
+
+    const company =
+      (companyName || "").trim() || guessCompanyFromEmail(mail);
 
     try {
       setSubmitting(true);
 
-      const fd = new FormData();
-      fd.append("email", email.trim());
-      fd.append("_replyto", email.trim());
-      fd.append("service_area", area.trim());
-      fd.append("markets", marketsHuman);
-      fd.append("keywords", keywords.join(", "));
-      fd.append("_gotcha", "");
+      // Optional: persist email for convenience
+      try {
+        localStorage.setItem("ambit_email", mail);
+      } catch {}
 
-      // Keep subject clean & useful for you
-      fd.append("_subject", `AMBIT lead: ${email.trim()} (${area.trim()})`);
+      const payload: any = {
+        name: company,
+        companyName: company,
+        email: mail,
+        location: loc,
+        serviceArea: loc,
+        keywords: kw,
+        naics: naicsCodes.join(","),
+        naicsCodes,
+        segments,
+        segmentCsv: segmentsCsv,
+      };
 
-      const res = await fetch(FORMSPREE_ENDPOINT, {
-        method: "POST",
-        headers: { Accept: "application/json" },
-        body: fd,
-      });
+      const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
 
-      const json = await res.json().catch(() => null);
-      if (!res.ok) throw new Error(json?.error || "Form submission failed");
+      if (!res.ok) {
+        const msg = String(json?.message || json?.error || `Signup failed (${res.status})`);
+        throw new Error(msg);
+      }
 
-      router.push("/thanks");
+      const id = Number(json?.id) || Number(json?.customer?.id);
+      if (!id || !Number.isFinite(id)) {
+        throw new Error("Customer created, but no customer id returned.");
+      }
+
+      router.push(`/matches/${id}`);
+      router.refresh();
     } catch (err: any) {
       setError(err?.message || "Something went wrong. Try again.");
     } finally {
@@ -166,14 +245,28 @@ export default function ConciergeLeadCapture() {
         {/* LEFT */}
         <div className="min-w-0">
           <div className="text-base font-semibold text-white sm:text-lg">
-            Get 3 free matches in 24 hours
+            Start your 7-day free trial
           </div>
 
           <div className="mt-2 text-xs text-white/70">
-            No credit card • Unsubscribe anytime • We only email when we find matches
+            No credit card • Daily matches for 7 days • Unsubscribe anytime
           </div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
+            {/* Company */}
+            <div className="min-w-0">
+              <div className="text-xs font-semibold text-white/80">Company name</div>
+              <input
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                placeholder="Your company name (optional)"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
+              <div className="mt-2 text-[11px] text-white/55">
+                If left blank, we’ll use your email domain.
+              </div>
+            </div>
+
             {/* Email */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Work Email</div>
@@ -197,16 +290,33 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Keywords (optional) */}
+            {/* Keywords (required) */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Keywords</div>
-                <div className="text-xs text-white/55">Optional</div>
+                <div className="text-xs text-white/55">Required</div>
               </div>
               <input
                 value={keywordText}
                 onChange={(e) => setKeywordText(e.target.value)}
-                placeholder="What do you do? (ex: HVAC, plumbing, roofing)"
+                placeholder="asphalt, striping, concrete"
+                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
+              />
+              <div className="mt-2 text-[11px] text-white/55">
+                Think services + equipment + materials. Commas help.
+              </div>
+            </div>
+
+            {/* NAICS (optional) */}
+            <div className="min-w-0">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-white/80">NAICS codes</div>
+                <div className="text-xs text-white/55">Optional</div>
+              </div>
+              <input
+                value={naicsInput}
+                onChange={(e) => setNaicsInput(e.target.value)}
+                placeholder="237310, 238220, 561730"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
             </div>
@@ -222,16 +332,11 @@ export default function ConciergeLeadCapture() {
                 )}
                 style={{ backgroundColor: BRAND }}
               >
-                {submitting ? "Sending…" : "Send me 3 matches"}
+                {submitting ? "Starting…" : "Start free trial"}
               </button>
 
               <div className="mt-2 text-center text-xs text-white/70">
-                Free • 3 matches in 24 hours
-              </div>
-
-              <div className="mt-1 text-center text-[11px] leading-relaxed text-white/55">
-                You’ll receive the best matches available across Residential, Commercial, and
-                Government. Mix varies by region and availability.
+                No credit card required • Residential + Commercial + Government
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
@@ -285,7 +390,7 @@ export default function ConciergeLeadCapture() {
           </div>
 
           <div className="mt-3 text-xs text-white/65">
-            Samples only. Your first 3 real matches are emailed within 24 hours.
+            Samples only. Your real matches are emailed during your 7-day free trial.
           </div>
         </div>
       </div>
