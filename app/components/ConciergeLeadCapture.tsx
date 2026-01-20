@@ -19,7 +19,7 @@ function normalizeKeywords(list: string[]) {
     .map((k) => k.trim())
     .filter(Boolean)
     .map((k) => k.replace(/\s+/g, " "))
-    .slice(0, 12);
+    .slice(0, 16);
 
   const seen = new Set<string>();
   const out: string[] = [];
@@ -31,7 +31,6 @@ function normalizeKeywords(list: string[]) {
   }
   return out;
 }
-
 function splitKeywordText(text: string) {
   return normalizeKeywords(
     String(text || "")
@@ -49,7 +48,7 @@ function isValidNaicsToken(input: string) {
   return /^\d{2,6}$/.test(input);
 }
 function parseNaicsList(raw: string) {
-  const parts = raw
+  const parts = String(raw || "")
     .split(",")
     .map((p) => p.trim())
     .filter(Boolean);
@@ -65,7 +64,6 @@ function parseNaicsList(raw: string) {
       uniqueValid.push(v);
     }
   }
-
   return uniqueValid;
 }
 
@@ -165,7 +163,6 @@ function SampleCard({
 export default function ConciergeLeadCapture() {
   const router = useRouter();
 
-  const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
   const [area, setArea] = useState("");
   const [keywordText, setKeywordText] = useState("");
@@ -194,16 +191,15 @@ export default function ConciergeLeadCapture() {
     if (!loc) return setError("Service area is required.");
     if (!kw) return setError("Keywords are required. (Comma-separated is fine.)");
 
-    const company =
-      (companyName || "").trim() || guessCompanyFromEmail(mail);
+    // ✅ NAICS REQUIRED
+    if (!naicsCodes.length) {
+      return setError("NAICS is required — it’s the #1 signal for match quality.");
+    }
+
+    const company = guessCompanyFromEmail(mail);
 
     try {
       setSubmitting(true);
-
-      // Optional: persist email for convenience
-      try {
-        localStorage.setItem("ambit_email", mail);
-      } catch {}
 
       const payload: any = {
         name: company,
@@ -249,24 +245,17 @@ export default function ConciergeLeadCapture() {
           </div>
 
           <div className="mt-2 text-xs text-white/70">
-            No credit card • Daily matches for 7 days • Unsubscribe anytime
+            No credit card • Daily matches for 7 days • First matches start within 24 hours
+          </div>
+
+          {/* transparency + safety */}
+          <div className="mt-2 text-xs text-white/60">
+            Sources: SAM.gov, OpenGov, local portals
+            <span className="mx-2 text-white/35">•</span>
+            No spam. No data resale.
           </div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
-            {/* Company */}
-            <div className="min-w-0">
-              <div className="text-xs font-semibold text-white/80">Company name</div>
-              <input
-                value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)}
-                placeholder="Your company name (optional)"
-                className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
-              />
-              <div className="mt-2 text-[11px] text-white/55">
-                If left blank, we’ll use your email domain.
-              </div>
-            </div>
-
             {/* Email */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Work Email</div>
@@ -290,7 +279,7 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Keywords (required) */}
+            {/* Keywords */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Keywords</div>
@@ -307,11 +296,11 @@ export default function ConciergeLeadCapture() {
               </div>
             </div>
 
-            {/* NAICS (optional) */}
+            {/* NAICS (required) */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">NAICS codes</div>
-                <div className="text-xs text-white/55">Optional</div>
+                <div className="text-xs text-white/55">Required</div>
               </div>
               <input
                 value={naicsInput}
@@ -319,6 +308,9 @@ export default function ConciergeLeadCapture() {
                 placeholder="237310, 238220, 561730"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
+              <div className="mt-2 text-[11px] text-white/55">
+                NAICS is the #1 signal for match quality — it helps AMBIT filter the right work.
+              </div>
             </div>
 
             {/* CTA */}
@@ -337,6 +329,15 @@ export default function ConciergeLeadCapture() {
 
               <div className="mt-2 text-center text-xs text-white/70">
                 No credit card required • Residential + Commercial + Government
+              </div>
+
+              <div className="mt-2 text-center text-[11px] leading-relaxed text-white/55">
+                Ambit filters the latest listings to find your best fit, providing a tailored
+                selection based on what&apos;s currently live and ready to bid.
+              </div>
+
+              <div className="mt-2 text-center text-[11px] text-white/60">
+                Need help? Email <span className="font-semibold">ambit@sevrixgov.com</span>
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
