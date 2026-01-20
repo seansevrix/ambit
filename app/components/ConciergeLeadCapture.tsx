@@ -229,6 +229,11 @@ export default function ConciergeLeadCapture() {
                 Free • 3 matches in 24 hours
               </div>
 
+              <div className="mt-1 text-center text-[11px] leading-relaxed text-white/55">
+                You’ll receive the best matches available across Residential, Commercial, and
+                Government. Mix varies by region and availability.
+              </div>
+
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
             </div>
           </form>
