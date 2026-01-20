@@ -92,9 +92,17 @@ async function postJson(url: string, body: any) {
 
 function MatchPill({ score }: { score: number }) {
   return (
-    <div className="shrink-0 rounded-xl border border-black/10 bg-white px-2.5 py-2 text-center shadow-sm sm:px-3">
-      <div className="text-[11px] font-semibold text-slate-500">Match</div>
-      <div className="text-lg font-bold text-slate-900">{score}</div>
+    <div className="relative shrink-0">
+      {/* subtle “live” pulse ring */}
+      <div className="pointer-events-none absolute inset-0 -m-1 rounded-2xl bg-white/30 blur-md opacity-60" />
+      <div className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-white/40 animate-pulse" />
+
+      <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)] transition">
+        <div className="text-[11px] font-semibold text-slate-500">Match</div>
+        <div className="text-xl font-extrabold tracking-tight text-slate-900">
+          {score}
+        </div>
+      </div>
     </div>
   );
 }
@@ -193,7 +201,7 @@ export default function ConciergeLeadCapture() {
 
     // ✅ NAICS REQUIRED
     if (!naicsCodes.length) {
-      return setError("NAICS is required — it’s the #1 signal for match quality.");
+      return setError("NAICS is required — essential for high-quality matching.");
     }
 
     const company = guessCompanyFromEmail(mail);
@@ -277,12 +285,9 @@ export default function ConciergeLeadCapture() {
               <input
                 value={keywordText}
                 onChange={(e) => setKeywordText(e.target.value)}
-                placeholder="asphalt, striping, concrete"
+                placeholder="Think services + equipment + materials (ex: asphalt, striping, concrete)"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-              <div className="mt-2 text-[11px] text-white/55">
-                Think services + equipment + materials. Commas help.
-              </div>
             </div>
 
             {/* NAICS (required) */}
@@ -298,7 +303,7 @@ export default function ConciergeLeadCapture() {
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
               <div className="mt-2 text-[11px] text-white/55">
-                NAICS is the #1 signal for match quality — it helps AMBIT filter the right work.
+                Essential for high-quality matching.
               </div>
             </div>
 
@@ -317,16 +322,7 @@ export default function ConciergeLeadCapture() {
               </button>
 
               <div className="mt-3 text-center text-xs text-white/70">
-                No credit card required • Residential + Commercial + Government
-              </div>
-
-              <div className="mt-2 text-center text-[11px] leading-relaxed text-white/55">
-                Ambit filters the latest listings to find your best fit, providing a tailored
-                selection based on what&apos;s currently live and ready to bid.
-              </div>
-
-              <div className="mt-2 text-center text-[11px] text-white/60">
-                Need help? Email <span className="font-semibold">ambit@sevrixgov.com</span>
+                No credit card required. Cancel anytime.
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
@@ -377,10 +373,6 @@ export default function ConciergeLeadCapture() {
               score={92}
               accent="green"
             />
-          </div>
-
-          <div className="mt-3 text-xs text-white/65">
-            Samples only. Your real matches are emailed during your 7-day free trial.
           </div>
         </div>
       </div>
