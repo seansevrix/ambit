@@ -516,6 +516,7 @@ router.post("/customers", async (req, res) => {
     if (isNewSignup) {
       const subject = "Welcome to AMBIT — your 7-day free trial starts now";
       const matchesUrl = `${APP_URL}/matches/${customer.id}`;
+      const profileUrl = `${APP_URL}/customers/${customer.id}/profile`;
 
       const html = `
         <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
@@ -526,6 +527,16 @@ router.post("/customers", async (req, res) => {
           </p>
 
           <p style="margin:0 0 12px">
+            If you don’t see opportunities you like right away, widen your net:
+          </p>
+
+          <ul style="margin:0 0 12px;padding-left:18px;color:#444">
+            <li>Add or expand <b>NAICS codes</b> (even 2–4 helps a lot)</li>
+            <li>Add more <b>keywords</b> (services, materials, equipment, brands)</li>
+            <li>Expand your <b>service area</b> (nearby cities/counties/statewide)</li>
+          </ul>
+
+          <p style="margin:0 0 12px">
             Want to see your matches now?
           </p>
 
@@ -533,6 +544,12 @@ router.post("/customers", async (req, res) => {
             <a href="${matchesUrl}" target="_blank"
               style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
               View my matches
+            </a>
+          </p>
+
+          <p style="margin:10px 0 0">
+            <a href="${profileUrl}" target="_blank" style="color:#111;text-decoration:underline">
+              Update my profile
             </a>
           </p>
 
@@ -553,7 +570,12 @@ router.post("/customers", async (req, res) => {
       const text =
         `Welcome to AMBIT!\n\n` +
         `Your 7-day free trial is active. You'll receive daily matched opportunities.\n\n` +
-        `View matches: ${matchesUrl}\n`;
+        `If you don’t see opportunities you like right away, widen your net:\n` +
+        `- Add or expand NAICS codes (2–4 helps a lot)\n` +
+        `- Add more keywords (services, materials, equipment, brands)\n` +
+        `- Expand your service area (nearby cities/counties/statewide)\n\n` +
+        `View matches: ${matchesUrl}\n` +
+        `Update profile: ${profileUrl}\n`;
 
       sendResendEmail({
         to: customer.email,
