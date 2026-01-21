@@ -29,16 +29,6 @@ export default function HomePage() {
               Trusted by 200+ Clients
             </p>
 
-            {/* Transparency lines */}
-            <p className="mt-3 text-xs text-white/60 sm:text-sm">
-              Sources: SAM.gov, OpenGov, local portals
-              <span className="mx-2 text-white/35">•</span>
-              No spam. No data resale.
-              <span className="mx-2 text-white/35">•</span>
-              First matches start within 24 hours
-            </p>
-
-            {/* Only keep View Live Leads (remove Start Free Trial button) */}
             <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link href="/live-opportunities" className={LINK}>
                 View Live Leads →
