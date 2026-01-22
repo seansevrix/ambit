@@ -1,13 +1,23 @@
-// app/matches/[customerId]/page.tsx
+"use client";
+
+import { useEffect } from "react";
+import { useParams } from "next/navigation";
 import ScoutingReportClient from "./ScoutingReportClient";
 
-type PageProps = {
-  params: Promise<{ customerId: string }>;
-};
+export default function MatchesPage() {
+  const params = useParams();
+  const customerId = Number(params.customerId);
 
-export default async function MatchesPage({ params }: PageProps) {
-  const { customerId } = await params; // Next 16: params is a Promise
-  const id = Number(customerId);
+  // 🔥 Fire Meta conversion when user reaches matches after signup
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).fbq) {
+      (window as any).fbq("track", "CompleteRegistration");
+    }
+  }, []);
 
-  return <ScoutingReportClient customerId={id} />;
+  if (!customerId || Number.isNaN(customerId)) {
+    return null; // safety guard
+  }
+
+  return <ScoutingReportClient customerId={customerId} />;
 }
