@@ -1,5 +1,4 @@
 import Link from "next/link";
-import Image from "next/image";
 
 type Segment = "Residential" | "Commercial" | "Government";
 
@@ -22,8 +21,6 @@ const CARD =
 
 const PILL =
   "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85";
-
-const SUBTLE = "text-white/70";
 
 const TESTIMONIALS: Testimonial[] = [
   {
@@ -60,7 +57,7 @@ const TESTIMONIALS: Testimonial[] = [
     highlight: true,
   },
 
-  // Dense tiles (short, scannable)
+  // Dense tiles (short + scannable)
   {
     name: "Erin J.",
     role: "Estimator, HVAC",
@@ -76,7 +73,7 @@ const TESTIMONIALS: Testimonial[] = [
     role: "Owner, Landscaping",
     location: "Hawaii, USA",
     quote:
-      "AMBIT helped me spot projects I would’ve missed. It’s become part of my morning routine.",
+      "AMBIT helped me spot projects I would’ve missed. It’s part of my morning routine now.",
     initials: "LR",
     segment: "Residential",
     stars: 4,
@@ -121,12 +118,15 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-const PARTNER_LOGOS = [
-  { name: "EMCOR", src: "/logos/emcor.svg" },
-  { name: "Dynegy", src: "/logos/dynegy.svg" },
-  { name: "Premier Pool Service", src: "/logos/premierpoolservice.svg" },
-  { name: "Sevrix", src: "/logos/sevrix.svg" },
-];
+const LOGOS = {
+  g2: "/logos/g2.svg",
+  partners: [
+    { name: "EMCOR", src: "/logos/emcor.svg" },
+    { name: "Dynegy", src: "/logos/dynegy.svg" },
+    { name: "Premier Pool Service", src: "/logos/premierpoolservice.svg" },
+    { name: "Sevrix", src: "/logos/sevrix.svg" },
+  ],
+};
 
 function Stars({ value }: { value: number }) {
   const full = Math.max(0, Math.min(5, Math.round(value)));
@@ -158,6 +158,20 @@ function SegmentChip({ segment }: { segment?: Segment }) {
   );
 }
 
+function LogoImg({
+  src,
+  alt,
+  className,
+}: {
+  src: string;
+  alt: string;
+  className: string;
+}) {
+  // Use <img> so SVGs always render correctly (prevents broken placeholders)
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt={alt} className={className} />;
+}
+
 function QuoteCard({ t }: { t: Testimonial }) {
   return (
     <div className={`${CARD} p-6`}>
@@ -184,61 +198,44 @@ function QuoteCard({ t }: { t: Testimonial }) {
   );
 }
 
-function LogoRow() {
-  return (
-    <div className="mt-8 flex flex-wrap items-center justify-center gap-6">
-      <span className="text-xs text-white/50">
-        Partnered with contractors working alongside:
-      </span>
-
-      <div className="flex flex-wrap items-center justify-center gap-6">
-        {PARTNER_LOGOS.map((b) => (
-          <div
-            key={b.name}
-            className="flex items-center rounded-xl border border-white/10 bg-white/5 px-4 py-2"
-            title={b.name}
-          >
-            <Image
-              src={b.src}
-              alt={b.name}
-              width={120}
-              height={28}
-              className="h-[18px] w-auto opacity-90"
-            />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function TestimonialsPage() {
   const featured = TESTIMONIALS.filter((t) => t.highlight).slice(0, 3);
   const rest = TESTIMONIALS.filter((t) => !t.highlight);
-  const spotlights = TESTIMONIALS.filter((t) => t.highlight).slice(0, 2);
+
+  // 3 columns so nothing looks empty (photo #2 vibe)
+  const col1: Testimonial[] = [featured[0], rest[0], rest[1]].filter(
+    Boolean
+  ) as Testimonial[];
+  const col2: Testimonial[] = [featured[1], featured[2], rest[2]].filter(
+    Boolean
+  ) as Testimonial[];
+  const col3: Testimonial[] = [
+    // “Spotlight” header card + more tiles + CTA, always filled
+    rest[3],
+    rest[4],
+    rest[5],
+  ].filter(Boolean) as Testimonial[];
 
   return (
     <main className="bg-[#0B1430] text-white">
       <div className="mx-auto max-w-7xl px-6 py-20">
-        {/* HERO (photo #2 vibe + honest numbers) */}
+        {/* HERO */}
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
             Trusted proof from real contractors
           </h1>
-          <p className={`mt-4 ${SUBTLE}`}>
+          <p className="mt-4 text-white/70">
             Clear, honest reviews from contractors using AMBIT to find better-fit
             opportunities faster.
           </p>
 
-          {/* Badges row (G2 + rating + reviews) */}
+          {/* Badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <div className={`${PILL} shadow-[0_20px_60px_rgba(0,0,0,0.35)]`}>
-              <Image
-                src="/logos/g2.svg"
+              <LogoImg
+                src={LOGOS.g2}
                 alt="G2"
-                width={22}
-                height={22}
-                className="opacity-95"
+                className="h-[18px] w-auto opacity-95"
               />
               <span className="font-semibold">G2</span>
               <span className="text-white/70">4.5/5</span>
@@ -250,90 +247,96 @@ export default function TestimonialsPage() {
             <div className={PILL}>U.S. based businesses</div>
           </div>
 
-          {/* Star ribbon (photo #2) */}
           <div className="mt-6 flex items-center justify-center gap-3 text-sm text-white/70">
             <Stars value={5} />
             <span>
-              Average rating: <span className="text-white/85 font-semibold">4.5/5</span>
+              Average rating:{" "}
+              <span className="font-semibold text-white/90">4.5/5</span>
             </span>
+            <span className="text-white/40">•</span>
+            <span>200+ reviews (G2)</span>
           </div>
 
           {/* Partner logos */}
-          <LogoRow />
-        </div>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-5">
+            <span className="text-xs text-white/50">
+              Partnered with contractors working alongside:
+            </span>
 
-        {/* LAYOUT (photo #2 structure): proof grid + right rail spotlights */}
-        <div className="mt-16 grid gap-6 lg:grid-cols-12">
-          {/* LEFT: featured + dense grid */}
-          <div className="lg:col-span-8">
-            {/* Featured area: one tall + two stacked (photo #2 vibe) */}
-            <div className="grid gap-6 md:grid-cols-2">
-              <div className="md:row-span-2">
-                <QuoteCard t={featured[0]} />
-              </div>
-              <QuoteCard t={featured[1]} />
-              <QuoteCard t={featured[2]} />
-            </div>
-
-            {/* Dense grid */}
-            <div className="mt-6 grid gap-6 md:grid-cols-2">
-              {rest.slice(0, 6).map((t) => (
-                <QuoteCard key={t.name + t.location} t={t} />
+            <div className="flex flex-wrap items-center justify-center gap-4">
+              {LOGOS.partners.map((b) => (
+                <div
+                  key={b.name}
+                  className="rounded-xl border border-white/10 bg-white/5 px-4 py-2"
+                  title={b.name}
+                >
+                  <LogoImg
+                    src={b.src}
+                    alt={b.name}
+                    className="h-[18px] w-auto opacity-90"
+                  />
+                </div>
               ))}
             </div>
           </div>
+        </div>
 
-          {/* RIGHT: spotlight rail */}
-          <aside className="lg:col-span-4">
-            <div className="sticky top-20 space-y-6">
-              <div className={`${CARD} p-6`}>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm font-semibold">Spotlight Reviews</div>
-                  <span className="text-xs text-white/50">High-signal feedback</span>
-                </div>
-                <p className="mt-2 text-sm text-white/70">
-                  The themes we hear most: less searching, clearer summaries, and
-                  better-fit opportunities.
-                </p>
+        {/* PROOF GRID (photo #2 vibe) */}
+        <div className="mt-16 grid gap-6 lg:grid-cols-3">
+          {/* Column 1 */}
+          <div className="space-y-6">
+            {col1.map((t) => (
+              <QuoteCard
+                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
+                t={t}
+              />
+            ))}
+          </div>
+
+          {/* Column 2 */}
+          <div className="space-y-6">
+            {col2.map((t) => (
+              <QuoteCard
+                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
+                t={t}
+              />
+            ))}
+          </div>
+
+          {/* Column 3 */}
+          <div className="space-y-6">
+            <div className={`${CARD} p-6`}>
+              <div className="flex items-center justify-between">
+                <div className="text-sm font-semibold">Spotlight Reviews</div>
+                <span className="text-xs text-white/50">High-signal feedback</span>
               </div>
+              <p className="mt-2 text-sm text-white/70">
+                Themes we hear most: less searching, clearer summaries, and better-fit opportunities.
+              </p>
+            </div>
 
-              {spotlights.map((t) => (
-                <div key={t.name} className={`${CARD} p-6`}>
-                  <div className="flex items-start justify-between">
-                    <SegmentChip segment={t.segment} />
-                    <Stars value={t.stars ?? 5} />
-                  </div>
-                  <p className="mt-3 text-sm leading-relaxed text-white/85">
-                    “{t.quote}”
-                  </p>
-                  <div className="mt-6 flex items-center gap-4">
-                    <Avatar initials={t.initials} />
-                    <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{t.name}</div>
-                      <div className="truncate text-xs text-white/60">
-                        {t.role} — {t.location}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+            {col3.map((t) => (
+              <QuoteCard
+                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
+                t={t}
+              />
+            ))}
 
-              {/* Minimal CTA (your rule: clean + single) */}
-              <div className={`${CARD} p-8 text-center`}>
-                <h2 className="text-xl font-semibold">
-                  Built for contractors who value their time
-                </h2>
-                <p className="mx-auto mt-3 max-w-sm text-sm text-white/70">
-                  Spend less time searching and more time bidding on work that fits your business.
-                </p>
-                <div className="mt-6">
-                  <Link href="/get-started" className={PRIMARY}>
-                    Start Free Trial — No Credit Card
-                  </Link>
-                </div>
+            <div className={`${CARD} p-8 text-center`}>
+              <h2 className="text-xl font-semibold">
+                Built for contractors who value their time
+              </h2>
+              <p className="mx-auto mt-3 max-w-sm text-sm text-white/70">
+                Spend less time searching and more time bidding on work that fits
+                your business.
+              </p>
+              <div className="mt-6">
+                <Link href="/get-started" className={PRIMARY}>
+                  Start Free Trial — No Credit Card
+                </Link>
               </div>
             </div>
-          </aside>
+          </div>
         </div>
 
         <div className="h-6" />
