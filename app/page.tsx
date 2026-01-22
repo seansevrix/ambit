@@ -1,6 +1,6 @@
 import Link from "next/link";
-import Image from "next/image";
 import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
+import ProofDashboard from "./components/ProofDashboard";
 
 const LINK = "text-sm font-semibold text-white/75 hover:text-white transition";
 
@@ -71,42 +71,7 @@ export default function HomePage() {
 
           {/* GRAPHS (below signup) */}
           <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-            <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-              Proof, not promises.
-            </h2>
-
-            <p className="mt-2 max-w-2xl text-sm text-white/70">
-              Illustrative examples of what “matched opportunities + faster response” can do. Results vary by trade,
-              service area, and bid volume.
-            </p>
-
-            <p className="mt-2 text-sm font-semibold text-white/75">
-              Results for: <span className="text-white">Mid-sized Electrical Contractor (5–10 employees)</span> in{" "}
-              <span className="text-white">Dallas, TX</span>.
-            </p>
-
-            <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] sm:p-5">
-              <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1430]/30">
-                {/* NEW IMAGE (cache-busted) */}
-                <Image
-                  src="/proof/ambit-tiles.jpeg"
-                  alt="AMBIT example performance tiles"
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 900px"
-                  className="object-contain"
-                />
-              </div>
-
-              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs text-white/50">
-                  Example results (illustrative). Results vary by trade, response time, service area, and bid volume.
-                </p>
-
-                <Link href="#preview" className={PRIMARY_BTN}>
-                  See results for your trade →
-                </Link>
-              </div>
-            </div>
+            <ProofDashboard />
           </div>
 
           {/* TESTIMONIALS (below graphs) */}
@@ -138,7 +103,7 @@ export default function HomePage() {
               {TESTIMONIALS.map((t) => (
                 <div
                   key={t.name}
-                  className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6"
+                  className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]"
                 >
                   <p className="text-sm leading-relaxed text-white/75">
                     <span className="text-white/40">“</span>
