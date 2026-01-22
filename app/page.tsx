@@ -61,22 +61,20 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* PROOF IMAGE (Examples only) */}
+          {/* SIGNUP AREA (first) */}
+          <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
+            <ConciergeLeadCapture />
+          </div>
+
+          {/* GRAPHS (below signup) */}
           <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                  PROOF <span className="mx-2 text-white/35">•</span> Examples only
-                </div>
-                <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                  Proof, not promises.
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm text-white/70">
-                  Illustrative examples of what “matched opportunities + faster response” can do. Results vary by trade,
-                  service area, and bid volume.
-                </p>
-              </div>
-            </div>
+            <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+              Proof, not promises.
+            </h2>
+            <p className="mt-2 max-w-2xl text-sm text-white/70">
+              Illustrative examples of what “matched opportunities + faster response” can do. Results vary by trade,
+              service area, and bid volume.
+            </p>
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] sm:p-5">
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1430]/30">
@@ -86,20 +84,16 @@ export default function HomePage() {
                   fill
                   sizes="(max-width: 1024px) 100vw, 900px"
                   className="object-contain"
-                  priority={false}
                 />
               </div>
+
               <p className="mt-3 text-xs text-white/50">
                 Example results (illustrative). Results vary by trade, response time, service area, and bid volume.
               </p>
             </div>
           </div>
 
-          <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
-            <ConciergeLeadCapture />
-          </div>
-
-          {/* TESTIMONIALS (below signup panel) */}
+          {/* TESTIMONIALS (below graphs) */}
           <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
