@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
@@ -120,8 +122,7 @@ const TESTIMONIALS: Testimonial[] = [
     role: "Owner, Mechanical",
     location: "Texas, USA",
     hook: "Less searching. More bidding.",
-    quote:
-      "Less searching. More bidding. AMBIT saves me time every week.",
+    quote: "Less searching. More bidding. AMBIT saves me time every week.",
     initials: "JM",
     segment: "Government",
     stars: 5,
@@ -192,9 +193,7 @@ function Img({
 
 function BoldHookQuote({ hook, quote }: { hook: string; quote: string }) {
   const parts = quote.split(hook);
-  if (parts.length < 2) {
-    return <span className="text-white/88">{quote}</span>;
-  }
+  if (parts.length < 2) return <span className="text-white/88">{quote}</span>;
   return (
     <span className="text-white/88">
       {parts[0]}
@@ -284,21 +283,15 @@ function PartnerStrip() {
   );
 }
 
-function ProgressBar({
-  label,
-  percent,
-}: {
-  label: string;
-  percent: number;
-}) {
+function ProgressBar({ label, percent }: { label: string; percent: number }) {
   const clamped = Math.max(0, Math.min(100, Math.round(percent)));
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between text-sm text-white/75">
         <span>{label}</span>
-        <span className="text-white/55">{clamped}%</span>
+        <span className="text-white/55">Mentioned in {clamped}%</span>
       </div>
-      <div className="h-2 w-full rounded-full bg-white/10 overflow-hidden">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
         <div
           className="h-full rounded-full bg-[#1A4FA3]"
           style={{ width: `${clamped}%` }}
@@ -309,9 +302,8 @@ function ProgressBar({
 }
 
 function SpotlightBox() {
-  // Adjust these numbers if you ever get real analytics.
-  // For now they are presented as "Mentioned in X% of reviews" and should only be used if you stand behind them.
-  // If you don't want implied stats, set all to null and the UI will render as "Frequently mentioned".
+  // Only use metrics you are comfortable standing behind.
+  // If you don't want implied percentages, set these to null and the UI will say "Frequently mentioned".
   const metrics: Array<{ label: string; percent: number | null }> = [
     { label: "Less searching time", percent: 86 },
     { label: "Clear summaries", percent: 81 },
@@ -325,7 +317,7 @@ function SpotlightBox() {
       <div className="flex items-center justify-between">
         <div className="text-sm font-semibold">Spotlight Reviews</div>
         <span className="text-xs text-white/50">
-          {hasNumeric ? "Mentioned in reviews" : "Frequently mentioned"}
+          {hasNumeric ? "Signals from reviews" : "Frequently mentioned"}
         </span>
       </div>
 
@@ -352,25 +344,17 @@ function SpotlightBox() {
   );
 }
 
-function Carousel({
-  items,
-}: {
-  items: Testimonial[];
-}) {
+function Carousel({ items }: { items: Testimonial[] }) {
   return (
-    <div className="mt-6">
+    <div>
       <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold text-white/90">
-          More reviews
-        </div>
-        <div className="text-xs text-white/50">
-          Scroll →
-        </div>
+        <div className="text-sm font-semibold text-white/90">More reviews</div>
+        <div className="text-xs text-white/50">Scroll →</div>
       </div>
 
       <div className="mt-3 flex gap-4 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch]">
         {items.map((t) => (
-          <div key={t.name} className="min-w-[320px] max-w-[320px] flex-shrink-0">
+          <div key={t.name} className="w-[340px] flex-shrink-0">
             <QuoteCard t={t} />
           </div>
         ))}
@@ -389,7 +373,6 @@ export default function TestimonialsPage() {
 
   const rest = useMemo(() => {
     const nonFeatured = TESTIMONIALS.filter((t) => !t.featured);
-    // Group 5★ first for visual positivity; keep 4★ present (honest) but later
     const fives = nonFeatured.filter((t) => t.stars === 5);
     const fours = nonFeatured.filter((t) => t.stars === 4);
     return [...fives, ...fours];
@@ -430,7 +413,7 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
-        {/* Featured Three (skimmable) */}
+        {/* Featured Three */}
         <div className="mt-10 grid gap-6 lg:grid-cols-3">
           {featured.map((t, idx) => (
             <div key={t.name} className="lg:col-span-1">
@@ -454,7 +437,7 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
-        {/* Right-side style section: spotlight + carousel */}
+        {/* Spotlight + Carousel */}
         <div className="mt-10 grid gap-6 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <SpotlightBox />
@@ -474,7 +457,7 @@ export default function TestimonialsPage() {
             </div>
 
             <div className="mt-4 text-center text-xs text-white/45">
-              Note: Star ratings shown reflect individual reviewers.
+              Star ratings shown reflect individual reviewers.
             </div>
           </div>
         </div>
