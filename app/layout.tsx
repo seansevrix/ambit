@@ -6,7 +6,7 @@ import SiteFooter from "./components/SiteFooter";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 
-const META_PIXEL_ID = "PIXEL_ID_HERE";
+const META_PIXEL_ID = "1433466544843565";
 
 export const metadata: Metadata = {
   title: "AMBIT",
