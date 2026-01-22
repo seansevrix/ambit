@@ -87,8 +87,9 @@ export default function HomePage() {
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] sm:p-5">
               <div className="relative aspect-[16/9] w-full overflow-hidden rounded-xl border border-white/10 bg-[#0B1430]/30">
+                {/* NEW IMAGE (cache-busted) */}
                 <Image
-                  src="/proof/ambit-tiles.png"
+                  src="/proof/ambit-tiles.png?v=2"
                   alt="AMBIT example performance tiles"
                   fill
                   sizes="(max-width: 1024px) 100vw, 900px"
