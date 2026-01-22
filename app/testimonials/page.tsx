@@ -10,7 +10,7 @@ type Testimonial = {
   initials: string;
   segment?: Segment;
   stars?: 1 | 2 | 3 | 4 | 5;
-  highlight?: boolean;
+  featured?: boolean;
 };
 
 const PRIMARY =
@@ -22,6 +22,16 @@ const CARD =
 const PILL =
   "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85";
 
+const LOGOS = {
+  g2: "/logos/g2.png",
+  partners: [
+    { name: "EMCOR", src: "/logos/emcor.png" },
+    { name: "Dynegy", src: "/logos/dynegy.png" },
+    { name: "Premier Pool Service", src: "/logos/premierpoolservice.png" },
+    { name: "Sevrix", src: "/logos/sevrix.png" },
+  ],
+};
+
 const TESTIMONIALS: Testimonial[] = [
   {
     name: "Sarah K.",
@@ -32,7 +42,7 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "SK",
     segment: "Commercial",
     stars: 5,
-    highlight: true,
+    featured: true,
   },
   {
     name: "David Chen",
@@ -43,7 +53,7 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "DC",
     segment: "Commercial",
     stars: 5,
-    highlight: true,
+    featured: true,
   },
   {
     name: "Mark T.",
@@ -54,10 +64,9 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "MT",
     segment: "Residential",
     stars: 5,
-    highlight: true,
+    featured: true,
   },
 
-  // Dense tiles (short + scannable)
   {
     name: "Erin J.",
     role: "Estimator, HVAC",
@@ -118,24 +127,11 @@ const TESTIMONIALS: Testimonial[] = [
   },
 ];
 
-const LOGOS = {
-  g2: "/logos/g2.svg",
-  partners: [
-    { name: "EMCOR", src: "/logos/emcor.svg" },
-    { name: "Dynegy", src: "/logos/dynegy.svg" },
-    { name: "Premier Pool Service", src: "/logos/premierpoolservice.svg" },
-    { name: "Sevrix", src: "/logos/sevrix.svg" },
-  ],
-};
-
 function Stars({ value }: { value: number }) {
   const full = Math.max(0, Math.min(5, Math.round(value)));
   const stars = Array.from({ length: 5 }, (_, i) => (i < full ? "★" : "☆"));
   return (
-    <span
-      className="tracking-[0.12em] text-[#FFD36A]"
-      aria-label={`${full} out of 5 stars`}
-    >
+    <span className="tracking-[0.12em] text-[#FFD36A]">
       {stars.join("")}
     </span>
   );
@@ -158,7 +154,7 @@ function SegmentChip({ segment }: { segment?: Segment }) {
   );
 }
 
-function LogoImg({
+function Img({
   src,
   alt,
   className,
@@ -167,7 +163,6 @@ function LogoImg({
   alt: string;
   className: string;
 }) {
-  // Use <img> so SVGs always render correctly (prevents broken placeholders)
   // eslint-disable-next-line @next/next/no-img-element
   return <img src={src} alt={alt} className={className} />;
 }
@@ -177,7 +172,7 @@ function QuoteCard({ t }: { t: Testimonial }) {
     <div className={`${CARD} p-6`}>
       <div className="flex items-start justify-between gap-3">
         <SegmentChip segment={t.segment} />
-        <span className="text-white/25 text-lg leading-none">“</span>
+        <span className="text-white/20 text-lg leading-none">“</span>
       </div>
 
       <p className="mt-3 text-sm leading-relaxed text-white/85">“{t.quote}”</p>
@@ -199,27 +194,13 @@ function QuoteCard({ t }: { t: Testimonial }) {
 }
 
 export default function TestimonialsPage() {
-  const featured = TESTIMONIALS.filter((t) => t.highlight).slice(0, 3);
-  const rest = TESTIMONIALS.filter((t) => !t.highlight);
-
-  // 3 columns so nothing looks empty (photo #2 vibe)
-  const col1: Testimonial[] = [featured[0], rest[0], rest[1]].filter(
-    Boolean
-  ) as Testimonial[];
-  const col2: Testimonial[] = [featured[1], featured[2], rest[2]].filter(
-    Boolean
-  ) as Testimonial[];
-  const col3: Testimonial[] = [
-    // “Spotlight” header card + more tiles + CTA, always filled
-    rest[3],
-    rest[4],
-    rest[5],
-  ].filter(Boolean) as Testimonial[];
+  const featured = TESTIMONIALS.filter((t) => t.featured);
+  const rest = TESTIMONIALS.filter((t) => !t.featured);
 
   return (
     <main className="bg-[#0B1430] text-white">
       <div className="mx-auto max-w-7xl px-6 py-20">
-        {/* HERO */}
+        {/* Hero */}
         <div className="mx-auto max-w-5xl text-center">
           <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
             Trusted proof from real contractors
@@ -229,14 +210,9 @@ export default function TestimonialsPage() {
             opportunities faster.
           </p>
 
-          {/* Badges */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <div className={`${PILL} shadow-[0_20px_60px_rgba(0,0,0,0.35)]`}>
-              <LogoImg
-                src={LOGOS.g2}
-                alt="G2"
-                className="h-[18px] w-auto opacity-95"
-              />
+              <Img src={LOGOS.g2} alt="G2" className="h-5 w-5 opacity-95" />
               <span className="font-semibold">G2</span>
               <span className="text-white/70">4.5/5</span>
               <span className="text-white/40">•</span>
@@ -268,12 +244,11 @@ export default function TestimonialsPage() {
                 <div
                   key={b.name}
                   className="rounded-xl border border-white/10 bg-white/5 px-4 py-2"
-                  title={b.name}
                 >
-                  <LogoImg
+                  <Img
                     src={b.src}
                     alt={b.name}
-                    className="h-[18px] w-auto opacity-90"
+                    className="h-5 w-auto opacity-90"
                   />
                 </div>
               ))}
@@ -281,29 +256,27 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
-        {/* PROOF GRID (photo #2 vibe) */}
-        <div className="mt-16 grid gap-6 lg:grid-cols-3">
-          {/* Column 1 */}
+        {/* Featured row (strong hierarchy like photo #2) */}
+        <div className="mt-14 grid gap-6 lg:grid-cols-3">
+          {featured.map((t) => (
+            <div key={t.name} className="lg:col-span-1">
+              <QuoteCard t={t} />
+            </div>
+          ))}
+        </div>
+
+        {/* Dense proof grid */}
+        <div className="mt-6 grid gap-6 lg:grid-cols-3">
           <div className="space-y-6">
-            {col1.map((t) => (
-              <QuoteCard
-                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
-                t={t}
-              />
-            ))}
+            <QuoteCard t={rest[0]} />
+            <QuoteCard t={rest[1]} />
           </div>
 
-          {/* Column 2 */}
           <div className="space-y-6">
-            {col2.map((t) => (
-              <QuoteCard
-                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
-                t={t}
-              />
-            ))}
+            <QuoteCard t={rest[2]} />
+            <QuoteCard t={rest[3]} />
           </div>
 
-          {/* Column 3 */}
           <div className="space-y-6">
             <div className={`${CARD} p-6`}>
               <div className="flex items-center justify-between">
@@ -315,12 +288,7 @@ export default function TestimonialsPage() {
               </p>
             </div>
 
-            {col3.map((t) => (
-              <QuoteCard
-                key={`${t.name}-${t.location}-${t.quote.slice(0, 12)}`}
-                t={t}
-              />
-            ))}
+            <QuoteCard t={rest[4]} />
 
             <div className={`${CARD} p-8 text-center`}>
               <h2 className="text-xl font-semibold">
