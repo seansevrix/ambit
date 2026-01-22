@@ -4,6 +4,9 @@ import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
 
 const LINK = "text-sm font-semibold text-white/75 hover:text-white transition";
 
+const PRIMARY_BTN =
+  "inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#15428B]";
+
 const TESTIMONIALS = [
   {
     quote:
@@ -71,9 +74,15 @@ export default function HomePage() {
             <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
               Proof, not promises.
             </h2>
+
             <p className="mt-2 max-w-2xl text-sm text-white/70">
               Illustrative examples of what “matched opportunities + faster response” can do. Results vary by trade,
               service area, and bid volume.
+            </p>
+
+            <p className="mt-2 text-sm font-semibold text-white/75">
+              Results for: <span className="text-white">Mid-sized Electrical Contractor (5–10 employees)</span> in{" "}
+              <span className="text-white">Dallas, TX</span>.
             </p>
 
             <div className="mt-6 overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset] sm:p-5">
@@ -87,9 +96,15 @@ export default function HomePage() {
                 />
               </div>
 
-              <p className="mt-3 text-xs text-white/50">
-                Example results (illustrative). Results vary by trade, response time, service area, and bid volume.
-              </p>
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs text-white/50">
+                  Example results (illustrative). Results vary by trade, response time, service area, and bid volume.
+                </p>
+
+                <Link href="#preview" className={PRIMARY_BTN}>
+                  See results for your trade →
+                </Link>
+              </div>
             </div>
           </div>
 
