@@ -32,7 +32,7 @@ export default function ProofSection({ belowSignup }: ProofSectionProps) {
             <div className="relative aspect-[16/9] w-full">
               <Image
                 // ✅ use the new clean image (no querystring)
-                src="/proof/ambit-tiles.jpg"
+                src="/proof/ambit-tiles.jpeg"
                 alt="AMBIT performance tiles (illustrative)"
                 fill
                 priority
