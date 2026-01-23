@@ -177,22 +177,9 @@ export default function PricingPage() {
           </div>
 
           <div className="mt-5 grid gap-4 md:grid-cols-3">
-            <Step
-              n="1"
-              title="Create your profile"
-              desc="Markets + NAICS + keywords + service area."
-            />
-            <Step
-              n="2"
-              title="Review your first matches"
-              desc="See ranked opportunities in your portal."
-            />
-            <Step
-              n="3"
-              title="Start your free trial"
-              desc="Daily delivery. Cancel anytime."
-              accent
-            />
+            <Step n="1" title="Create your profile" desc="Markets + NAICS + keywords + service area." />
+            <Step n="2" title="Review your first matches" desc="See ranked opportunities in your portal." />
+            <Step n="3" title="Start your free trial" desc="Daily delivery. Cancel anytime." accent />
           </div>
 
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs text-white/60">
@@ -204,9 +191,7 @@ export default function PricingPage() {
         <div className="mt-10">
           <div className="flex items-end justify-between gap-4">
             <h2 className="text-lg font-semibold">FAQ</h2>
-            <div className="text-xs text-white/55">
-              Still unsure? Start Single — switch later.
-            </div>
+            <div className="text-xs text-white/55">Still unsure? Start Single — switch later.</div>
           </div>
 
           <div className="mt-4 space-y-3">
@@ -219,9 +204,7 @@ export default function PricingPage() {
                 <summary className="cursor-pointer list-none text-sm font-semibold text-white/90">
                   <div className="flex items-center justify-between gap-4">
                     <span>{item.q}</span>
-                    <span className="text-white/60 group-open:rotate-45 transition-transform">
-                      +
-                    </span>
+                    <span className="text-white/60 transition-transform group-open:rotate-45">+</span>
                   </div>
                 </summary>
                 <p className="mt-3 text-sm text-white/70">{item.a}</p>
@@ -239,7 +222,6 @@ export default function PricingPage() {
 }
 
 function Sparkline() {
-  // Tiny “live” chart line
   return (
     <svg viewBox="0 0 80 32" className="h-8 w-full" aria-hidden="true" focusable="false">
       <path
@@ -250,12 +232,7 @@ function Sparkline() {
         className="text-emerald-300/80"
         strokeLinecap="round"
       />
-      <path
-        d="M0 30 H80"
-        stroke="currentColor"
-        strokeWidth="1"
-        className="text-white/10"
-      />
+      <path d="M0 30 H80" stroke="currentColor" strokeWidth="1" className="text-white/10" />
     </svg>
   );
 }
@@ -315,19 +292,18 @@ function Step({
       <div className="mt-4 text-emerald-200/80">
         <svg viewBox="0 0 80 32" className="h-8 w-full" aria-hidden="true" focusable="false">
           <path
-            d={accent ? "M4 26 C 18 18, 26 18, 34 16 S 56 10, 76 6" : "M4 22 C 18 22, 26 20, 34 18 S 56 16, 76 14"}
+            d={
+              accent
+                ? "M4 26 C 18 18, 26 18, 34 16 S 56 10, 76 6"
+                : "M4 22 C 18 22, 26 20, 34 18 S 56 16, 76 14"
+            }
             fill="none"
             stroke="currentColor"
             strokeWidth="2.25"
             className={accent ? "text-emerald-300/80" : "text-white/25"}
             strokeLinecap="round"
           />
-          <path
-            d="M0 30 H80"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-white/10"
-          />
+          <path d="M0 30 H80" stroke="currentColor" strokeWidth="1" className="text-white/10" />
         </svg>
       </div>
     </div>
@@ -364,14 +340,22 @@ function Plan({
           : "border-white/10 bg-white/5",
       ].join(" ")}
     >
+      {/* Background glows */}
       {featured ? (
         <>
           <div className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(450px_260px_at_70%_0%,rgba(52,211,153,0.20),transparent_60%)]" />
           <div className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(520px_300px_at_20%_10%,rgba(26,79,163,0.20),transparent_60%)]" />
         </>
       ) : (
-        <div className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(500px_280px_at_30%_0%,rgba(26,79,163,0.14),transparent_60%)]" />
+        <>
+          {/* UPDATED: match the All markets “premium” vibe */}
+          <div className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(520px_300px_at_70%_0%,rgba(52,211,153,0.18),transparent_60%)]" />
+          <div className="pointer-events-none absolute -inset-px rounded-3xl bg-[radial-gradient(520px_300px_at_20%_10%,rgba(26,79,163,0.18),transparent_60%)]" />
+        </>
       )}
+
+      {/* Subtle inner sheen (both cards) */}
+      <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.06] via-transparent to-transparent" />
 
       <div className="relative flex items-center justify-between gap-3">
         <p className="text-sm font-semibold text-white/90">{name}</p>
@@ -382,9 +366,7 @@ function Plan({
         ) : null}
       </div>
 
-      {kicker ? (
-        <div className="relative mt-2 text-xs text-white/55">{kicker}</div>
-      ) : null}
+      {kicker ? <div className="relative mt-2 text-xs text-white/55">{kicker}</div> : null}
 
       <p className="relative mt-4 text-4xl font-semibold tracking-tight">
         {price}
@@ -404,12 +386,7 @@ function Plan({
 
       <Link
         href={href}
-        className={[
-          "relative mt-6 block rounded-xl px-4 py-3 text-center text-sm font-semibold transition",
-          featured
-            ? "bg-white text-black hover:bg-white/90"
-            : "bg-white text-black hover:bg-white/90",
-        ].join(" ")}
+        className="relative mt-6 block rounded-xl bg-white px-4 py-3 text-center text-sm font-semibold text-black transition hover:bg-white/90"
       >
         {cta}
       </Link>
