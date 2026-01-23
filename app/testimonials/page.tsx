@@ -83,7 +83,7 @@ const TESTIMONIALS: Testimonial[] = [
     featured: true,
   },
 
-  // More reviews (keep honest ratings; group 5★ first in carousel)
+  // More reviews
   {
     name: "Erin J.",
     role: "Estimator, HVAC",
@@ -111,8 +111,7 @@ const TESTIMONIALS: Testimonial[] = [
     role: "Project Coordinator, Facilities",
     location: "Washington, USA",
     hook: "Clear match reasoning keeps our team aligned.",
-    quote:
-      "Clean layout and clear match reasoning keeps our team aligned fast.",
+    quote: "Clean layout and clear match reasoning keeps our team aligned fast.",
     initials: "TP",
     segment: "Government",
     stars: 5,
@@ -143,8 +142,7 @@ const TESTIMONIALS: Testimonial[] = [
     role: "Owner, Concrete",
     location: "Arizona, USA",
     hook: "Simple setup. Better matches.",
-    quote:
-      "Simple setup. Better matches. Less noise. Exactly what we needed.",
+    quote: "Simple setup. Better matches. Less noise. Exactly what we needed.",
     initials: "CB",
     segment: "Residential",
     stars: 4,
@@ -154,11 +152,7 @@ const TESTIMONIALS: Testimonial[] = [
 function Stars({ value }: { value: number }) {
   const full = Math.max(0, Math.min(5, Math.round(value)));
   const stars = Array.from({ length: 5 }, (_, i) => (i < full ? "★" : "☆"));
-  return (
-    <span className="tracking-[0.12em] text-[#FFD36A]/90">
-      {stars.join("")}
-    </span>
-  );
+  return <span className="tracking-[0.12em] text-[#FFD36A]/90">{stars.join("")}</span>;
 }
 
 function Avatar({ initials }: { initials: string }) {
@@ -292,18 +286,13 @@ function ProgressBar({ label, percent }: { label: string; percent: number }) {
         <span className="text-white/55">Mentioned in {clamped}%</span>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-        <div
-          className="h-full rounded-full bg-[#1A4FA3]"
-          style={{ width: `${clamped}%` }}
-        />
+        <div className="h-full rounded-full bg-[#1A4FA3]" style={{ width: `${clamped}%` }} />
       </div>
     </div>
   );
 }
 
 function SpotlightBox() {
-  // Only use metrics you are comfortable standing behind.
-  // If you don't want implied percentages, set these to null and the UI will say "Frequently mentioned".
   const metrics: Array<{ label: string; percent: number | null }> = [
     { label: "Less searching time", percent: 86 },
     { label: "Clear summaries", percent: 81 },
@@ -381,11 +370,27 @@ export default function TestimonialsPage() {
   const visibleCarousel = showMore ? rest : rest.slice(0, 6);
 
   return (
-    <main className="bg-[#0B1430] text-white">
+    <main className="min-h-screen bg-[#070B18] text-white">
+      {/* Background glow + subtle grid (matches the site) */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
+        <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] [background-size:72px_72px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
+      </div>
+
       <div className="mx-auto max-w-7xl px-6 py-16 md:py-20">
         {/* Hero */}
         <div className="mx-auto max-w-5xl text-center">
-          <h1 className="text-4xl font-semibold tracking-tight md:text-5xl">
+          <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+            </span>
+            Live customer feedback
+          </div>
+
+          <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
             Trusted proof from real contractors
           </h1>
           <p className="mt-4 text-white/70">
