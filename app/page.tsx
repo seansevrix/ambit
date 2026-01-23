@@ -1,3 +1,4 @@
+// app/page.tsx
 import Link from "next/link";
 import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
 import ProofDashboard from "./components/ProofDashboard";
@@ -9,159 +10,188 @@ const SECONDARY_BTN =
 
 export default function HomePage() {
   return (
-    <div className="space-y-8 overflow-x-hidden sm:space-y-12">
-      {/* HERO + GLASS PANEL */}
-      <section className="relative overflow-hidden rounded-2xl border border-white/10 sm:rounded-3xl">
-        <div className="absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.35),transparent_60%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#08122B] via-[#070F22] to-[#060A16]" />
+    <div className="min-h-screen bg-[#070B18] text-white">
+      {/* Global background glow + subtle grid (matches Pricing/Get Started/Preview) */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
+        <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] [background-size:72px_72px]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
+      </div>
 
-        <div className="relative px-4 py-10 sm:px-10 sm:py-14">
-          <div className="mx-auto max-w-5xl text-center">
-            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-              Get more local contracts.
-            </h1>
+      <div className="mx-auto max-w-[1200px] px-6 py-10 lg:px-10">
+        <div className="space-y-8 overflow-x-hidden sm:space-y-12">
+          {/* HERO + GLASS PANEL */}
+          <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_10px_60px_rgba(0,0,0,0.35)] sm:rounded-3xl">
+            {/* Keep your hero gradient, just make it play nice with the global bg */}
+            <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.28),transparent_60%)]" />
+            <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#08122B]/80 via-[#070F22]/75 to-[#060A16]/80" />
+            <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(to_right,rgba(255,255,255,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.18)_1px,transparent_1px)] [background-size:92px_92px]" />
 
-            <p className="mt-3 text-sm text-white/70 sm:text-base">
-              Qualified opportunities sent to you — not your competitors.
-            </p>
-
-            <p className="mt-3 text-xs text-white/65 sm:text-sm">
-              <span className="font-semibold text-white/85">7-day free trial</span>
-              <span className="mx-2 text-white/35">•</span>
-              No credit card
-              <span className="mx-2 text-white/35">•</span>
-              Trusted by 200+ clients
-            </p>
-
-            <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/live-opportunities" className={LINK}>
-                View Live Leads →
-              </Link>
-            </div>
-          </div>
-
-          {/* SIGNUP AREA (first) */}
-          <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
-            <ConciergeLeadCapture />
-          </div>
-
-          {/* PROOF DASHBOARD (below signup) */}
-          <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-            <ProofDashboard />
-          </div>
-
-          {/* TESTIMONIALS (below graphs) */}
-          <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-              <div>
-                <div className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                  TESTIMONIALS
+            <div className="relative px-4 py-10 sm:px-10 sm:py-14">
+              <div className="mx-auto max-w-5xl text-center">
+                <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                  </span>
+                  Live local matches
                 </div>
 
-                <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                  Real contractors. Real results.
-                </h2>
+                <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+                  Get more local contracts.
+                </h1>
 
-                <p className="mt-2 max-w-2xl text-sm text-white/70">
-                  Skimmable feedback from teams using AMBIT to find better-fit opportunities faster.
+                <p className="mt-3 text-sm text-white/70 sm:text-base">
+                  Qualified opportunities sent to you — not your competitors.
                 </p>
 
-                {/* SIGNALS */}
-                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
-                  <span>✓ Faster response times</span>
-                  <span>✓ Cleaner summaries</span>
-                  <span>✓ Better-fit opportunities</span>
+                <p className="mt-3 text-xs text-white/65 sm:text-sm">
+                  <span className="font-semibold text-white/85">7-day free trial</span>
+                  <span className="mx-2 text-white/35">•</span>
+                  No credit card
+                  <span className="mx-2 text-white/35">•</span>
+                  Trusted by 200+ clients
+                </p>
+
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  <Link href="/live-opportunities" className={LINK}>
+                    View Live Leads →
+                  </Link>
                 </div>
               </div>
 
-              <div className="flex">
-                <Link href="/testimonials" className={SECONDARY_BTN}>
-                  See more reviews by trade →
-                </Link>
+              {/* SIGNUP AREA (first) */}
+              <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
+                <ConciergeLeadCapture />
               </div>
-            </div>
 
-            <div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-3">
-              {/* SARAH */}
-              <div className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                <p className="text-sm leading-relaxed text-white/75">
-                  <span className="text-white/40">“</span>
-                  I sat on this for weeks because I’m a disaster with new tech and expected setup to be a nightmare.
-                  <strong className="font-semibold text-white">
-                    {" "}
-                    Fully up and running in under 5 minutes.
-                  </strong>{" "}
-                  I set our service area + NAICS, and matches started coming in immediately.
-                  <span className="text-white/40">”</span>
-                </p>
+              {/* PROOF DASHBOARD (below signup) */}
+              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
+                <ProofDashboard />
+              </div>
 
-                <div className="mt-5 h-px w-full bg-white/10" />
+              {/* TESTIMONIALS (below graphs) */}
+              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <div className="inline-flex items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                      TESTIMONIALS
+                    </div>
 
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-white">Sarah K.</div>
-                  <div className="mt-1 text-xs text-white/65">Owner, Janitorial Company</div>
-                  <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                    Janitorial · Florida
+                    <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                      Real contractors. Real results.
+                    </h2>
+
+                    <p className="mt-2 max-w-2xl text-sm text-white/70">
+                      Skimmable feedback from teams using AMBIT to find better-fit opportunities
+                      faster.
+                    </p>
+
+                    {/* SIGNALS */}
+                    <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
+                      <span>✓ Faster response times</span>
+                      <span>✓ Cleaner summaries</span>
+                      <span>✓ Better-fit opportunities</span>
+                    </div>
+                  </div>
+
+                  <div className="flex">
+                    <Link href="/testimonials" className={SECONDARY_BTN}>
+                      See more reviews by trade →
+                    </Link>
                   </div>
                 </div>
-              </div>
 
-              {/* DAVID */}
-              <div className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                <p className="text-sm leading-relaxed text-white/75">
-                  <span className="text-white/40">“</span>
-                  We’ve tested a lot of tools, but AMBIT is the first one that actually scaled with us.
-                  <strong className="font-semibold text-white">
-                    {" "}
-                    We stopped wasting hours digging through portals.
-                  </strong>{" "}
-                  Daily matches are relevant and clearly summarized.
-                  <span className="text-white/40">”</span>
-                </p>
+                <div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-3">
+                  {/* SARAH */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
+                    <p className="text-sm leading-relaxed text-white/75">
+                      <span className="text-white/40">“</span>
+                      I sat on this for weeks because I’m a disaster with new tech and expected
+                      setup to be a nightmare.
+                      <strong className="font-semibold text-white">
+                        {" "}
+                        Fully up and running in under 5 minutes.
+                      </strong>{" "}
+                      I set our service area + NAICS, and matches started coming in immediately.
+                      <span className="text-white/40">”</span>
+                    </p>
 
-                <div className="mt-5 h-px w-full bg-white/10" />
+                    <div className="mt-5 h-px w-full bg-white/10" />
 
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-white">David Chen</div>
-                  <div className="mt-1 text-xs text-white/65">Operations Director</div>
-                  <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                    Construction · Nevada
+                    <div className="mt-4">
+                      <div className="text-sm font-semibold text-white">Sarah K.</div>
+                      <div className="mt-1 text-xs text-white/65">
+                        Owner, Janitorial Company
+                      </div>
+                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
+                        Janitorial · Florida
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DAVID */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
+                    <p className="text-sm leading-relaxed text-white/75">
+                      <span className="text-white/40">“</span>
+                      We’ve tested a lot of tools, but AMBIT is the first one that actually scaled
+                      with us.
+                      <strong className="font-semibold text-white">
+                        {" "}
+                        We stopped wasting hours digging through portals.
+                      </strong>{" "}
+                      Daily matches are relevant and clearly summarized.
+                      <span className="text-white/40">”</span>
+                    </p>
+
+                    <div className="mt-5 h-px w-full bg-white/10" />
+
+                    <div className="mt-4">
+                      <div className="text-sm font-semibold text-white">David Chen</div>
+                      <div className="mt-1 text-xs text-white/65">
+                        Operations Director
+                      </div>
+                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
+                        Construction · Nevada
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* MARK */}
+                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
+                    <p className="text-sm leading-relaxed text-white/75">
+                      <span className="text-white/40">“</span>
+                      What impressed me most was the accuracy.
+                      <strong className="font-semibold text-white">
+                        {" "}
+                        It sends work we can actually bid and win.
+                      </strong>{" "}
+                      After tightening our NAICS + keywords, match quality jumped immediately.
+                      <span className="text-white/40">”</span>
+                    </p>
+
+                    <div className="mt-5 h-px w-full bg-white/10" />
+
+                    <div className="mt-4">
+                      <div className="text-sm font-semibold text-white">Mark T.</div>
+                      <div className="mt-1 text-xs text-white/65">Owner, Plumbing Company</div>
+                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
+                        Plumbing · California
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* MARK */}
-              <div className="rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                <p className="text-sm leading-relaxed text-white/75">
-                  <span className="text-white/40">“</span>
-                  What impressed me most was the accuracy.
-                  <strong className="font-semibold text-white">
-                    {" "}
-                    It sends work we can actually bid and win.
-                  </strong>{" "}
-                  After tightening our NAICS + keywords, match quality jumped immediately.
-                  <span className="text-white/40">”</span>
+                <p className="mt-6 text-center text-xs text-white/45">
+                  Testimonials are real feedback. Results vary by trade, service area, and response
+                  time.
                 </p>
-
-                <div className="mt-5 h-px w-full bg-white/10" />
-
-                <div className="mt-4">
-                  <div className="text-sm font-semibold text-white">Mark T.</div>
-                  <div className="mt-1 text-xs text-white/65">Owner, Plumbing Company</div>
-                  <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                    Plumbing · California
-                  </div>
-                </div>
               </div>
             </div>
-
-            {/* subtle footer line */}
-            <p className="mt-6 text-center text-xs text-white/45">
-              Testimonials are real feedback. Results vary by trade, service area, and response time.
-            </p>
-          </div>
+          </section>
         </div>
-      </section>
+      </div>
     </div>
   );
 }
