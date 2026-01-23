@@ -1,4 +1,7 @@
+// app/opengraph-image.tsx
 import { ImageResponse } from "next/og";
+
+export const runtime = "edge";
 
 export const size = {
   width: 1200,
@@ -12,101 +15,103 @@ export default function OpenGraphImage() {
     (
       <div
         style={{
-          width: "100%",
-          height: "100%",
+          width: "1200px",
+          height: "630px",
           display: "flex",
-          flexDirection: "column",
+          alignItems: "center",
           justifyContent: "center",
-          padding: 72,
-          background: "#020617", // slate-950
-          color: "#ffffff",
+          backgroundColor: "#070B18",
+          position: "relative",
+          overflow: "hidden",
+          fontFamily:
+            'ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial',
         }}
       >
-        {/* Top mark */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+        {/* Background glows */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "radial-gradient(900px 600px at 20% 0%, rgba(26,79,163,0.35), transparent 60%), radial-gradient(800px 520px at 80% 25%, rgba(52,211,153,0.22), transparent 55%), radial-gradient(900px 600px at 75% 100%, rgba(26,79,163,0.22), transparent 60%)",
+          }}
+        />
+
+        {/* Subtle grid */}
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            opacity: 0.08,
+            backgroundImage:
+              "linear-gradient(to right, rgba(255,255,255,0.25) 1px, transparent 1px), linear-gradient(to bottom, rgba(255,255,255,0.25) 1px, transparent 1px)",
+            backgroundSize: "72px 72px",
+          }}
+        />
+
+        {/* Content */}
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          {/* Logo mark (simple + clean) */}
           <div
             style={{
-              width: 64,
-              height: 64,
-              borderRadius: 18,
-              background: "#ffffff",
+              width: 170,
+              height: 170,
+              borderRadius: 40,
+              background: "rgba(255,255,255,0.06)",
+              border: "2px solid rgba(255,255,255,0.14)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "#020617",
-              fontSize: 34,
-              fontWeight: 900,
-              letterSpacing: -1,
+              boxShadow: "0 24px 90px rgba(0,0,0,0.45)",
             }}
           >
-            A
-          </div>
-
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 36, fontWeight: 800, letterSpacing: -1 }}>
-              AMBIT
-            </div>
-            <div style={{ fontSize: 18, opacity: 0.8 }}>
-              Gov-tech. Simple. Contractor-first.
-            </div>
-          </div>
-        </div>
-
-        {/* Headline */}
-        <div
-          style={{
-            marginTop: 36,
-            fontSize: 58,
-            fontWeight: 800,
-            letterSpacing: -2,
-            lineHeight: 1.05,
-            maxWidth: 980,
-          }}
-        >
-          Ranked government contract leads for contractors.
-        </div>
-
-        {/* Sub */}
-        <div
-          style={{
-            marginTop: 18,
-            fontSize: 24,
-            opacity: 0.85,
-            maxWidth: 900,
-            lineHeight: 1.35,
-          }}
-        >
-          Tell us your trade + service area. AMBIT finds, scores, and summarizes the best
-          fits—delivered to your inbox.
-        </div>
-
-        {/* Pills */}
-        <div style={{ display: "flex", gap: 12, marginTop: 30, flexWrap: "wrap" }}>
-          {["Match score", "Plain-English summary", "Daily digest", "Cancel anytime"].map(
-            (t) => (
+            <div
+              style={{
+                width: 112,
+                height: 112,
+                borderRadius: 999,
+                background: "rgba(0,0,0,0.35)",
+                border: "2px solid rgba(255,255,255,0.14)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
               <div
-                key={t}
                 style={{
-                  padding: "10px 14px",
-                  borderRadius: 999,
-                  background: "rgba(255,255,255,0.10)",
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  fontSize: 16,
-                  fontWeight: 650,
+                  fontSize: 64,
+                  fontWeight: 900,
+                  color: "rgba(255,255,255,0.95)",
+                  lineHeight: 1,
                 }}
               >
-                {t}
+                A
               </div>
-            )
-          )}
-        </div>
+            </div>
+          </div>
 
-        {/* Bottom line */}
-        <div style={{ marginTop: 40, fontSize: 16, opacity: 0.7 }}>
-          ambit • lead engine for the field
+          {/* Text */}
+          <div
+            style={{
+              marginTop: 26,
+              fontSize: 64,
+              fontWeight: 900,
+              color: "rgba(255,255,255,0.93)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Gain More Leads
+          </div>
         </div>
       </div>
     ),
-    size
+    { ...size }
   );
 }
