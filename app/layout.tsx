@@ -9,18 +9,18 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const META_PIXEL_ID = "1433466544843565";
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://ambitco.app"),
+  metadataBase: new URL("https://www.ambitco.app"),
   title: "AMBIT",
   description: "Gain More Leads",
   openGraph: {
     title: "AMBIT",
     description: "Gain More Leads",
-    url: "https://ambitco.app",
+    url: "https://www.ambitco.app/",
     siteName: "AMBIT",
     type: "website",
     images: [
       {
-        url: "/og.jpeg", // put your file in /public/og.jpeg
+        url: "https://www.ambitco.app/og.jpeg",
         width: 1200,
         height: 630,
         alt: "AMBIT — Gain More Leads",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "AMBIT",
     description: "Gain More Leads",
-    images: ["/og.jpeg"],
+    images: ["https://www.ambitco.app/og.jpeg"],
   },
 };
 
@@ -42,7 +42,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
+      <body className="min-h-screen bg-gradient-to-b from-[#0B1430] via-[#0D1A3A] to-[#0F2048] text-white">
         {/* Meta Pixel */}
         <Script id="meta-pixel" strategy="afterInteractive">
           {`
@@ -69,9 +69,7 @@ export default function RootLayout({
             alt=""
           />
         </noscript>
-      </head>
 
-      <body className="min-h-screen bg-gradient-to-b from-[#0B1430] via-[#0D1A3A] to-[#0F2048] text-white">
         <div className="min-h-screen flex flex-col">
           <SiteNav />
 
@@ -82,7 +80,6 @@ export default function RootLayout({
           <SiteFooter />
         </div>
 
-        {/* Vercel Analytics + Speed Insights */}
         <Analytics />
         <SpeedInsights />
       </body>
