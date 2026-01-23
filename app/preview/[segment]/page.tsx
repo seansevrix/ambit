@@ -1,3 +1,4 @@
+// app/preview/[segment]/page.tsx
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
@@ -94,6 +95,187 @@ const TESTIMONIALS_BY_SEGMENT: Record<Segment, Testimonial> = {
 const TRIAL_BANNER_TEXT =
   "7-day free trial • No credit card required • Cancel anytime • No spam";
 
+type Stat = {
+  label: string;
+  value: string;
+  sub: string;
+  delta: string;
+  trend?: "up" | "down";
+};
+
+type LiveBoard = {
+  resultsFor: string;
+  updatedText: string;
+  datasetText: string;
+  stats: Stat[];
+};
+
+const LIVE_BOARD_BY_SEGMENT: Record<Segment, LiveBoard> = {
+  residential: {
+    resultsFor: "Small-sized Pool Company (3–8 employees) in Oceanside, CA",
+    updatedText: "Updated just now",
+    datasetText: "Example dataset",
+    stats: [
+      { label: "Monthly Contract Revenue", value: "$6,250", sub: "vs. $1,920 prior month", delta: "+226%", trend: "up" },
+      { label: "Opportunities Matched", value: "15", sub: "vs. 12 prior month", delta: "+25%", trend: "up" },
+      { label: "Opportunities Submitted", value: "10", sub: "vs. 8 prior month", delta: "+20%", trend: "up" },
+
+      { label: "Contracts Won", value: "3", sub: "vs. 1 prior month", delta: "+200%", trend: "up" },
+      { label: "Pipeline Value", value: "$8,900", sub: "vs. $7,500 prior month", delta: "+19%", trend: "up" },
+      { label: "Win Rate", value: "30%", sub: "vs. 25% prior year", delta: "+5 pts", trend: "up" },
+
+      { label: "Service Capacity", value: "70%", sub: "vs. 65% prior month", delta: "+5%", trend: "up" },
+      { label: "Avg Contract Value", value: "$1,850", sub: "vs. $1,690 prior month", delta: "+9%", trend: "up" },
+      { label: "Cost per Win (effective)", value: "$120", sub: "vs. $135 prior month", delta: "-11%", trend: "down" },
+    ],
+  },
+
+  commercial: {
+    resultsFor: "Mid-sized Plumbing Business (10–25 employees) in Newport Beach, CA",
+    updatedText: "Updated just now",
+    datasetText: "Example dataset",
+    stats: [
+      { label: "Monthly Contract Revenue", value: "$41,500", sub: "vs. $32,600 prior month", delta: "+27%", trend: "up" },
+      { label: "Opportunities Matched", value: "18", sub: "vs. 14 prior month", delta: "+29%", trend: "up" },
+      { label: "Opportunities Submitted", value: "12", sub: "vs. 9 prior month", delta: "+33%", trend: "up" },
+
+      { label: "Contracts Won", value: "2", sub: "vs. 1 prior month", delta: "+100%", trend: "up" },
+      { label: "Pipeline Value", value: "$85,000", sub: "vs. $72,000 prior month", delta: "+18%", trend: "up" },
+      { label: "Win Rate", value: "22%", sub: "vs. 18% prior quarter", delta: "+4 pts", trend: "up" },
+
+      { label: "Service Capacity", value: "92%", sub: "vs. 88% prior month", delta: "+4%", trend: "up" },
+      { label: "Avg Contract Value", value: "$1,850", sub: "vs. $1,460 prior month", delta: "+27%", trend: "up" },
+      { label: "Cost per Win (effective)", value: "$245", sub: "vs. $280 prior month", delta: "-13%", trend: "down" },
+    ],
+  },
+
+  government: {
+    resultsFor: "Mid-sized Concrete Company (15–40 employees) in Fort Worth, TX",
+    updatedText: "Updated just now",
+    datasetText: "Example dataset",
+    stats: [
+      { label: "Monthly Contract Revenue", value: "$180,000", sub: "vs. $153,000 prior month", delta: "+18%", trend: "up" },
+      { label: "Opportunities Matched", value: "8", sub: "vs. 5 prior month", delta: "+60%", trend: "up" },
+      { label: "Opportunities Submitted", value: "5", sub: "vs. 3 prior month", delta: "+67%", trend: "up" },
+
+      { label: "Contracts Won", value: "2", sub: "vs. 1 prior month", delta: "+100%", trend: "up" },
+      { label: "Pipeline Value", value: "$1.0M", sub: "vs. $800k prior month", delta: "+25%", trend: "up" },
+      { label: "Win Rate", value: "15%", sub: "vs. 11% prior year", delta: "+4 pts", trend: "up" },
+
+      { label: "Service Capacity", value: "60%", sub: "vs. 55% prior month", delta: "+5%", trend: "up" },
+      { label: "Avg Contract Value", value: "$900,000", sub: "vs. $700,000 prior month", delta: "+29%", trend: "up" },
+      { label: "Cost per Win (effective)", value: "$239.98", sub: "vs. $298.00 prior month", delta: "-19%", trend: "down" },
+    ],
+  },
+};
+
+function Sparkline({ trend = "up" }: { trend?: "up" | "down" }) {
+  // Simple inline SVG that looks like a live mini-chart.
+  // No external deps, no images, stable on Vercel.
+  const dUp = "M4 26 C 18 22, 22 22, 34 18 S 58 14, 76 10";
+  const dDown = "M4 10 C 18 14, 22 14, 34 18 S 58 22, 76 26";
+  const d = trend === "down" ? dDown : dUp;
+
+  return (
+    <svg
+      viewBox="0 0 80 32"
+      className="h-8 w-full"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <path
+        d={d}
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2.25"
+        className="text-emerald-300/80"
+        strokeLinecap="round"
+      />
+      <path
+        d="M0 30 H80"
+        stroke="currentColor"
+        strokeWidth="1"
+        className="text-white/10"
+      />
+    </svg>
+  );
+}
+
+function LiveResultsBoard({ segment }: { segment: Segment }) {
+  const b = LIVE_BOARD_BY_SEGMENT[segment];
+
+  return (
+    <section className="mt-8">
+      <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.35)]">
+        {/* Top row */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <div className="flex items-center gap-3">
+              <h2 className="text-lg font-semibold text-white">
+                Proof, not promises.
+              </h2>
+
+              {/* Live pill */}
+              <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+                </span>
+                Live preview
+              </span>
+            </div>
+
+            <p className="mt-1 max-w-3xl text-sm text-white/60">
+              Illustrative examples of what “matched opportunities + faster
+              response” can do. Results vary by trade, area, and competitiveness.
+            </p>
+
+            <div className="mt-3 text-sm text-white/75">
+              <span className="text-white/50">Results for:</span>{" "}
+              <span className="font-semibold text-white">{b.resultsFor}</span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 text-xs text-white/55">
+            <span>{b.updatedText}</span>
+            <span className="text-white/25">•</span>
+            <span>{b.datasetText}</span>
+          </div>
+        </div>
+
+        {/* Cards */}
+        <div className="mt-5 grid gap-4 md:grid-cols-3">
+          {b.stats.map((s) => (
+            <div
+              key={s.label}
+              className="rounded-2xl border border-white/10 bg-white/[0.04] p-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="text-xs font-semibold text-white/60">
+                  {s.label}
+                </div>
+                <span className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-semibold text-emerald-200/90">
+                  {s.delta}
+                </span>
+              </div>
+
+              <div className="mt-2 text-2xl font-bold tracking-tight text-white">
+                {s.value}
+              </div>
+
+              <div className="mt-1 text-xs text-white/45">{s.sub}</div>
+
+              <div className="mt-4 text-emerald-200/80">
+                <Sparkline trend={s.trend ?? "up"} />
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default async function PreviewSegmentPage({
   params,
 }: {
@@ -153,6 +335,9 @@ export default async function PreviewSegmentPage({
         </div>
       </div>
 
+      {/* ✅ Live “Proof” board (for ALL segments) */}
+      <LiveResultsBoard segment={segmentKey} />
+
       {/* ✅ Side-by-side */}
       <div className="mt-8 grid gap-5 md:grid-cols-2">
         {/* Unlocked example */}
@@ -162,7 +347,9 @@ export default async function PreviewSegmentPage({
           <div className="text-[11px] font-semibold tracking-widest text-white/55">
             UNLOCKED EXAMPLE
           </div>
-          <div className="mt-2 text-lg font-bold text-white">{data.unlocked.title}</div>
+          <div className="mt-2 text-lg font-bold text-white">
+            {data.unlocked.title}
+          </div>
 
           <div className="mt-3 flex flex-wrap gap-2 text-xs">
             <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-white/80">
@@ -206,7 +393,9 @@ export default async function PreviewSegmentPage({
             Proof it works — then unlock your matches.
           </div>
 
-          <p className="mt-4 text-sm leading-relaxed text-white/80">“{t.quote}”</p>
+          <p className="mt-4 text-sm leading-relaxed text-white/80">
+            “{t.quote}”
+          </p>
 
           <div className="mt-4 text-xs text-white/60">
             <div className="font-semibold text-white/80">{t.name}</div>
