@@ -9,8 +9,30 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 const META_PIXEL_ID = "1433466544843565";
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://ambitco.app"),
   title: "AMBIT",
-  description: "Find the right government opportunities for your company.",
+  description: "Gain More Leads",
+  openGraph: {
+    title: "AMBIT",
+    description: "Gain More Leads",
+    url: "https://ambitco.app",
+    siteName: "AMBIT",
+    type: "website",
+    images: [
+      {
+        url: "/og.jpeg", // put your file in /public/og.jpeg
+        width: 1200,
+        height: 630,
+        alt: "AMBIT — Gain More Leads",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AMBIT",
+    description: "Gain More Leads",
+    images: ["/og.jpeg"],
+  },
 };
 
 export default function RootLayout({
