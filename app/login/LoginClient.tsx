@@ -14,6 +14,11 @@ function getBackendBaseUrl() {
   return raw.replace(/\/$/, "");
 }
 
+function isValidEmail(v: string) {
+  const s = v.trim().toLowerCase();
+  return s.length >= 5 && s.includes("@") && s.includes(".");
+}
+
 export default function LoginClient({ safeNext }: { safeNext?: string }) {
   const router = useRouter();
 
@@ -32,11 +37,6 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
       // ignore
     }
   }, []);
-
-  function isValidEmail(v: string) {
-    const s = v.trim().toLowerCase();
-    return s.length >= 5 && s.includes("@") && s.includes(".");
-  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -99,104 +99,106 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
     }
   }
 
+  const inputBase =
+    "w-full rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-white/25 focus:bg-black/30 transition";
+
+  const primaryBtn =
+    "w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
-    <main className="min-h-screen w-full bg-gradient-to-b from-slate-950 via-slate-950 to-slate-900">
-      <div className="mx-auto flex min-h-screen max-w-6xl items-center justify-center px-6 py-16">
-        <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
-              A
-            </div>
-            <div>
-              <div className="text-sm font-semibold text-white">AMBIT</div>
-              <div className="text-xs text-white/60">
-                Enter your company portal to view your opportunity matches
-              </div>
-            </div>
+    <div>
+      {/* Compact header */}
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
+          A
+        </div>
+        <div>
+          <div className="text-sm font-semibold text-white">AMBIT</div>
+          <div className="text-xs text-white/60">
+            Enter your email to access your match dashboard
           </div>
-
-          <h1 className="mt-6 text-3xl font-semibold tracking-tight text-white">
-            Company Portal
-          </h1>
-          <p className="mt-2 text-sm text-white/70">
-            Enter the email you used when you signed up.
-          </p>
-
-          <form onSubmit={handleSubmit} className="mt-6 space-y-4">
-            <div>
-              <label className="mb-1 block text-xs font-medium text-white/70">
-                Email
-              </label>
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                inputMode="email"
-                placeholder="you@company.com"
-                className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-3 text-white outline-none placeholder:text-white/30 focus:border-white/30"
-              />
-
-              {!backend && (
-                <div className="mt-1 text-xs text-amber-200/80">
-                  Missing frontend env: NEXT_PUBLIC_BACKEND_URL
-                </div>
-              )}
-
-              <div className="mt-2 text-xs text-white/50">
-                New here?{" "}
-                <Link className="underline hover:text-white" href="/get-started">
-                  Create your profile
-                </Link>
-                .
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-3">
-              <label className="flex cursor-pointer items-center gap-2 text-sm text-white/70">
-                <input
-                  type="checkbox"
-                  checked={remember}
-                  onChange={(e) => setRemember(e.target.checked)}
-                  className="h-4 w-4 rounded border-white/20 bg-black/30"
-                />
-                Remember me
-              </label>
-
-              <Link
-                href="/contact"
-                className="text-sm text-white/70 underline hover:text-white"
-              >
-                Need help?
-              </Link>
-            </div>
-
-            {error && (
-              <div className="rounded-xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
-                {error}
-              </div>
-            )}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full rounded-xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {loading ? "Signing in…" : "Show My Matches"}
-            </button>
-
-            <div className="text-xs text-white/50">
-              By continuing you agree to our{" "}
-              <Link className="underline hover:text-white" href="/terms">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link className="underline hover:text-white" href="/privacy">
-                Privacy Policy
-              </Link>
-              .
-            </div>
-          </form>
         </div>
       </div>
-    </main>
+
+      <div className="mt-5">
+        <h2 className="text-2xl font-semibold tracking-tight text-white">
+          Company Portal
+        </h2>
+        <p className="mt-1 text-sm text-white/70">
+          Use the email you signed up with.
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+        <div>
+          <label className="mb-1.5 block text-xs font-semibold text-white/70">
+            Email
+          </label>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            inputMode="email"
+            autoComplete="email"
+            placeholder="you@company.com"
+            className={inputBase}
+          />
+
+          {!backend ? (
+            <div className="mt-2 rounded-xl border border-amber-300/15 bg-amber-400/10 px-3 py-2 text-xs text-amber-100/90">
+              Missing env: <span className="font-semibold">NEXT_PUBLIC_BACKEND_URL</span>
+            </div>
+          ) : null}
+
+          <div className="mt-2 text-xs text-white/55">
+            New here?{" "}
+            <Link className="font-semibold text-white/70 underline hover:text-white" href="/get-started">
+              Create your profile
+            </Link>
+            .
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-3">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-white/70">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+              className="h-4 w-4 rounded border-white/20 bg-black/30"
+            />
+            Remember me
+          </label>
+
+          <Link
+            href="/support"
+            className="text-sm font-semibold text-white/60 underline hover:text-white/80"
+          >
+            Need help?
+          </Link>
+        </div>
+
+        {error ? (
+          <div className="rounded-2xl border border-red-400/20 bg-red-500/10 px-4 py-3 text-sm text-red-100">
+            {error}
+          </div>
+        ) : null}
+
+        <button type="submit" disabled={loading} className={primaryBtn}>
+          {loading ? "Signing in…" : "Show My Matches"}
+        </button>
+
+        <div className="text-xs text-white/50">
+          By continuing you agree to our{" "}
+          <Link className="underline hover:text-white" href="/terms">
+            Terms
+          </Link>{" "}
+          and{" "}
+          <Link className="underline hover:text-white" href="/privacy">
+            Privacy Policy
+          </Link>
+          .
+        </div>
+      </form>
+    </div>
   );
 }
