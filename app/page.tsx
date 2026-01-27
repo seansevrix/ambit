@@ -39,7 +39,7 @@ export default function HomePage() {
                 </div>
 
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-                  Get more local contracts.
+                  Local Leads Every Morning.
                 </h1>
 
                 <p className="mt-3 text-sm text-white/70 sm:text-base">
