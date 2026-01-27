@@ -24,7 +24,6 @@ type Metric = {
 
 function formatNumber(n: number, format: "comma" | "none" = "comma") {
   if (format === "none") return String(n);
-  // keep commas but no currency formatting here
   return n.toLocaleString(undefined, { maximumFractionDigits: 2 });
 }
 
@@ -63,102 +62,110 @@ function useCountUp(opts?: Metric["animate"]) {
   return `${opts.prefix ?? ""}${body}${opts.suffix ?? ""}`;
 }
 
+/**
+ * Believable, small-team numbers:
+ * - still improving month over month
+ * - but not "viral SaaS fantasy" growth
+ */
 const METRICS: Metric[] = [
   {
     title: "Monthly Contract Revenue",
-    value: "$8,842",
-    delta: "+450%",
-    note: "vs. $1,636 prior month",
+    value: "$3,420",
+    delta: "+18%",
+    note: "vs. $2,900 prior month",
     color: "green",
     path: "M4 28 C18 26, 28 24, 40 22 C52 20, 64 18, 76 18 C88 18, 96 16, 112 14 C128 12, 144 10, 156 10",
     area:
       "M4 28 C18 26, 28 24, 40 22 C52 20, 64 18, 76 18 C88 18, 96 16, 112 14 C128 12, 144 10, 156 10 L156 44 L4 44 Z",
-    animate: { from: 1636, to: 8842, prefix: "$", decimals: 0, format: "comma" },
+    animate: { from: 2900, to: 3420, prefix: "$", decimals: 0, format: "comma" },
   },
   {
     title: "Opportunities Matched",
-    value: "47",
-    delta: "+275%",
-    note: "vs. 12 prior month",
+    value: "19",
+    delta: "+36%",
+    note: "vs. 14 prior month",
     color: "green",
     path: "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14",
     area:
       "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14 L156 44 L4 44 Z",
-    animate: { from: 12, to: 47, decimals: 0, format: "none" },
+    animate: { from: 14, to: 19, decimals: 0, format: "none" },
   },
   {
     title: "Opportunities Submitted",
-    value: "14",
-    delta: "+336%",
-    note: "vs. 3 prior month",
+    value: "6",
+    delta: "+50%",
+    note: "vs. 4 prior month",
     color: "green",
     path: "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12",
     area:
       "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12 L156 44 L4 44 Z",
-    animate: { from: 3, to: 14, decimals: 0, format: "none" },
+    animate: { from: 4, to: 6, decimals: 0, format: "none" },
   },
   {
     title: "Contracts Won",
-    value: "4",
-    delta: "+300%",
+    value: "2",
+    delta: "+100%",
     note: "vs. 1 prior month",
     color: "green",
     path: "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16",
     area:
       "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16 L156 44 L4 44 Z",
-    animate: { from: 1, to: 4, decimals: 0, format: "none" },
+    animate: { from: 1, to: 2, decimals: 0, format: "none" },
   },
   {
     title: "Pipeline Value",
-    value: "$40.7k",
-    note: "vs. $12,636 prior month",
+    value: "$18.6k",
+    delta: "+22%",
+    note: "vs. $15.2k prior month",
     color: "green",
     path: "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16",
     area:
       "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16 L156 44 L4 44 Z",
-    animate: { from: 12.6, to: 40.7, suffix: "k", decimals: 1, format: "none", prefix: "$" },
+    animate: { from: 15.2, to: 18.6, suffix: "k", decimals: 1, format: "none", prefix: "$" },
   },
   {
     title: "Win Rate",
-    value: "28%",
-    note: "vs. 3% prior month",
+    value: "16%",
+    delta: "+4 pts",
+    note: "vs. 12% prior month",
     color: "green",
     path: "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18",
     area:
       "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18 L156 44 L4 44 Z",
-    animate: { from: 3, to: 28, suffix: "%", decimals: 0, format: "none" },
+    animate: { from: 12, to: 16, suffix: "%", decimals: 0, format: "none" },
   },
   {
     title: "Time to Respond",
-    value: "2 hours",
-    delta: "+89%",
-    note: "vs. 1.95 prior month",
+    value: "4.2 hrs",
+    delta: "-14%",
+    note: "vs. 4.9 hrs prior month",
     color: "blue",
     path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
     area:
       "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
-    animate: { from: 1.95, to: 2.0, suffix: " hrs", decimals: 2, format: "none" },
+    animate: { from: 4.9, to: 4.2, suffix: " hrs", decimals: 1, format: "none" },
   },
   {
     title: "Avg Contract Value",
-    value: "$2,145",
-    note: "vs. $1,220 prior month",
+    value: "$1,380",
+    delta: "+9%",
+    note: "vs. $1,265 prior month",
     color: "blue",
     path: "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16",
     area:
       "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16 L156 44 L4 44 Z",
-    animate: { from: 1220, to: 2145, prefix: "$", decimals: 0, format: "comma" },
+    animate: { from: 1265, to: 1380, prefix: "$", decimals: 0, format: "comma" },
   },
   {
     title: "Cost per Win (effective)",
-    value: "$245",
-    delta: "+28%",
-    note: "vs. $225 prior month",
+    value: "$310",
+    delta: "-6%",
+    note: "vs. $330 prior month",
     color: "blue",
     path: "M4 30 C18 30, 30 29, 44 28 C58 26, 72 24, 88 24 C104 24, 126 22, 156 18",
     area:
       "M4 30 C18 30, 30 29, 44 28 C58 26, 72 24, 88 24 C104 24, 126 22, 156 18 L156 44 L4 44 Z",
-    animate: { from: 225, to: 245, prefix: "$", decimals: 0, format: "comma" },
+    animate: { from: 330, to: 310, prefix: "$", decimals: 0, format: "comma" },
   },
 ];
 
@@ -201,8 +208,16 @@ function Sparkline({
         </linearGradient>
 
         <linearGradient id={`line-${tone}-${index}`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={tone === "green" ? "#34d399" : "#7dd3fc"} stopOpacity="0.65" />
-          <stop offset="100%" stopColor={tone === "green" ? "#a7f3d0" : "#bae6fd"} stopOpacity="1" />
+          <stop
+            offset="0%"
+            stopColor={tone === "green" ? "#34d399" : "#7dd3fc"}
+            stopOpacity="0.65"
+          />
+          <stop
+            offset="100%"
+            stopColor={tone === "green" ? "#a7f3d0" : "#bae6fd"}
+            stopOpacity="1"
+          />
         </linearGradient>
       </defs>
 
@@ -237,9 +252,7 @@ function MetricCard({ m, index }: { m: Metric; index: number }) {
           <p className="text-sm font-semibold text-white/80">{m.title}</p>
 
           <div className="mt-2 flex items-baseline gap-2">
-            <p className="text-3xl font-semibold tracking-tight text-white">
-              {counted ?? m.value}
-            </p>
+            <p className="text-3xl font-semibold tracking-tight text-white">{counted ?? m.value}</p>
 
             {m.delta ? (
               <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-300/20">
@@ -279,7 +292,6 @@ function WindowDots() {
 
 export default function ProofDashboard() {
   const updatedText = useMemo(() => {
-    // lightweight “live” feel; don’t overdo it
     return "Updated just now";
   }, []);
 
@@ -361,7 +373,8 @@ export default function ProofDashboard() {
 
         <div className="relative mt-6 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-5 md:flex-row">
           <p className="text-xs text-white/50">
-            Example results (illustrative). Results vary by trade, response time, service area, and bid volume.
+            Example results (illustrative). Results vary by trade, response time, service area, and
+            bid volume.
           </p>
 
           <Link
