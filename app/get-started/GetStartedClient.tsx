@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AmbitMark from "../components/AmbitMark";
 
@@ -29,7 +29,7 @@ function isValidNaicsToken(input: string) {
   return /^\d{2,6}$/.test(input);
 }
 function parseNaicsList(raw: string) {
-  const parts = raw
+  const parts = String(raw || "")
     .split(",")
     .map((p) => p.trim())
     .filter(Boolean);
@@ -56,6 +56,23 @@ function parseNaicsList(raw: string) {
   };
 }
 
+function addNaicsToken(current: string, token: string) {
+  const parsed = parseNaicsList(current);
+  const t = sanitizeNaicsToken(token);
+  if (!isValidNaicsToken(t)) return current;
+
+  const set = new Set(parsed.valid);
+  set.add(t);
+  return Array.from(set).join(", ");
+}
+
+function removeNaicsToken(current: string, token: string) {
+  const parsed = parseNaicsList(current);
+  const t = sanitizeNaicsToken(token);
+  const next = parsed.valid.filter((x) => x !== t);
+  return next.join(", ");
+}
+
 /** Segments / Markets */
 type SegmentKey = "residential" | "commercial" | "government";
 const SEGMENTS: Array<{
@@ -74,6 +91,45 @@ type PlanTier = "single" | "all";
 const PRICE_SINGLE = 39.99;
 const PRICE_ALL = 59.99;
 
+// Trade for prefill + NAICS chips
+type Trade = "GC" | "Plumbing" | "Landscaping";
+const TRADE_OPTIONS: Trade[] = ["GC", "Plumbing", "Landscaping"];
+
+const NAICS_SUGGESTIONS: Record<Trade, Array<{ code: string; label: string }>> = {
+  GC: [
+    { code: "236220", label: "Commercial building" },
+    { code: "236115", label: "Residential new" },
+    { code: "238990", label: "All other specialty" },
+    { code: "237310", label: "Highway/street/bridge" },
+  ],
+  Plumbing: [
+    { code: "238220", label: "Plumbing/HVAC" },
+    { code: "561790", label: "Other services (alt)" },
+    { code: "561210", label: "Facilities support" },
+  ],
+  Landscaping: [
+    { code: "561730", label: "Landscaping" },
+    { code: "561710", label: "Exterminating (adj.)" },
+    { code: "238990", label: "Outdoor specialty (alt)" },
+  ],
+};
+
+function normalizeTrade(raw: string | null): Trade | null {
+  const v = String(raw || "").trim().toLowerCase();
+  if (v === "gc" || v === "general" || v === "generalcontractor") return "GC";
+  if (v === "plumbing" || v === "plumber") return "Plumbing";
+  if (v === "landscaping" || v === "landscape") return "Landscaping";
+  return null;
+}
+
+function normalizeMarket(raw: string | null): SegmentKey | null {
+  const v = String(raw || "").trim().toLowerCase();
+  if (v === "residential") return "residential";
+  if (v === "commercial") return "commercial";
+  if (v === "government" || v === "gov") return "government";
+  return null;
+}
+
 export default function GetStartedClient() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -86,6 +142,9 @@ export default function GetStartedClient() {
 
   const [plan, setPlan] = useState<PlanTier>("single");
 
+  // Trade state (for NAICS chips + optional prefill)
+  const [trade, setTrade] = useState<Trade>("GC");
+
   // default: all selected; single-plan effect will reduce to 1
   const [segments, setSegments] = useState<Set<SegmentKey>>(
     () => new Set<SegmentKey>(["residential", "commercial", "government"])
@@ -96,6 +155,9 @@ export default function GetStartedClient() {
 
   const [naicsTouched, setNaicsTouched] = useState(false);
   const [segmentsTouched, setSegmentsTouched] = useState(false);
+
+  // Prefill only once (don’t clobber user typing)
+  const didPrefillRef = useRef(false);
 
   // Load plan once (query param > localStorage > default)
   useEffect(() => {
@@ -113,6 +175,34 @@ export default function GetStartedClient() {
     }
 
     setPlan(next || "single");
+  }, [searchParams]);
+
+  // Prefill from query params: trade, area, keywords, market (optional)
+  useEffect(() => {
+    if (didPrefillRef.current) return;
+    if (!searchParams) return;
+
+    const qpTrade = normalizeTrade(searchParams.get("trade"));
+    const qpArea = String(searchParams.get("area") || "").trim();
+    const qpKeywords = String(searchParams.get("keywords") || "").trim();
+    const qpMarket = normalizeMarket(searchParams.get("market"));
+
+    if (qpTrade) setTrade(qpTrade);
+
+    if (qpArea && !serviceArea.trim()) setServiceArea(qpArea);
+    if (qpKeywords && !keywords.trim()) setKeywords(qpKeywords);
+
+    // Optional: if market is provided, set single plan + that segment
+    if (qpMarket) {
+      setPlan("single");
+      setSegments(new Set<SegmentKey>([qpMarket]));
+    }
+
+    // Mark prefill as done if any of these existed
+    if (qpTrade || qpArea || qpKeywords || qpMarket) {
+      didPrefillRef.current = true;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
   // Persist plan selection
@@ -201,6 +291,8 @@ export default function GetStartedClient() {
         keywords: kw,
         segments: segmentsList,
         segmentCsv: segmentsCsv,
+        // optional metadata (safe to send even if backend ignores)
+        trade,
       };
 
       const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
@@ -223,6 +315,8 @@ export default function GetStartedClient() {
       setLoading(false);
     }
   }
+
+  const activeNaicsSet = useMemo(() => new Set(naicsParsed.valid), [naicsParsed.valid]);
 
   return (
     <section className="mx-auto w-full max-w-3xl">
@@ -261,6 +355,36 @@ export default function GetStartedClient() {
 
       {/* Main card */}
       <div className="rounded-3xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_20px_80px_rgba(0,0,0,0.35)] backdrop-blur sm:p-8">
+        {/* Trade (new, fast win) */}
+        <div className="mb-6">
+          <div className="mb-2 flex items-center justify-between">
+            <div className="text-xs font-semibold text-white/75">Trade</div>
+            <div className="text-xs text-white/55">Used for smarter defaults</div>
+          </div>
+
+          <div className="inline-flex rounded-2xl border border-white/10 bg-slate-950/25 p-1">
+            {TRADE_OPTIONS.map((t) => {
+              const active = trade === t;
+              return (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTrade(t)}
+                  className={[
+                    "rounded-xl px-3 py-2 text-sm font-semibold transition",
+                    active
+                      ? "bg-white text-slate-900 shadow-sm"
+                      : "text-white/75 hover:text-white",
+                  ].join(" ")}
+                  aria-pressed={active}
+                >
+                  {t}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Plan */}
         <div>
           <div className="mb-2 text-xs font-semibold text-white/75">Plan</div>
@@ -449,7 +573,45 @@ export default function GetStartedClient() {
               inputMode="text"
             />
 
-            <div className="mt-2 text-xs text-white/55">
+            {/* Trade-based chips */}
+            <div className="mt-3">
+              <div className="flex items-center justify-between">
+                <div className="text-xs font-semibold text-white/70">Suggested for {trade}</div>
+                <div className="text-xs text-white/45">Tap to add</div>
+              </div>
+
+              <div className="mt-2 flex flex-wrap gap-2">
+                {NAICS_SUGGESTIONS[trade].map((s) => {
+                  const active = activeNaicsSet.has(sanitizeNaicsToken(s.code));
+                  return (
+                    <button
+                      key={s.code}
+                      type="button"
+                      onClick={() => {
+                        setNaicsTouched(true);
+                        setNaicsInput((cur) =>
+                          active ? removeNaicsToken(cur, s.code) : addNaicsToken(cur, s.code)
+                        );
+                      }}
+                      className={[
+                        "inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                        active
+                          ? "border-blue-400/60 bg-blue-500/20 text-white"
+                          : "border-white/10 bg-slate-950/25 text-white/75 hover:text-white hover:bg-slate-950/35",
+                      ].join(" ")}
+                      aria-pressed={active}
+                    >
+                      <span className="font-mono">{s.code}</span>
+                      <span className="text-white/55">•</span>
+                      <span className="text-white/70">{s.label}</span>
+                      {active ? <span className="ml-1 text-white">✓</span> : null}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-3 text-xs text-white/55">
               NAICS improves accuracy, but keywords are enough to start.
               {govSelected ? (
                 <span className="font-semibold text-white/75"> (For Government, NAICS helps a lot.)</span>
@@ -477,11 +639,17 @@ export default function GetStartedClient() {
 
           <div className="text-xs text-white/55">
             By continuing, you agree to our{" "}
-            <Link href="/terms" className="font-semibold text-white/75 underline underline-offset-4 decoration-white/20 hover:decoration-white/50">
+            <Link
+              href="/terms"
+              className="font-semibold text-white/75 underline underline-offset-4 decoration-white/20 hover:decoration-white/50"
+            >
               Terms
             </Link>{" "}
             and{" "}
-            <Link href="/privacy" className="font-semibold text-white/75 underline underline-offset-4 decoration-white/20 hover:decoration-white/50">
+            <Link
+              href="/privacy"
+              className="font-semibold text-white/75 underline underline-offset-4 decoration-white/20 hover:decoration-white/50"
+            >
               Privacy Policy
             </Link>
             .
@@ -497,7 +665,10 @@ export default function GetStartedClient() {
 
           <div className="pt-1 text-center text-sm text-white/70">
             Already have an account?{" "}
-            <Link href="/login" className="font-semibold text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/50">
+            <Link
+              href="/login"
+              className="font-semibold text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/50"
+            >
               Sign in
             </Link>
           </div>
