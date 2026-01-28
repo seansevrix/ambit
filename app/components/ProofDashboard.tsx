@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+type Trade = "GC" | "Plumbing" | "Landscaping";
+
 type Metric = {
   title: string;
-  value: string; // display string
+  value: string; // fallback display string
   delta?: string;
   note: string;
   color: "green" | "blue";
@@ -63,111 +65,298 @@ function useCountUp(opts?: Metric["animate"]) {
 }
 
 /**
- * Believable, small-team numbers:
- * - still improving month over month
- * - but not "viral SaaS fantasy" growth
+ * Rolling-window, believable examples by trade.
+ * These are intentionally “good but not fantasy.”
  */
-const METRICS: Metric[] = [
-  {
-    title: "Monthly Contract Revenue",
-    value: "$3,420",
-    delta: "+18%",
-    note: "vs. $2,900 prior month",
-    color: "green",
-    path: "M4 28 C18 26, 28 24, 40 22 C52 20, 64 18, 76 18 C88 18, 96 16, 112 14 C128 12, 144 10, 156 10",
-    area:
-      "M4 28 C18 26, 28 24, 40 22 C52 20, 64 18, 76 18 C88 18, 96 16, 112 14 C128 12, 144 10, 156 10 L156 44 L4 44 Z",
-    animate: { from: 2900, to: 3420, prefix: "$", decimals: 0, format: "comma" },
+const TRADE_CONTEXT: Record<Trade, { label: string; persona: string }> = {
+  GC: {
+    label: "General Contractor",
+    persona: "Results for: Mid-sized GC (5–10 employees) in Dallas, TX.",
   },
-  {
-    title: "Opportunities Matched",
-    value: "19",
-    delta: "+36%",
-    note: "vs. 14 prior month",
-    color: "green",
-    path: "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14",
-    area:
-      "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14 L156 44 L4 44 Z",
-    animate: { from: 14, to: 19, decimals: 0, format: "none" },
+  Plumbing: {
+    label: "Plumbing",
+    persona: "Results for: Plumbing company (3–8 employees) in Phoenix, AZ.",
   },
-  {
-    title: "Opportunities Submitted",
-    value: "6",
-    delta: "+50%",
-    note: "vs. 4 prior month",
-    color: "green",
-    path: "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12",
-    area:
-      "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12 L156 44 L4 44 Z",
-    animate: { from: 4, to: 6, decimals: 0, format: "none" },
+  Landscaping: {
+    label: "Landscaping",
+    persona: "Results for: Landscaping crew (4–10 employees) in Orlando, FL.",
   },
-  {
-    title: "Contracts Won",
-    value: "2",
-    delta: "+100%",
-    note: "vs. 1 prior month",
-    color: "green",
-    path: "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16",
-    area:
-      "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16 L156 44 L4 44 Z",
-    animate: { from: 1, to: 2, decimals: 0, format: "none" },
-  },
-  {
-    title: "Pipeline Value",
-    value: "$18.6k",
-    delta: "+22%",
-    note: "vs. $15.2k prior month",
-    color: "green",
-    path: "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16",
-    area:
-      "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16 L156 44 L4 44 Z",
-    animate: { from: 15.2, to: 18.6, suffix: "k", decimals: 1, format: "none", prefix: "$" },
-  },
-  {
-    title: "Win Rate",
-    value: "16%",
-    delta: "+4 pts",
-    note: "vs. 12% prior month",
-    color: "green",
-    path: "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18",
-    area:
-      "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18 L156 44 L4 44 Z",
-    animate: { from: 12, to: 16, suffix: "%", decimals: 0, format: "none" },
-  },
-  {
-    title: "Time to Respond",
-    value: "4.2 hrs",
-    delta: "-14%",
-    note: "vs. 4.9 hrs prior month",
-    color: "blue",
-    path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
-    area:
-      "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
-    animate: { from: 4.9, to: 4.2, suffix: " hrs", decimals: 1, format: "none" },
-  },
-  {
-    title: "Avg Contract Value",
-    value: "$1,380",
-    delta: "+9%",
-    note: "vs. $1,265 prior month",
-    color: "blue",
-    path: "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16",
-    area:
-      "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16 L156 44 L4 44 Z",
-    animate: { from: 1265, to: 1380, prefix: "$", decimals: 0, format: "comma" },
-  },
-  {
-    title: "Cost per Win (effective)",
-    value: "$310",
-    delta: "-6%",
-    note: "vs. $330 prior month",
-    color: "blue",
-    path: "M4 30 C18 30, 30 29, 44 28 C58 26, 72 24, 88 24 C104 24, 126 22, 156 18",
-    area:
-      "M4 30 C18 30, 30 29, 44 28 C58 26, 72 24, 88 24 C104 24, 126 22, 156 18 L156 44 L4 44 Z",
-    animate: { from: 330, to: 310, prefix: "$", decimals: 0, format: "comma" },
-  },
-];
+};
+
+const METRICS_BY_TRADE: Record<Trade, Metric[]> = {
+  GC: [
+    {
+      title: "Est Pipeline (30D)",
+      value: "$318k",
+      delta: "+12%",
+      note: "rolling 30 days vs prior 30",
+      color: "green",
+      path: "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16",
+      area:
+        "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 284, to: 318, suffix: "k", decimals: 0, format: "none", prefix: "$" },
+    },
+    {
+      title: "Matched Leads (7D)",
+      value: "42",
+      delta: "+9%",
+      note: "rolling 7 days vs prior 7",
+      color: "green",
+      path: "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14",
+      area:
+        "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14 L156 44 L4 44 Z",
+      animate: { from: 39, to: 42, decimals: 0, format: "none" },
+    },
+    {
+      title: "Submitted (7D)",
+      value: "11",
+      delta: "+10%",
+      note: "rolling 7 days vs prior 7",
+      color: "green",
+      path: "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12",
+      area:
+        "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12 L156 44 L4 44 Z",
+      animate: { from: 10, to: 11, decimals: 0, format: "none" },
+    },
+    {
+      title: "Wins (30D)",
+      value: "3",
+      delta: "+1",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16",
+      area:
+        "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16 L156 44 L4 44 Z",
+      animate: { from: 2, to: 3, decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Match Score (7D)",
+      value: "86",
+      delta: "+2",
+      note: "rolling 7 days",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 84, to: 86, decimals: 0, format: "none" },
+    },
+    {
+      title: "Time to Respond (7D)",
+      value: "4.2 hrs",
+      delta: "-8%",
+      note: "rolling 7 days vs prior 7",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 4.6, to: 4.2, suffix: " hrs", decimals: 1, format: "none" },
+    },
+    {
+      title: "Win Rate (30D)",
+      value: "18%",
+      delta: "+3 pts",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18",
+      area:
+        "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18 L156 44 L4 44 Z",
+      animate: { from: 15, to: 18, suffix: "%", decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Job Size (30D)",
+      value: "$12.4k",
+      delta: "+6%",
+      note: "rolling 30 days vs prior 30",
+      color: "blue",
+      path: "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16",
+      area:
+        "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 11.7, to: 12.4, suffix: "k", decimals: 1, format: "none", prefix: "$" },
+    },
+  ],
+
+  Plumbing: [
+    {
+      title: "Est Pipeline (30D)",
+      value: "$205k",
+      delta: "+10%",
+      note: "rolling 30 days vs prior 30",
+      color: "green",
+      path: "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16",
+      area:
+        "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 186, to: 205, suffix: "k", decimals: 0, format: "none", prefix: "$" },
+    },
+    {
+      title: "Matched Leads (7D)",
+      value: "37",
+      delta: "+8%",
+      note: "rolling 7 days vs prior 7",
+      color: "green",
+      path: "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14",
+      area:
+        "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14 L156 44 L4 44 Z",
+      animate: { from: 34, to: 37, decimals: 0, format: "none" },
+    },
+    {
+      title: "Submitted (7D)",
+      value: "9",
+      delta: "+1",
+      note: "rolling 7 days",
+      color: "green",
+      path: "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12",
+      area:
+        "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12 L156 44 L4 44 Z",
+      animate: { from: 8, to: 9, decimals: 0, format: "none" },
+    },
+    {
+      title: "Wins (30D)",
+      value: "4",
+      delta: "+1",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16",
+      area:
+        "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16 L156 44 L4 44 Z",
+      animate: { from: 3, to: 4, decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Match Score (7D)",
+      value: "88",
+      delta: "+1",
+      note: "rolling 7 days",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 87, to: 88, decimals: 0, format: "none" },
+    },
+    {
+      title: "Time to Respond (7D)",
+      value: "3.6 hrs",
+      delta: "-10%",
+      note: "rolling 7 days vs prior 7",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 4.0, to: 3.6, suffix: " hrs", decimals: 1, format: "none" },
+    },
+    {
+      title: "Win Rate (30D)",
+      value: "24%",
+      delta: "+4 pts",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18",
+      area:
+        "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18 L156 44 L4 44 Z",
+      animate: { from: 20, to: 24, suffix: "%", decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Job Size (30D)",
+      value: "$4.8k",
+      delta: "+5%",
+      note: "rolling 30 days vs prior 30",
+      color: "blue",
+      path: "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16",
+      area:
+        "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 4.6, to: 4.8, suffix: "k", decimals: 1, format: "none", prefix: "$" },
+    },
+  ],
+
+  Landscaping: [
+    {
+      title: "Est Pipeline (30D)",
+      value: "$154k",
+      delta: "+8%",
+      note: "rolling 30 days vs prior 30",
+      color: "green",
+      path: "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16",
+      area:
+        "M4 34 C18 33, 30 32, 44 30 C58 28, 74 26, 92 24 C110 22, 132 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 142, to: 154, suffix: "k", decimals: 0, format: "none", prefix: "$" },
+    },
+    {
+      title: "Matched Leads (7D)",
+      value: "51",
+      delta: "+11%",
+      note: "rolling 7 days vs prior 7",
+      color: "green",
+      path: "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14",
+      area:
+        "M4 30 C18 30, 28 28, 40 26 C52 24, 64 22, 76 22 C88 22, 102 20, 116 18 C130 16, 142 14, 156 14 L156 44 L4 44 Z",
+      animate: { from: 46, to: 51, decimals: 0, format: "none" },
+    },
+    {
+      title: "Submitted (7D)",
+      value: "13",
+      delta: "+2",
+      note: "rolling 7 days",
+      color: "green",
+      path: "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12",
+      area:
+        "M4 32 C16 30, 30 28, 44 26 C58 24, 70 22, 84 22 C98 22, 110 20, 124 18 C138 16, 146 14, 156 12 L156 44 L4 44 Z",
+      animate: { from: 11, to: 13, decimals: 0, format: "none" },
+    },
+    {
+      title: "Wins (30D)",
+      value: "5",
+      delta: "+1",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16",
+      area:
+        "M4 34 C20 34, 32 33, 44 32 C58 30, 72 28, 86 26 C100 24, 122 20, 156 16 L156 44 L4 44 Z",
+      animate: { from: 4, to: 5, decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Match Score (7D)",
+      value: "84",
+      delta: "+1",
+      note: "rolling 7 days",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 83, to: 84, decimals: 0, format: "none" },
+    },
+    {
+      title: "Time to Respond (7D)",
+      value: "2.9 hrs",
+      delta: "-7%",
+      note: "rolling 7 days vs prior 7",
+      color: "blue",
+      path: "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18",
+      area:
+        "M4 34 C18 34, 30 34, 44 33 C58 32, 72 30, 90 28 C108 26, 130 22, 156 18 L156 44 L4 44 Z",
+      animate: { from: 3.1, to: 2.9, suffix: " hrs", decimals: 1, format: "none" },
+    },
+    {
+      title: "Win Rate (30D)",
+      value: "22%",
+      delta: "+3 pts",
+      note: "rolling 30 days",
+      color: "green",
+      path: "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18",
+      area:
+        "M4 34 C20 34, 38 33, 56 30 C74 27, 94 24, 116 22 C138 20, 148 18, 156 18 L156 44 L4 44 Z",
+      animate: { from: 19, to: 22, suffix: "%", decimals: 0, format: "none" },
+    },
+    {
+      title: "Avg Job Size (30D)",
+      value: "$2.3k",
+      delta: "+4%",
+      note: "rolling 30 days vs prior 30",
+      color: "blue",
+      path: "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16",
+      area:
+        "M4 34 C20 33, 34 32, 48 30 C62 28, 76 26, 92 24 C108 22, 128 18, 156 16 L156 44 L4 44 Z",
+      animate: { from: 2.2, to: 2.3, suffix: "k", decimals: 1, format: "none", prefix: "$" },
+    },
+  ],
+};
 
 function Sparkline({
   path,
@@ -238,6 +427,11 @@ function Sparkline({
 function MetricCard({ m, index }: { m: Metric; index: number }) {
   const counted = useCountUp(m.animate);
 
+  const deltaClass =
+    m.color === "green"
+      ? "bg-emerald-400/10 text-emerald-200 ring-1 ring-emerald-300/20"
+      : "bg-sky-400/10 text-sky-200 ring-1 ring-sky-300/20";
+
   return (
     <div
       className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.03)] transition hover:border-white/15 hover:bg-white/7"
@@ -255,7 +449,7 @@ function MetricCard({ m, index }: { m: Metric; index: number }) {
             <p className="text-3xl font-semibold tracking-tight text-white">{counted ?? m.value}</p>
 
             {m.delta ? (
-              <span className="rounded-full bg-emerald-400/10 px-2 py-1 text-xs font-semibold text-emerald-200 ring-1 ring-emerald-300/20">
+              <span className={`rounded-full px-2 py-1 text-xs font-semibold ${deltaClass}`}>
                 {m.delta}
               </span>
             ) : null}
@@ -290,10 +484,49 @@ function WindowDots() {
   );
 }
 
+function TradeToggle({
+  trade,
+  setTrade,
+}: {
+  trade: Trade;
+  setTrade: (t: Trade) => void;
+}) {
+  const options: Trade[] = ["GC", "Plumbing", "Landscaping"];
+
+  return (
+    <div className="inline-flex rounded-2xl border border-white/12 bg-white/5 p-1">
+      {options.map((t) => {
+        const active = trade === t;
+        return (
+          <button
+            key={t}
+            type="button"
+            onClick={() => setTrade(t)}
+            className={[
+              "rounded-xl px-3 py-2 text-sm font-semibold transition",
+              active
+                ? "bg-white text-slate-900 shadow-sm"
+                : "text-white/80 hover:text-white",
+            ].join(" ")}
+            aria-pressed={active}
+          >
+            {t}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ProofDashboard() {
+  const [trade, setTrade] = useState<Trade>("GC");
+
   const updatedText = useMemo(() => {
     return "Updated just now";
   }, []);
+
+  const metrics = METRICS_BY_TRADE[trade];
+  const context = TRADE_CONTEXT[trade];
 
   return (
     <section className="relative">
@@ -342,6 +575,9 @@ export default function ProofDashboard() {
                 <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70">
                   Live preview
                 </span>
+                <span className="rounded-full border border-white/15 bg-white/5 px-2.5 py-1 text-[11px] font-semibold text-white/70">
+                  Rolling 7D / 30D
+                </span>
               </div>
 
               <p className="mt-1 max-w-3xl text-sm text-white/65">
@@ -349,9 +585,14 @@ export default function ProofDashboard() {
                 Results vary by trade, service area, and bid volume.
               </p>
 
-              <p className="mt-2 text-sm font-semibold text-white/80">
-                Results for: Mid-sized Electrical Contractor (5–10 employees) in Dallas, TX.
-              </p>
+              <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-sm font-semibold text-white/80">{context.persona}</p>
+
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-white/60">Trade:</span>
+                  <TradeToggle trade={trade} setTrade={setTrade} />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -364,8 +605,8 @@ export default function ProofDashboard() {
 
         {/* Cards */}
         <div className="relative mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {METRICS.map((m, idx) => (
-            <div key={m.title} className="card-in" style={{ animationDelay: `${idx * 55}ms` }}>
+          {metrics.map((m, idx) => (
+            <div key={`${trade}-${m.title}`} className="card-in" style={{ animationDelay: `${idx * 55}ms` }}>
               <MetricCard m={m} index={idx} />
             </div>
           ))}
