@@ -1,17 +1,68 @@
+"use client";
+
 // app/page.tsx
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import ConciergeLeadCapture from "./components/ConciergeLeadCapture";
 import ProofDashboard from "./components/ProofDashboard";
 
 const LINK = "text-sm font-semibold text-white/75 hover:text-white transition";
 
+const PRIMARY_CTA =
+  "inline-flex items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-[#061017] shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-300/60 focus:ring-offset-0";
+
 const SECONDARY_BTN =
   "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white";
 
+const TOGGLE_BTN =
+  "inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition";
+
+type IntentKey = "residential" | "commercial" | "government";
+
+const INTENTS: Array<{
+  key: IntentKey;
+  label: string;
+  short: string;
+}> = [
+  { key: "residential", label: "Residential", short: "Homeowner requests" },
+  { key: "commercial", label: "Commercial", short: "Business work orders" },
+  { key: "government", label: "Government", short: "Public bid opportunities" },
+];
+
 export default function HomePage() {
+  const [intent, setIntent] = useState<IntentKey>("residential");
+
+  const heroCopy = useMemo(() => {
+    // You can tune these later. Keep it simple + believable for now.
+    if (intent === "commercial") {
+      return {
+        pill: "Live commercial matches",
+        subhead:
+          "We find, rank, and deliver high-intent commercial jobs directly to you. See what’s waiting in your area right now.",
+      };
+    }
+    if (intent === "government") {
+      return {
+        pill: "Live government matches",
+        subhead:
+          "We find, rank, and deliver high-intent bid opportunities directly to you. See what’s waiting in your area right now.",
+      };
+    }
+    return {
+      pill: "Live local matches",
+      subhead:
+        "We find, rank, and deliver high-intent residential jobs directly to you. See what’s waiting in your area right now.",
+    };
+  }, [intent]);
+
+  const ctaHref = useMemo(() => {
+    // We’ll use this later to prefill onboarding.
+    return `/get-started?intent=${encodeURIComponent(intent)}`;
+  }, [intent]);
+
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
-      {/* Global background glow + subtle grid (matches Pricing/Get Started/Preview) */}
+      {/* Global background glow + subtle grid */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
@@ -23,41 +74,93 @@ export default function HomePage() {
         <div className="space-y-8 overflow-x-hidden sm:space-y-12">
           {/* HERO + GLASS PANEL */}
           <section className="relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-[0_10px_60px_rgba(0,0,0,0.35)] sm:rounded-3xl">
-            {/* Keep your hero gradient, just make it play nice with the global bg */}
+            {/* Hero gradient */}
             <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(1200px_600px_at_50%_-10%,rgba(110,168,255,0.28),transparent_60%)]" />
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-[#08122B]/80 via-[#070F22]/75 to-[#060A16]/80" />
             <div className="pointer-events-none absolute inset-0 opacity-[0.05] [background-image:linear-gradient(to_right,rgba(255,255,255,0.18)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.18)_1px,transparent_1px)] [background-size:92px_92px]" />
 
             <div className="relative px-4 py-10 sm:px-10 sm:py-14">
               <div className="mx-auto max-w-5xl text-center">
+                {/* Live pill */}
                 <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
-                  Live local matches
+                  {heroCopy.pill}
                 </div>
 
+                {/* NEW HERO HEADLINE */}
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
-                  Local Leads Every Morning.
+                  Stop chasing leads. Start winning contracts.
                 </h1>
 
+                {/* NEW SUBHEAD */}
                 <p className="mt-3 text-sm text-white/70 sm:text-base">
-                  Qualified opportunities sent to you — not your competitors.
+                  {heroCopy.subhead}
                 </p>
 
+                {/* Intent selector */}
+                <div className="mx-auto mt-6 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:justify-center">
+                  {INTENTS.map((i) => {
+                    const active = i.key === intent;
+                    return (
+                      <button
+                        key={i.key}
+                        type="button"
+                        onClick={() => setIntent(i.key)}
+                        className={[
+                          TOGGLE_BTN,
+                          active
+                            ? "border-white/25 bg-white/10 text-white"
+                            : "border-white/10 bg-white/5 text-white/70 hover:bg-white/8 hover:text-white",
+                        ].join(" ")}
+                        aria-pressed={active}
+                      >
+                        <span className="mr-2">{i.label}</span>
+                        <span className="hidden text-xs font-semibold text-white/50 sm:inline">
+                          {i.short}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* CTA row */}
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  {/* HIGH-CONTRAST CTA */}
+                  <Link
+                    href={ctaHref}
+                    className={`${PRIMARY_CTA} bg-emerald-400`}
+                  >
+                    See My Matches — It’s Free
+                  </Link>
+
+                  <Link href="/live-opportunities" className={LINK}>
+                    View Live Leads →
+                  </Link>
+                </div>
+
+                {/* Micro trust line */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">
                   <span className="font-semibold text-white/85">7-day free trial</span>
                   <span className="mx-2 text-white/35">•</span>
-                  No credit card
+                  No credit card required
                   <span className="mx-2 text-white/35">•</span>
                   Trusted by 200+ clients
                 </p>
 
-                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link href="/live-opportunities" className={LINK}>
-                    View Live Leads →
-                  </Link>
+                {/* Small trust badges (grayscale, subtle) */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                    Verified Homeowners
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                    Secure Data
+                  </span>
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
+                    24/7 Support
+                  </span>
                 </div>
               </div>
 
@@ -88,7 +191,6 @@ export default function HomePage() {
                       faster.
                     </p>
 
-                    {/* SIGNALS */}
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
                       <span>✓ Faster response times</span>
                       <span>✓ Cleaner summaries</span>
@@ -122,9 +224,7 @@ export default function HomePage() {
 
                     <div className="mt-4">
                       <div className="text-sm font-semibold text-white">Sarah K.</div>
-                      <div className="mt-1 text-xs text-white/65">
-                        Owner, Janitorial Company
-                      </div>
+                      <div className="mt-1 text-xs text-white/65">Owner, Janitorial Company</div>
                       <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
                         Janitorial · Florida
                       </div>
@@ -149,9 +249,7 @@ export default function HomePage() {
 
                     <div className="mt-4">
                       <div className="text-sm font-semibold text-white">David Chen</div>
-                      <div className="mt-1 text-xs text-white/65">
-                        Operations Director
-                      </div>
+                      <div className="mt-1 text-xs text-white/65">Operations Director</div>
                       <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
                         Construction · Nevada
                       </div>
