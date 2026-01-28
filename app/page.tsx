@@ -19,109 +19,45 @@ const TOGGLE_BTN =
 
 type IntentKey = "residential" | "commercial" | "government";
 
-const INTENTS: Array<{
-  key: IntentKey;
-  label: string;
-}> = [
+const INTENTS: Array<{ key: IntentKey; label: string }> = [
   { key: "residential", label: "Residential" },
   { key: "commercial", label: "Commercial" },
   { key: "government", label: "Government" },
 ];
 
-type Trade = "GC" | "Plumbing" | "Landscaping";
-
-function defaultTradeForIntent(intent: IntentKey): Trade {
-  if (intent === "residential") return "Plumbing";
-  if (intent === "commercial") return "GC";
-  return "GC";
+function intentPill(intent: IntentKey) {
+  if (intent === "commercial") return "Live commercial matches";
+  if (intent === "government") return "Live government matches";
+  return "Live residential matches";
 }
 
-function uniqueTokens(list: string[]) {
-  const seen = new Set<string>();
-  const out: string[] = [];
-  for (const raw of list) {
-    const t = String(raw || "").trim().replace(/\s+/g, " ");
-    if (!t) continue;
-    const k = t.toLowerCase();
-    if (seen.has(k)) continue;
-    seen.add(k);
-    out.push(t);
-  }
-  return out;
-}
-
-function buildKeywordsString(tokens: string[]) {
-  return uniqueTokens(tokens).join(", ");
-}
-
-const KEYWORD_PRESETS: Record<IntentKey, string[]> = {
-  residential: ["Leak repair", "Water heater", "Drain cleanout", "Toilet install", "Repipe"],
-  commercial: ["Preventative maintenance", "Tenant improvement", "Concrete", "Paving", "Electrical"],
-  government: ["Facilities", "Maintenance", "On-call", "RFP", "IDIQ"],
-};
-
-function intentCopy(intent: IntentKey) {
-  if (intent === "commercial") {
-    return {
-      pill: "Live commercial matches",
-      proofTitle: "Proof that feels real — commercial",
-      proofNote:
-        "Examples of what matched opportunities + faster response can do for facilities + businesses.",
-      testimonialsTitle: "Commercial teams are moving faster with AMBIT.",
-    };
-  }
-  if (intent === "government") {
-    return {
-      pill: "Live government matches",
-      proofTitle: "Proof that feels real — government",
-      proofNote:
-        "Illustrative examples of matched bids + faster response cycles. Results vary by agency + NAICS.",
-      testimonialsTitle: "Gov-focused contractors are seeing cleaner bid pipelines.",
-    };
-  }
-  return {
-    pill: "Live residential matches",
-    proofTitle: "Proof that feels real — residential",
-    proofNote:
-      "Illustrative examples of better-fit homeowner jobs + faster response. Results vary by area + trade.",
-    testimonialsTitle: "Home-service pros are landing better jobs with AMBIT.",
-  };
+function intentProofLine(intent: IntentKey) {
+  if (intent === "commercial")
+    return "Preview: Commercial work orders + service contracts near you.";
+  if (intent === "government")
+    return "Preview: Public bid opportunities you can actually pursue.";
+  return "Preview: Verified homeowner requests in your service area.";
 }
 
 export default function HomePage() {
   const [intent, setIntent] = useState<IntentKey>("residential");
-  const [chipKeywords, setChipKeywords] = useState<string[]>(() => []);
 
-  const trade = useMemo(() => defaultTradeForIntent(intent), [intent]);
-  const copy = useMemo(() => intentCopy(intent), [intent]);
+  const heroPill = useMemo(() => intentPill(intent), [intent]);
 
-  // ✅ Subhead EXACT from your spec
   const heroSubhead = useMemo(() => {
+    // ✅ Spec copy
     return "We find, rank, and deliver high-intent jobs directly to you. See what’s waiting in your area right now.";
   }, []);
 
-  // ✅ Pass selection into /get-started as query params
-  // We include BOTH intent + market (market matches what your GetStartedClient expects),
-  // plus trade + optional keywords.
   const ctaHref = useMemo(() => {
-    const params = new URLSearchParams();
-    params.set("intent", intent);
-    params.set("market", intent);
-    params.set("trade", trade);
+    return `/get-started?intent=${encodeURIComponent(intent)}`;
+  }, [intent]);
 
-    const kw = buildKeywordsString(
-      chipKeywords.length ? chipKeywords : KEYWORD_PRESETS[intent].slice(0, 3)
-    );
-    if (kw) params.set("keywords", kw);
-
-    return `/get-started?${params.toString()}`;
-  }, [intent, trade, chipKeywords]);
-
-  const presetChips = useMemo(() => KEYWORD_PRESETS[intent], [intent]);
+  const proofLine = useMemo(() => intentProofLine(intent), [intent]);
 
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
-      {/* Global background glow + subtle grid (A: background depth) */}
+      {/* Global background glow + subtle grid */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
@@ -146,16 +82,18 @@ export default function HomePage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
-                  {copy.pill}
+                  {heroPill}
                 </div>
 
-                {/* HERO HEADLINE */}
+                {/* ✅ Spec headline */}
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
                   Stop chasing leads. Start winning contracts.
                 </h1>
 
-                {/* ✅ Subhead updated */}
-                <p className="mt-3 text-sm text-white/70 sm:text-base">{heroSubhead}</p>
+                {/* ✅ Spec subhead */}
+                <p className="mx-auto mt-3 max-w-3xl text-sm text-white/70 sm:text-base">
+                  {heroSubhead}
+                </p>
 
                 {/* Intent selector */}
                 <div className="mx-auto mt-6 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:justify-center">
@@ -165,10 +103,7 @@ export default function HomePage() {
                       <button
                         key={i.key}
                         type="button"
-                        onClick={() => {
-                          setIntent(i.key);
-                          setChipKeywords([]); // keep chips relevant
-                        }}
+                        onClick={() => setIntent(i.key)}
                         className={[
                           TOGGLE_BTN,
                           "min-w-[160px]",
@@ -184,74 +119,35 @@ export default function HomePage() {
                   })}
                 </div>
 
-                {/* Chips */}
-                <div className="mx-auto mt-4 w-full max-w-3xl">
-                  <div className="flex flex-wrap items-center justify-center gap-2">
-                    {presetChips.map((k) => {
-                      const active = chipKeywords.some((x) => x.toLowerCase() === k.toLowerCase());
-                      return (
-                        <button
-                          key={k}
-                          type="button"
-                          onClick={() => {
-                            setChipKeywords((prev) => {
-                              const exists = prev.some((x) => x.toLowerCase() === k.toLowerCase());
-                              if (exists) return prev.filter((x) => x.toLowerCase() !== k.toLowerCase());
-                              return uniqueTokens([...prev, k]).slice(0, 6);
-                            });
-                          }}
-                          className={[
-                            "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
-                            active
-                              ? "border-emerald-300/35 bg-emerald-400/15 text-white"
-                              : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white",
-                          ].join(" ")}
-                          aria-pressed={active}
-                        >
-                          {k}
-                          {active ? <span className="ml-2 text-white/80">✓</span> : null}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 {/* CTA row */}
-                <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
-                  <div className="flex flex-col items-center gap-2">
-                    <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
-                      See My Matches — It’s Free
-                    </Link>
-
-                    {/* ✅ Microtext near CTA */}
-                    <div className="text-xs font-semibold text-white/70">
-                      No credit card required
-                    </div>
-                  </div>
+                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                  {/* ✅ Highest contrast button (electric green) */}
+                  <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
+                    See My Matches — It’s Free
+                  </Link>
 
                   <Link href="/live-opportunities" className={LINK}>
                     View Live Leads →
                   </Link>
                 </div>
 
-                {/* Small value stack (keep, but not redundant) */}
-                <p className="mt-3 text-xs text-white/55 sm:text-sm">
-                  <span className="font-semibold text-white/80">7-day free trial</span>
-                  <span className="mx-2 text-white/30">•</span>
-                  Cancel anytime.
-                </p>
+                {/* ✅ Microtext near CTA */}
+                <p className="mt-3 text-xs text-white/65 sm:text-sm">No credit card required.</p>
+
+                {/* Intent-mutating proof hint (small, clean) */}
+                <p className="mt-2 text-xs text-white/55">{proofLine}</p>
               </div>
 
-              {/* SIGNUP AREA */}
+              {/* SIGNUP / PREVIEW */}
               <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
                 <ConciergeLeadCapture />
               </div>
 
-              {/* Trust badges (A: keep clean; C later can reposition/upgrade) */}
+              {/* Second-wave social proof near CTA (small grayscale badges) */}
               <div className="mx-auto mt-5 max-w-6xl">
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    Verified sources
+                    Trusted by 200+ clients
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     Secure Data
@@ -262,19 +158,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* PROOF DASHBOARD (A: section mutates via headers) */}
+              {/* PROOF DASHBOARD (intent-aware) */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-                <div className="mb-4 text-center">
-                  <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                    {copy.proofTitle}
-                  </h2>
-                  <p className="mt-2 text-sm text-white/65">{copy.proofNote}</p>
-                </div>
-
-                <ProofDashboard intent={intent}/>
+                <ProofDashboard intent={intent} />
               </div>
 
-              {/* TESTIMONIALS (A: section mutates via headers) */}
+              {/* TESTIMONIALS */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -283,7 +172,7 @@ export default function HomePage() {
                     </div>
 
                     <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                      {copy.testimonialsTitle}
+                      Real contractors. Real results.
                     </h2>
 
                     <p className="mt-2 max-w-2xl text-sm text-white/70">
@@ -309,9 +198,8 @@ export default function HomePage() {
                   {/* SARAH */}
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
                     <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>
-                      I sat on this for weeks because I’m a disaster with new tech and expected
-                      setup to be a nightmare.
+                      <span className="text-white/40">“</span>I sat on this for weeks because I’m a
+                      disaster with new tech and expected setup to be a nightmare.
                       <strong className="font-semibold text-white">
                         {" "}
                         Fully up and running in under 5 minutes.
@@ -334,9 +222,8 @@ export default function HomePage() {
                   {/* DAVID */}
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
                     <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>
-                      We’ve tested a lot of tools, but AMBIT is the first one that actually scaled
-                      with us.
+                      <span className="text-white/40">“</span>We’ve tested a lot of tools, but AMBIT
+                      is the first one that actually scaled with us.
                       <strong className="font-semibold text-white">
                         {" "}
                         We stopped wasting hours digging through portals.
@@ -359,8 +246,8 @@ export default function HomePage() {
                   {/* MARK */}
                   <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
                     <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>
-                      What impressed me most was the accuracy.
+                      <span className="text-white/40">“</span>What impressed me most was the
+                      accuracy.
                       <strong className="font-semibold text-white">
                         {" "}
                         It sends work we can actually bid and win.
