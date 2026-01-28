@@ -12,7 +12,7 @@ const PRIMARY_CTA =
   "inline-flex items-center justify-center rounded-2xl px-6 py-3 text-sm font-semibold text-[#061017] shadow-[0_10px_40px_rgba(0,0,0,0.35)] transition hover:brightness-110 focus:outline-none focus:ring-2 focus:ring-emerald-300/60 focus:ring-offset-0";
 
 const SECONDARY_BTN =
-  "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white";
+  "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white transition";
 
 const TOGGLE_BTN =
   "inline-flex items-center justify-center rounded-xl border px-4 py-2 text-sm font-semibold transition";
@@ -39,7 +39,6 @@ export default function HomePage() {
   }, [intent]);
 
   const heroSubhead = useMemo(() => {
-    // Punchy, consistent, no over-explaining.
     return "Verified contracts delivered to your inbox daily. View current matches below.";
   }, []);
 
@@ -126,7 +125,7 @@ export default function HomePage() {
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">
                   <span className="font-semibold text-white/85">7-day free trial</span>
                   <span className="mx-2 text-white/35">•</span>
-                  No credit card required
+                  No credit card required.
                 </p>
               </div>
 
