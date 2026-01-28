@@ -118,7 +118,9 @@ function MatchPill({ score }: { score: number }) {
 
       <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)] transition">
         <div className="text-[11px] font-semibold text-slate-500">Match</div>
-        <div className="text-xl font-extrabold tracking-tight text-slate-900">{score}</div>
+        <div className="text-xl font-extrabold tracking-tight text-slate-900">
+          {score}
+        </div>
       </div>
     </div>
   );
@@ -131,11 +133,21 @@ function MarketIcon({ market }: { market: string }) {
   return (
     <span className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-slate-500">
       {m === "commercial" ? (
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-3.5 w-3.5"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M4 22h16v-2H4v2zm2-4h12V2H6v16zm2-2V4h8v12H8zm1-9h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
         </svg>
       ) : (
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-3.5 w-3.5"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4zm0 3.2L6 7.7V12c0 3.9 2.5 7.4 6 8 3.5-.6 6-4.1 6-8V7.7l-6-2.5z" />
         </svg>
       )}
@@ -333,7 +345,6 @@ function sampleCardsForIntent(intent: IntentKey) {
     ];
   }
 
-  // residential default
   return [
     {
       market: "Residential",
@@ -371,7 +382,11 @@ function sampleCardsForIntent(intent: IntentKey) {
   ];
 }
 
-export default function ConciergeLeadCapture({ intent = "residential" }: { intent?: IntentKey }) {
+export default function ConciergeLeadCapture({
+  intent = "residential",
+}: {
+  intent?: IntentKey;
+}) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -451,7 +466,9 @@ export default function ConciergeLeadCapture({ intent = "residential" }: { inten
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT */}
         <div className="min-w-0">
-          <div className="text-base font-semibold text-white sm:text-lg">Start your 7-day free trial</div>
+          <div className="text-base font-semibold text-white sm:text-lg">
+            Start your 7-day free trial
+          </div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
             <div className="min-w-0">
@@ -499,7 +516,9 @@ export default function ConciergeLeadCapture({ intent = "residential" }: { inten
                 placeholder="e.g., 238160"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-              <div className="mt-2 text-[11px] text-white/55">Essential for high-quality matching.</div>
+              <div className="mt-2 text-[11px] text-white/55">
+                Essential for high-quality matching.
+              </div>
             </div>
 
             <div className="pt-1">
@@ -527,7 +546,9 @@ export default function ConciergeLeadCapture({ intent = "residential" }: { inten
         {/* RIGHT */}
         <div className="min-w-0">
           <div className="flex items-center justify-between">
-            <div className="text-base font-semibold text-white sm:text-lg">Sample matches</div>
+            <div className="text-base font-semibold text-white sm:text-lg">
+              Sample matches
+            </div>
             <div className="text-xs text-white/60">Examples only</div>
           </div>
 
