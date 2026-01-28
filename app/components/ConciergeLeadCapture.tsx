@@ -3,8 +3,6 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
-type IntentKey = "residential" | "commercial" | "government";
-
 const BRAND = "#1A4FA3";
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -116,11 +114,9 @@ function MatchPill({ score }: { score: number }) {
       <div className="pointer-events-none absolute inset-0 -m-1 rounded-2xl bg-white/30 blur-md opacity-60" />
       <div className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-white/40 animate-pulse" />
 
-      <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)] transition">
+      <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] transition hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)]">
         <div className="text-[11px] font-semibold text-slate-500">Match</div>
-        <div className="text-xl font-extrabold tracking-tight text-slate-900">
-          {score}
-        </div>
+        <div className="text-xl font-extrabold tracking-tight text-slate-900">{score}</div>
       </div>
     </div>
   );
@@ -128,26 +124,19 @@ function MatchPill({ score }: { score: number }) {
 
 function MarketIcon({ market }: { market: string }) {
   const m = market.toLowerCase();
+  // Only show icons for Commercial + Government
   if (m !== "commercial" && m !== "government") return null;
 
   return (
     <span className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-slate-500">
       {m === "commercial" ? (
-        <svg
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        // building
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
           <path d="M4 22h16v-2H4v2zm2-4h12V2H6v16zm2-2V4h8v12H8zm1-9h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
         </svg>
       ) : (
-        <svg
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        // shield/seal
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
           <path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4zm0 3.2L6 7.7V12c0 3.9 2.5 7.4 6 8 3.5-.6 6-4.1 6-8V7.7l-6-2.5z" />
         </svg>
       )}
@@ -164,6 +153,8 @@ function LiveDot() {
   );
 }
 
+type LockedRow = { title: string; value: string };
+
 function SampleCard({
   market,
   title,
@@ -174,6 +165,7 @@ function SampleCard({
   verified,
   score,
   accent,
+  lockedRows,
 }: {
   market: string;
   title: string;
@@ -184,6 +176,7 @@ function SampleCard({
   verified?: boolean;
   score: number;
   accent: "blue" | "indigo" | "green";
+  lockedRows: LockedRow[];
 }) {
   const badge =
     accent === "green"
@@ -223,7 +216,6 @@ function SampleCard({
         <div className="min-w-0">
           <span className="text-slate-400">Est value:</span> {value}
         </div>
-
         <div className="min-w-0">
           <span className="text-slate-400">Buyer:</span>{" "}
           <span className="inline-flex items-center gap-1.5">
@@ -233,23 +225,18 @@ function SampleCard({
         </div>
       </div>
 
+      {/* Blurred feed (unique per card) */}
       <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div className="absolute inset-0 backdrop-blur-[6px]" />
         <div className="absolute inset-0 bg-white/35" />
 
         <div className="relative space-y-2 text-xs text-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Full Roof Replace</div>
-            <div className="text-slate-500">$18k</div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Deck Build</div>
-            <div className="text-slate-500">$7k</div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Concrete Patch + Grind</div>
-            <div className="text-slate-500">$3.2k</div>
-          </div>
+          {lockedRows.slice(0, 3).map((r) => (
+            <div key={r.title} className="flex items-center justify-between">
+              <div className="font-semibold">{r.title}</div>
+              <div className="text-slate-500">{r.value}</div>
+            </div>
+          ))}
         </div>
 
         <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-600">
@@ -268,125 +255,9 @@ function SampleCard({
   );
 }
 
-function sampleCardsForIntent(intent: IntentKey) {
-  if (intent === "commercial") {
-    return [
-      {
-        market: "Commercial",
-        title: "HVAC preventative maintenance (12-month)",
-        meta: "Carlsbad, CA • Due in 8 days",
-        naics: "238220",
-        value: "$18k–$55k",
-        buyer: "Retail Plaza Management",
-        verified: true,
-        score: 89,
-        accent: "indigo" as const,
-      },
-      {
-        market: "Commercial",
-        title: "Exterior pressure washing (multi-site)",
-        meta: "San Diego, CA • Due in 5 days",
-        naics: "561790",
-        value: "$6.5k–$22k",
-        buyer: "Property Management Group",
-        verified: false,
-        score: 86,
-        accent: "blue" as const,
-      },
-      {
-        market: "Commercial",
-        title: "Parking lot striping + ADA refresh",
-        meta: "Oceanside, CA • Due in 9 days",
-        naics: "237310",
-        value: "$4.2k–$18k",
-        buyer: "Commercial Facilities",
-        verified: false,
-        score: 84,
-        accent: "green" as const,
-      },
-    ];
-  }
+type IntentKey = "residential" | "commercial" | "government";
 
-  if (intent === "government") {
-    return [
-      {
-        market: "Government",
-        title: "On-call hauling + disposal services",
-        meta: "Vista, CA • Due in 10 days",
-        naics: "562111",
-        value: "$60k–$220k",
-        buyer: "City Procurement",
-        verified: true,
-        score: 92,
-        accent: "green" as const,
-      },
-      {
-        market: "Government",
-        title: "Janitorial services (12-month base + options)",
-        meta: "San Diego, CA • Due in 12 days",
-        naics: "561720",
-        value: "$85k–$260k",
-        buyer: "County Facilities",
-        verified: false,
-        score: 88,
-        accent: "indigo" as const,
-      },
-      {
-        market: "Government",
-        title: "Minor electrical repairs (IDIQ)",
-        meta: "Chula Vista, CA • Due in 14 days",
-        naics: "238210",
-        value: "$40k–$140k",
-        buyer: "Public Works",
-        verified: false,
-        score: 85,
-        accent: "blue" as const,
-      },
-    ];
-  }
-
-  return [
-    {
-      market: "Residential",
-      title: "Roof leak repair + shingle replacement",
-      meta: "San Diego, CA • Due in 6 days",
-      naics: "238160",
-      value: "$1.8k–$6.5k",
-      buyer: "Homeowner",
-      verified: true,
-      score: 86,
-      accent: "blue" as const,
-    },
-    {
-      market: "Residential",
-      title: "Water heater install + haul-away",
-      meta: "Encinitas, CA • Due in 4 days",
-      naics: "238220",
-      value: "$1.2k–$3.4k",
-      buyer: "Homeowner",
-      verified: true,
-      score: 84,
-      accent: "indigo" as const,
-    },
-    {
-      market: "Residential",
-      title: "Fence repair + gate alignment",
-      meta: "Vista, CA • Due in 7 days",
-      naics: "238190",
-      value: "$650–$2.5k",
-      buyer: "Homeowner",
-      verified: true,
-      score: 82,
-      accent: "green" as const,
-    },
-  ];
-}
-
-export default function ConciergeLeadCapture({
-  intent = "residential",
-}: {
-  intent?: IntentKey;
-}) {
+export default function ConciergeLeadCapture({ intent }: { intent?: IntentKey }) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -400,10 +271,9 @@ export default function ConciergeLeadCapture({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Always include all markets behind the scenes
   const segments = ["residential", "commercial", "government"];
   const segmentsCsv = segments.join(",");
-
-  const samples = useMemo(() => sampleCardsForIntent(intent), [intent]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -418,6 +288,7 @@ export default function ConciergeLeadCapture({
     if (!loc) return setError("Service area is required.");
     if (!kw) return setError("Keywords are required. (Comma-separated is fine.)");
 
+    // NAICS required
     if (!naicsCodes.length) {
       return setError("NAICS is required — essential for high-quality matching.");
     }
@@ -461,16 +332,77 @@ export default function ConciergeLeadCapture({
     }
   }
 
+  // Samples (make them feel “live” and UNIQUE)
+  const samples = useMemo(() => {
+    const residential = {
+      market: "Residential",
+      title: "Roof leak repair + shingle replacement",
+      meta: "San Diego, CA • Due in 6 days",
+      naics: "238160",
+      value: "$1.8k–$6.5k",
+      buyer: "Homeowner",
+      verified: true,
+      score: 86,
+      accent: "blue" as const,
+      lockedRows: [
+        { title: "Drywall patch + texture", value: "$450" },
+        { title: "Gutter clean + minor repair", value: "$320" },
+        { title: "Fence section replacement", value: "$980" },
+      ],
+    };
+
+    const commercial = {
+      market: "Commercial",
+      title: "HVAC preventative maintenance (12-month)",
+      meta: "Carlsbad, CA • Due in 8 days",
+      naics: "238220",
+      value: "$18k–$55k",
+      buyer: "Retail Plaza Management",
+      verified: false,
+      score: 89,
+      accent: "indigo" as const,
+      lockedRows: [
+        { title: "Quarterly PM (8 RTUs)", value: "$9.6k" },
+        { title: "Thermostat upgrade batch", value: "$3.1k" },
+        { title: "After-hours service retainer", value: "$4.8k" },
+      ],
+    };
+
+    const government = {
+      market: "Government",
+      title: "On-call hauling + disposal services",
+      meta: "Vista, CA • Due in 10 days",
+      naics: "562111",
+      value: "$60k–$220k",
+      buyer: "City Procurement",
+      verified: false,
+      score: 92,
+      accent: "green" as const,
+      lockedRows: [
+        { title: "Debris haul (per load)", value: "$420" },
+        { title: "Street sweep support (daily)", value: "$1.9k" },
+        { title: "Emergency response (24h)", value: "$7.5k" },
+      ],
+    };
+
+    // Put the selected intent first (feels responsive to the toggle)
+    const pick =
+      intent === "commercial" ? [commercial, residential, government]
+      : intent === "government" ? [government, residential, commercial]
+      : [residential, commercial, government];
+
+    return pick;
+  }, [intent]);
+
   return (
     <div className="w-full rounded-2xl border border-white/20 bg-white/10 p-4 shadow-[0_30px_120px_rgba(0,0,0,0.35)] backdrop-blur-xl sm:rounded-[28px] sm:p-6">
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid items-start gap-6 lg:grid-cols-2">
         {/* LEFT */}
         <div className="min-w-0">
-          <div className="text-base font-semibold text-white sm:text-lg">
-            Start your 7-day free trial
-          </div>
+          <div className="text-base font-semibold text-white sm:text-lg">Start your 7-day free trial</div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
+            {/* Email */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Work Email</div>
               <input
@@ -482,6 +414,7 @@ export default function ConciergeLeadCapture({
               />
             </div>
 
+            {/* Service area */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Service area</div>
               <input
@@ -492,6 +425,7 @@ export default function ConciergeLeadCapture({
               />
             </div>
 
+            {/* Keywords */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Keywords</div>
@@ -505,6 +439,7 @@ export default function ConciergeLeadCapture({
               />
             </div>
 
+            {/* NAICS */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">NAICS codes</div>
@@ -516,17 +451,16 @@ export default function ConciergeLeadCapture({
                 placeholder="e.g., 238160"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-              <div className="mt-2 text-[11px] text-white/55">
-                Essential for high-quality matching.
-              </div>
+              <div className="mt-2 text-[11px] text-white/55">Essential for high-quality matching.</div>
             </div>
 
+            {/* CTA */}
             <div className="pt-1">
               <button
                 type="submit"
                 disabled={submitting}
                 className={cx(
-                  "w-full rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_40px_rgba(26,79,163,0.35)]",
+                  "w-full rounded-2xl px-5 py-3 text-sm font-semibold text-white shadow-[0_12px_40px_rgba(26,79,163,0.35)] transition",
                   submitting && "opacity-75"
                 )}
                 style={{ backgroundColor: BRAND }}
@@ -541,14 +475,35 @@ export default function ConciergeLeadCapture({
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}
             </div>
           </form>
+
+          {/* ✅ Fill the “dead space” with clean, believable value (keeps left column balanced) */}
+          <div className="mt-5 rounded-2xl border border-white/15 bg-white/5 p-4">
+            <div className="text-xs font-semibold text-white/80">What you’ll get (daily)</div>
+            <ul className="mt-3 grid gap-2 text-xs text-white/65">
+              <li className="flex gap-2">
+                <span className="mt-[2px] text-white/60">✓</span>
+                Ranked matches based on your service area + NAICS + keywords
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[2px] text-white/60">✓</span>
+                Clear summaries so you can triage in minutes
+              </li>
+              <li className="flex gap-2">
+                <span className="mt-[2px] text-white/60">✓</span>
+                Buyer context + estimated value range when available
+              </li>
+            </ul>
+
+            <div className="mt-3 text-[11px] text-white/55">
+              Next: we generate your first matches and send your daily delivery.
+            </div>
+          </div>
         </div>
 
         {/* RIGHT */}
         <div className="min-w-0">
           <div className="flex items-center justify-between">
-            <div className="text-base font-semibold text-white sm:text-lg">
-              Sample matches
-            </div>
+            <div className="text-base font-semibold text-white sm:text-lg">Sample matches</div>
             <div className="text-xs text-white/60">Examples only</div>
           </div>
 
@@ -565,6 +520,7 @@ export default function ConciergeLeadCapture({
                 verified={s.verified}
                 score={s.score}
                 accent={s.accent}
+                lockedRows={s.lockedRows}
               />
             ))}
           </div>
