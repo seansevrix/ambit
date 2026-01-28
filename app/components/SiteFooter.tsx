@@ -18,17 +18,17 @@ export default function SiteFooter() {
             </p>
           </div>
 
-          {/* ✅ Solutions column (required) */}
+          {/* ✅ Solutions (required) */}
           <div>
             <div className={TITLE}>Solutions</div>
             <div className="mt-4 grid gap-2">
-              <Link href="/get-started?market=residential" className={LINK}>
+              <Link href="/get-started?intent=residential" className={LINK}>
                 Residential
               </Link>
-              <Link href="/get-started?market=commercial" className={LINK}>
+              <Link href="/get-started?intent=commercial" className={LINK}>
                 Commercial
               </Link>
-              <Link href="/get-started?market=government" className={LINK}>
+              <Link href="/get-started?intent=government" className={LINK}>
                 Government
               </Link>
             </div>
