@@ -39,7 +39,19 @@ function intentProofLine(intent: IntentKey) {
   return "Preview: Verified homeowner requests in your service area.";
 }
 
-function intentTestimonials(intent: IntentKey) {
+type TestimonialItem = {
+  hook: string; // bold lead-in sentence
+  quote: string; // remainder (non-hook) text
+  name: string;
+  title: string;
+  tag: string;
+};
+
+function intentTestimonials(intent: IntentKey): {
+  header: string;
+  sub: string;
+  items: TestimonialItem[];
+} {
   if (intent === "commercial") {
     return {
       header: "Commercial teams move faster with AMBIT.",
@@ -47,25 +59,25 @@ function intentTestimonials(intent: IntentKey) {
         "Relevant work orders and service contracts—ranked and summarized so you don’t waste hours digging.",
       items: [
         {
-          quote:
-            "We used to check portals and emails all morning. Now AMBIT surfaces the jobs that actually match our scope—daily.",
           hook: "We stopped wasting hours digging through portals.",
+          quote:
+            "AMBIT surfaces the jobs that actually match our scope—daily. The summaries make triage easy, and the team moves faster.",
           name: "David Chen",
           title: "Operations Director",
           tag: "Construction · Nevada",
         },
         {
-          quote:
-            "The summaries are clean and the leads are relevant. It feels like having a coordinator who filters the noise.",
           hook: "It filters the noise and highlights what matters.",
+          quote:
+            "The leads are relevant, and the writeups are clean. It feels like having a coordinator who screens the inbox for us.",
           name: "Ariana M.",
           title: "Facilities Manager",
           tag: "Facilities · Arizona",
         },
         {
-          quote:
-            "We tightened keywords and our match quality jumped immediately. It’s been a consistent pipeline builder.",
           hook: "Match quality jumped immediately.",
+          quote:
+            "We tightened keywords and saw better-fit opportunities the same week. It’s been a consistent pipeline builder for our service team.",
           name: "Jordan S.",
           title: "Owner",
           tag: "HVAC · Texas",
@@ -81,25 +93,25 @@ function intentTestimonials(intent: IntentKey) {
         "Get public opportunities that fit your NAICS + service area—ranked so you know where to spend time.",
       items: [
         {
-          quote:
-            "The biggest win is clarity—what it is, why it fits, and what to do next. We’re submitting more because we’re not guessing.",
           hook: "We submit more because we’re not guessing.",
+          quote:
+            "The summary tells us what it is, why it fits, and what to do next—so we spend time only where we have a real shot.",
           name: "Marcus L.",
           title: "Small Business Owner",
           tag: "Gov Contracting · Florida",
         },
         {
-          quote:
-            "AMBIT helped us find smaller, winnable bids instead of giant projects we’d never pursue. That changed everything.",
           hook: "Smaller, winnable bids changed everything.",
+          quote:
+            "AMBIT helped us find opportunities that match our size and capacity instead of giant projects we’d never pursue.",
           name: "Priya K.",
           title: "Founder",
           tag: "Services · Virginia",
         },
         {
-          quote:
-            "It’s the first tool that doesn’t overwhelm us. The match score + summary makes triage easy.",
           hook: "Triage is finally easy.",
+          quote:
+            "The match score + summary makes it obvious what to open first. It’s the first tool that doesn’t overwhelm our team.",
           name: "Ethan R.",
           title: "Estimator",
           tag: "Trades · California",
@@ -111,29 +123,28 @@ function intentTestimonials(intent: IntentKey) {
   // residential (default)
   return {
     header: "Residential leads you can actually close.",
-    sub:
-      "Verified homeowner requests—ranked by fit so you can respond faster and win more.",
+    sub: "Verified homeowner requests—ranked by fit so you can respond faster and win more.",
     items: [
       {
+        hook: "Fully up and running in under 5 minutes.",
         quote:
           "I expected setup to be a nightmare. Five minutes later I was seeing real homeowner requests that matched our services.",
-        hook: "Fully up and running in under 5 minutes.",
         name: "Sarah K.",
         title: "Owner, Janitorial Company",
         tag: "Janitorial · Florida",
       },
       {
-        quote:
-          "We reply faster now because the leads come in clean and organized. Less scrolling, more jobs booked.",
         hook: "Less scrolling, more jobs booked.",
+        quote:
+          "We reply faster now because the leads come in clean and organized. It’s been a noticeable win for our team.",
         name: "Mark T.",
         title: "Owner, Plumbing Company",
         tag: "Plumbing · California",
       },
       {
-        quote:
-          "The match score is surprisingly accurate. It’s like having a front desk that screens requests for us.",
         hook: "It screens requests for us.",
+        quote:
+          "The match score is surprisingly accurate. It feels like having a front desk that filters the noise before we see it.",
         name: "Tanya W.",
         title: "Office Manager",
         tag: "Home Services · Colorado",
@@ -226,7 +237,6 @@ export default function HomePage() {
 
                 {/* CTA row */}
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  {/* ✅ Highest contrast button (electric green) */}
                   <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
                     See My Matches — It’s Free
                   </Link>
@@ -239,18 +249,8 @@ export default function HomePage() {
                 {/* ✅ Microtext near CTA */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">No credit card required.</p>
 
-                {/* ✅ Mutating helper line */}
-                <p className="mt-2 text-xs text-white/55">{proofLine}</p>
-              </div>
-
-              {/* SIGNUP / PREVIEW (mutates sample matches) */}
-              <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
-                <ConciergeLeadCapture intent={intent} />
-              </div>
-
-              {/* Trust badges near CTA (simple, grayscale) */}
-              <div className="mx-auto mt-5 max-w-6xl">
-                <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
+                {/* ✅ Trust badges MOVED: directly under CTA/microtext (before preview) */}
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     Verified buyers
                   </span>
@@ -261,9 +261,17 @@ export default function HomePage() {
                     24/7 support
                   </span>
                 </div>
+
+                {/* ✅ Mutating helper line */}
+                <p className="mt-3 text-xs text-white/55">{proofLine}</p>
               </div>
 
-              {/* PROOF DASHBOARD (already intent-aware in your page) */}
+              {/* SIGNUP / PREVIEW */}
+              <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
+                <ConciergeLeadCapture intent={intent} />
+              </div>
+
+              {/* PROOF DASHBOARD */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <ProofDashboard intent={intent} />
               </div>
@@ -304,8 +312,8 @@ export default function HomePage() {
                     >
                       <p className="text-sm leading-relaxed text-white/75">
                         <span className="text-white/40">“</span>
+                        <strong className="font-semibold text-white">{x.hook}</strong>{" "}
                         {x.quote}
-                        <strong className="font-semibold text-white"> {x.hook}</strong>
                         <span className="text-white/40">”</span>
                       </p>
 
