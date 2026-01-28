@@ -6,6 +6,7 @@ import GetStartedClient from "./GetStartedClient";
 const TRUST_BADGES = [
   "7-day free trial",
   "No credit card required",
+  "$49.99/mo after trial",
   "Cancel anytime",
   "No spam",
 ];
@@ -13,7 +14,7 @@ const TRUST_BADGES = [
 export default function Page() {
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
-      {/* Background glow + subtle grid (matches Pricing) */}
+      {/* Background glow + subtle grid */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
@@ -21,17 +22,17 @@ export default function Page() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-[1200px] px-6 py-14 lg:px-10">
+      <div className="mx-auto max-w-[1100px] px-6 py-14 lg:px-10">
         {/* Back link */}
         <Link href="/" className="text-sm text-white/70 hover:text-white">
           ← Back
         </Link>
 
         {/* Header */}
-        <div className="mt-6 flex flex-col gap-3">
-          <div className="flex items-center gap-3">
+        <div className="mt-7">
+          <div className="flex flex-wrap items-center gap-3">
             <h1 className="text-4xl font-semibold tracking-tight">
-              Get started
+              Start getting matched opportunities today
             </h1>
 
             {/* Live pill */}
@@ -44,12 +45,13 @@ export default function Page() {
             </span>
           </div>
 
-          <p className="max-w-2xl text-white/70">
-            Create your profile once. AMBIT delivers matched opportunities daily.
+          <p className="mt-2 max-w-2xl text-white/70">
+            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
+            <span className="font-semibold text-white/85">Residential • Commercial • Government</span>.
           </p>
 
           {/* Trust bar */}
-          <div className="flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {TRUST_BADGES.map((t) => (
               <span
                 key={t}
@@ -62,10 +64,14 @@ export default function Page() {
         </div>
 
         {/* Form container */}
-        <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.35)]">
+        <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.35)] sm:p-8">
           <Suspense fallback={<div className="h-[420px]" />}>
             <GetStartedClient />
           </Suspense>
+        </div>
+
+        <div className="mt-6 text-center text-xs text-white/45">
+          Tip: Keywords are the “magic” — services, equipment, materials, and job types.
         </div>
       </div>
     </div>
