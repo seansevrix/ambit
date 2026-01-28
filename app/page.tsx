@@ -22,11 +22,10 @@ type IntentKey = "residential" | "commercial" | "government";
 const INTENTS: Array<{
   key: IntentKey;
   label: string;
-  short: string;
 }> = [
-  { key: "residential", label: "Residential", short: "Homeowner requests" },
-  { key: "commercial", label: "Commercial", short: "Business work orders" },
-  { key: "government", label: "Government", short: "Public bid opportunities" },
+  { key: "residential", label: "Residential" },
+  { key: "commercial", label: "Commercial" },
+  { key: "government", label: "Government" },
 ];
 
 export default function HomePage() {
@@ -84,7 +83,7 @@ export default function HomePage() {
                 {/* Punchy subhead */}
                 <p className="mt-3 text-sm text-white/70 sm:text-base">{heroSubhead}</p>
 
-                {/* Intent selector */}
+                {/* Intent selector (no extra sublabels) */}
                 <div className="mx-auto mt-6 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:justify-center">
                   {INTENTS.map((i) => {
                     const active = i.key === intent;
@@ -95,16 +94,14 @@ export default function HomePage() {
                         onClick={() => setIntent(i.key)}
                         className={[
                           TOGGLE_BTN,
+                          "min-w-[160px]",
                           active
                             ? "border-white/25 bg-white/10 text-white"
                             : "border-white/10 bg-white/5 text-white/70 hover:bg-white/8 hover:text-white",
                         ].join(" ")}
                         aria-pressed={active}
                       >
-                        <span className="mr-2">{i.label}</span>
-                        <span className="hidden text-xs font-semibold text-white/50 sm:inline">
-                          {i.short}
-                        </span>
+                        {i.label}
                       </button>
                     );
                   })}
@@ -121,7 +118,7 @@ export default function HomePage() {
                   </Link>
                 </div>
 
-                {/* Clean value stack (only the big hook) */}
+                {/* Clean value stack */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">
                   <span className="font-semibold text-white/85">7-day free trial</span>
                   <span className="mx-2 text-white/35">•</span>
@@ -134,7 +131,7 @@ export default function HomePage() {
                 <ConciergeLeadCapture />
               </div>
 
-              {/* Second-wave social proof (moved down) */}
+              {/* Second-wave social proof */}
               <div className="mx-auto mt-5 max-w-6xl">
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
