@@ -22,13 +22,13 @@ export default function SiteFooter() {
           <div>
             <div className={TITLE}>Solutions</div>
             <div className="mt-4 grid gap-2">
-              <Link href="/residential" className={LINK}>
+              <Link href="/preview/residential" className={LINK}>
                 Residential
               </Link>
-              <Link href="/commercial" className={LINK}>
+              <Link href="/preview/commercial" className={LINK}>
                 Commercial
               </Link>
-              <Link href="/government" className={LINK}>
+              <Link href="/preview/government" className={LINK}>
                 Government
               </Link>
             </div>
