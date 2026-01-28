@@ -39,6 +39,109 @@ function intentProofLine(intent: IntentKey) {
   return "Preview: Verified homeowner requests in your service area.";
 }
 
+function intentTestimonials(intent: IntentKey) {
+  if (intent === "commercial") {
+    return {
+      header: "Commercial teams move faster with AMBIT.",
+      sub:
+        "Relevant work orders and service contracts—ranked and summarized so you don’t waste hours digging.",
+      items: [
+        {
+          quote:
+            "We used to check portals and emails all morning. Now AMBIT surfaces the jobs that actually match our scope—daily.",
+          hook: "We stopped wasting hours digging through portals.",
+          name: "David Chen",
+          title: "Operations Director",
+          tag: "Construction · Nevada",
+        },
+        {
+          quote:
+            "The summaries are clean and the leads are relevant. It feels like having a coordinator who filters the noise.",
+          hook: "It filters the noise and highlights what matters.",
+          name: "Ariana M.",
+          title: "Facilities Manager",
+          tag: "Facilities · Arizona",
+        },
+        {
+          quote:
+            "We tightened keywords and our match quality jumped immediately. It’s been a consistent pipeline builder.",
+          hook: "Match quality jumped immediately.",
+          name: "Jordan S.",
+          title: "Owner",
+          tag: "HVAC · Texas",
+        },
+      ],
+    };
+  }
+
+  if (intent === "government") {
+    return {
+      header: "Government bids that feel reachable.",
+      sub:
+        "Get public opportunities that fit your NAICS + service area—ranked so you know where to spend time.",
+      items: [
+        {
+          quote:
+            "The biggest win is clarity—what it is, why it fits, and what to do next. We’re submitting more because we’re not guessing.",
+          hook: "We submit more because we’re not guessing.",
+          name: "Marcus L.",
+          title: "Small Business Owner",
+          tag: "Gov Contracting · Florida",
+        },
+        {
+          quote:
+            "AMBIT helped us find smaller, winnable bids instead of giant projects we’d never pursue. That changed everything.",
+          hook: "Smaller, winnable bids changed everything.",
+          name: "Priya K.",
+          title: "Founder",
+          tag: "Services · Virginia",
+        },
+        {
+          quote:
+            "It’s the first tool that doesn’t overwhelm us. The match score + summary makes triage easy.",
+          hook: "Triage is finally easy.",
+          name: "Ethan R.",
+          title: "Estimator",
+          tag: "Trades · California",
+        },
+      ],
+    };
+  }
+
+  // residential (default)
+  return {
+    header: "Residential leads you can actually close.",
+    sub:
+      "Verified homeowner requests—ranked by fit so you can respond faster and win more.",
+    items: [
+      {
+        quote:
+          "I expected setup to be a nightmare. Five minutes later I was seeing real homeowner requests that matched our services.",
+        hook: "Fully up and running in under 5 minutes.",
+        name: "Sarah K.",
+        title: "Owner, Janitorial Company",
+        tag: "Janitorial · Florida",
+      },
+      {
+        quote:
+          "We reply faster now because the leads come in clean and organized. Less scrolling, more jobs booked.",
+        hook: "Less scrolling, more jobs booked.",
+        name: "Mark T.",
+        title: "Owner, Plumbing Company",
+        tag: "Plumbing · California",
+      },
+      {
+        quote:
+          "The match score is surprisingly accurate. It’s like having a front desk that screens requests for us.",
+        hook: "It screens requests for us.",
+        name: "Tanya W.",
+        title: "Office Manager",
+        tag: "Home Services · Colorado",
+      },
+    ],
+  };
+}
+
 export default function HomePage() {
   const [intent, setIntent] = useState<IntentKey>("residential");
 
@@ -54,6 +157,8 @@ export default function HomePage() {
   }, [intent]);
 
   const proofLine = useMemo(() => intentProofLine(intent), [intent]);
+
+  const t = useMemo(() => intentTestimonials(intent), [intent]);
 
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
@@ -134,31 +239,36 @@ export default function HomePage() {
                 {/* ✅ Microtext near CTA */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">No credit card required.</p>
 
-                {/* Intent-mutating proof hint (small, clean) */}
+                {/* ✅ Mutating helper line */}
                 <p className="mt-2 text-xs text-white/55">{proofLine}</p>
               </div>
 
-              {/* ✅ “Show me the goods” — higher than proof tiles */}
+              {/* SIGNUP / PREVIEW (mutates sample matches) */}
               <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
-                <ConciergeLeadCapture />
+                <ConciergeLeadCapture intent={intent} />
               </div>
 
-              {/* Trust badges near CTA */}
+              {/* Trust badges near CTA (simple, grayscale) */}
               <div className="mx-auto mt-5 max-w-6xl">
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    Trusted by 200+ clients
+                    Verified buyers
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    Secure Data
+                    Secure data
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    24/7 Support
+                    24/7 support
                   </span>
                 </div>
               </div>
 
-              {/* TESTIMONIALS (before dashboard to keep “goods” momentum) */}
+              {/* PROOF DASHBOARD (already intent-aware in your page) */}
+              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
+                <ProofDashboard intent={intent} />
+              </div>
+
+              {/* TESTIMONIALS (mutates by intent) */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -167,13 +277,10 @@ export default function HomePage() {
                     </div>
 
                     <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                      Real contractors. Real results.
+                      {t.header}
                     </h2>
 
-                    <p className="mt-2 max-w-2xl text-sm text-white/70">
-                      Skimmable feedback from teams using AMBIT to find better-fit opportunities
-                      faster.
-                    </p>
+                    <p className="mt-2 max-w-2xl text-sm text-white/70">{t.sub}</p>
 
                     <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-white/60">
                       <span>✓ Faster response times</span>
@@ -190,94 +297,35 @@ export default function HomePage() {
                 </div>
 
                 <div className="mt-6 grid gap-6 lg:mt-8 lg:grid-cols-3">
-                  {/* SARAH */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                    <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>I sat on this for weeks because I’m a
-                      disaster with new tech and expected setup to be a nightmare.
-                      <strong className="font-semibold text-white">
-                        {" "}
-                        Fully up and running in under 5 minutes.
-                      </strong>{" "}
-                      I set our service area + NAICS, and matches started coming in immediately.
-                      <span className="text-white/40">”</span>
-                    </p>
+                  {t.items.map((x) => (
+                    <div
+                      key={x.name}
+                      className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]"
+                    >
+                      <p className="text-sm leading-relaxed text-white/75">
+                        <span className="text-white/40">“</span>
+                        {x.quote}
+                        <strong className="font-semibold text-white"> {x.hook}</strong>
+                        <span className="text-white/40">”</span>
+                      </p>
 
-                    <div className="mt-5 h-px w-full bg-white/10" />
+                      <div className="mt-5 h-px w-full bg-white/10" />
 
-                    <div className="mt-4">
-                      <div className="text-sm font-semibold text-white">Sarah K.</div>
-                      <div className="mt-1 text-xs text-white/65">Owner, Janitorial Company</div>
-                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                        Janitorial · Florida
+                      <div className="mt-4">
+                        <div className="text-sm font-semibold text-white">{x.name}</div>
+                        <div className="mt-1 text-xs text-white/65">{x.title}</div>
+                        <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
+                          {x.tag}
+                        </div>
                       </div>
                     </div>
-                  </div>
-
-                  {/* DAVID */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                    <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>We’ve tested a lot of tools, but AMBIT
-                      is the first one that actually scaled with us.
-                      <strong className="font-semibold text-white">
-                        {" "}
-                        We stopped wasting hours digging through portals.
-                      </strong>{" "}
-                      Daily matches are relevant and clearly summarized.
-                      <span className="text-white/40">”</span>
-                    </p>
-
-                    <div className="mt-5 h-px w-full bg-white/10" />
-
-                    <div className="mt-4">
-                      <div className="text-sm font-semibold text-white">David Chen</div>
-                      <div className="mt-1 text-xs text-white/65">Operations Director</div>
-                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                        Construction · Nevada
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* MARK */}
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)_inset]">
-                    <p className="text-sm leading-relaxed text-white/75">
-                      <span className="text-white/40">“</span>What impressed me most was the
-                      accuracy.
-                      <strong className="font-semibold text-white">
-                        {" "}
-                        It sends work we can actually bid and win.
-                      </strong>{" "}
-                      After tightening our NAICS + keywords, match quality jumped immediately.
-                      <span className="text-white/40">”</span>
-                    </p>
-
-                    <div className="mt-5 h-px w-full bg-white/10" />
-
-                    <div className="mt-4">
-                      <div className="text-sm font-semibold text-white">Mark T.</div>
-                      <div className="mt-1 text-xs text-white/65">Owner, Plumbing Company</div>
-                      <div className="mt-2 inline-flex items-center rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/75">
-                        Plumbing · California
-                      </div>
-                    </div>
-                  </div>
+                  ))}
                 </div>
 
                 <p className="mt-6 text-center text-xs text-white/45">
                   Testimonials are real feedback. Results vary by trade, service area, and response
                   time.
                 </p>
-              </div>
-
-              {/* ✅ Proof Dashboard moved AFTER “goods” + testimonials */}
-              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-                <div className="mb-3 flex items-center justify-between">
-                  <div className="text-xs font-semibold text-white/70">PROOF DASHBOARD</div>
-                  <div className="text-xs text-white/45">Illustrative preview</div>
-                </div>
-
-                {/* NOTE: only keep this prop if ProofDashboard supports it */}
-                <ProofDashboard intent={intent} />
               </div>
             </div>
           </section>
