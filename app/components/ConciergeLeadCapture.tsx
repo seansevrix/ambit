@@ -3,6 +3,8 @@
 import { useMemo, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
+type IntentKey = "residential" | "commercial" | "government";
+
 const BRAND = "#1A4FA3";
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE_URL ||
@@ -90,7 +92,6 @@ async function postJson(url: string, body: any) {
   return { res, json };
 }
 
-/** UI bits */
 function BlueVerifiedCheck() {
   return (
     <span
@@ -151,42 +152,6 @@ function LiveDot() {
   );
 }
 
-/** Helpers for “city-specific” locked line */
-function metaToCity(meta: string) {
-  // meta like: "San Diego, CA • Due in 6 days"
-  const left = String(meta || "").split("•")[0]?.trim();
-  return left || "your area";
-}
-
-/** Locked feed rows (feel live, still blurred) */
-type FeedRow = { title: string; right: string };
-function getFeedRows(market: string): FeedRow[] {
-  const m = market.toLowerCase();
-  if (m === "government") {
-    return [
-      { title: "On-call hauling + disposal (IDQ)", right: "$60k" },
-      { title: "Debris removal + trucking", right: "$18k" },
-      { title: "Recycling services + pickups", right: "$9.5k" },
-      { title: "Bulk waste pickup (events)", right: "$7k" },
-    ];
-  }
-  if (m === "commercial") {
-    return [
-      { title: "HVAC preventative maintenance", right: "$22k" },
-      { title: "Rooftop unit service + filters", right: "$6.8k" },
-      { title: "Quarterly inspections (12 mo)", right: "$4.2k" },
-      { title: "After-hours repair coverage", right: "$3.1k" },
-    ];
-  }
-  // residential
-  return [
-    { title: "Roof leak repair", right: "$1.9k" },
-    { title: "Shingle replacement", right: "$4.8k" },
-    { title: "Gutter install + cleanup", right: "$1.2k" },
-    { title: "Drywall patch + paint", right: "$850" },
-  ];
-}
-
 function SampleCard({
   market,
   title,
@@ -215,9 +180,6 @@ function SampleCard({
       ? "bg-indigo-600/10 text-indigo-700 border-indigo-600/20"
       : "bg-blue-600/10 text-blue-700 border-blue-600/20";
 
-  const city = metaToCity(meta);
-  const feed = getFeedRows(market);
-
   return (
     <div className="rounded-2xl border border-white/20 bg-white/95 p-3 shadow-sm sm:p-4">
       <div className="flex items-start justify-between gap-3">
@@ -227,13 +189,11 @@ function SampleCard({
               {market}
             </span>
 
-            {/* LIVE indicator */}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold text-slate-600">
               <LiveDot />
               LIVE
             </span>
 
-            {/* Icons for Commercial + Government */}
             <MarketIcon market={market} />
           </div>
 
@@ -252,7 +212,6 @@ function SampleCard({
           <span className="text-slate-400">Est value:</span> {value}
         </div>
 
-        {/* Buyer + verified */}
         <div className="min-w-0">
           <span className="text-slate-400">Buyer:</span>{" "}
           <span className="inline-flex items-center gap-1.5">
@@ -262,18 +221,23 @@ function SampleCard({
         </div>
       </div>
 
-      {/* Locked / blurred “feed” */}
       <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div className="absolute inset-0 backdrop-blur-[7px]" />
-        <div className="absolute inset-0 bg-white/40" />
+        <div className="absolute inset-0 backdrop-blur-[6px]" />
+        <div className="absolute inset-0 bg-white/35" />
 
         <div className="relative space-y-2 text-xs text-slate-700">
-          {feed.slice(0, 4).map((r) => (
-            <div key={r.title} className="flex items-center justify-between">
-              <div className="font-semibold">{r.title}</div>
-              <div className="text-slate-500">{r.right}</div>
-            </div>
-          ))}
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">Full Roof Replace</div>
+            <div className="text-slate-500">$18k</div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">Deck Build</div>
+            <div className="text-slate-500">$7k</div>
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="font-semibold">Concrete Patch + Grind</div>
+            <div className="text-slate-500">$3.2k</div>
+          </div>
         </div>
 
         <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-600">
@@ -283,9 +247,8 @@ function SampleCard({
           Locked
         </div>
 
-        {/* ✅ Spec line (city-specific) */}
         <div className="relative mt-3 text-[11px] font-semibold text-slate-600">
-          View more open opportunities in <span className="text-slate-900">{city}</span> today.{" "}
+          View more open opportunities in your area today.{" "}
           <span className="text-slate-900">Sign up to unlock.</span>
         </div>
       </div>
@@ -293,7 +256,122 @@ function SampleCard({
   );
 }
 
-export default function ConciergeLeadCapture() {
+function sampleCardsForIntent(intent: IntentKey) {
+  if (intent === "commercial") {
+    return [
+      {
+        market: "Commercial",
+        title: "HVAC preventative maintenance (12-month)",
+        meta: "Carlsbad, CA • Due in 8 days",
+        naics: "238220",
+        value: "$18k–$55k",
+        buyer: "Retail Plaza Management",
+        verified: true,
+        score: 89,
+        accent: "indigo" as const,
+      },
+      {
+        market: "Commercial",
+        title: "Exterior pressure washing (multi-site)",
+        meta: "San Diego, CA • Due in 5 days",
+        naics: "561790",
+        value: "$6.5k–$22k",
+        buyer: "Property Management Group",
+        verified: false,
+        score: 86,
+        accent: "blue" as const,
+      },
+      {
+        market: "Commercial",
+        title: "Parking lot striping + ADA refresh",
+        meta: "Oceanside, CA • Due in 9 days",
+        naics: "237310",
+        value: "$4.2k–$18k",
+        buyer: "Commercial Facilities",
+        verified: false,
+        score: 84,
+        accent: "green" as const,
+      },
+    ];
+  }
+
+  if (intent === "government") {
+    return [
+      {
+        market: "Government",
+        title: "On-call hauling + disposal services",
+        meta: "Vista, CA • Due in 10 days",
+        naics: "562111",
+        value: "$60k–$220k",
+        buyer: "City Procurement",
+        verified: true,
+        score: 92,
+        accent: "green" as const,
+      },
+      {
+        market: "Government",
+        title: "Janitorial services (12-month base + options)",
+        meta: "San Diego, CA • Due in 12 days",
+        naics: "561720",
+        value: "$85k–$260k",
+        buyer: "County Facilities",
+        verified: false,
+        score: 88,
+        accent: "indigo" as const,
+      },
+      {
+        market: "Government",
+        title: "Minor electrical repairs (IDIQ)",
+        meta: "Chula Vista, CA • Due in 14 days",
+        naics: "238210",
+        value: "$40k–$140k",
+        buyer: "Public Works",
+        verified: false,
+        score: 85,
+        accent: "blue" as const,
+      },
+    ];
+  }
+
+  // residential default
+  return [
+    {
+      market: "Residential",
+      title: "Roof leak repair + shingle replacement",
+      meta: "San Diego, CA • Due in 6 days",
+      naics: "238160",
+      value: "$1.8k–$6.5k",
+      buyer: "Homeowner",
+      verified: true,
+      score: 86,
+      accent: "blue" as const,
+    },
+    {
+      market: "Residential",
+      title: "Water heater install + haul-away",
+      meta: "Encinitas, CA • Due in 4 days",
+      naics: "238220",
+      value: "$1.2k–$3.4k",
+      buyer: "Homeowner",
+      verified: true,
+      score: 84,
+      accent: "indigo" as const,
+    },
+    {
+      market: "Residential",
+      title: "Fence repair + gate alignment",
+      meta: "Vista, CA • Due in 7 days",
+      naics: "238190",
+      value: "$650–$2.5k",
+      buyer: "Homeowner",
+      verified: true,
+      score: 82,
+      accent: "green" as const,
+    },
+  ];
+}
+
+export default function ConciergeLeadCapture({ intent = "residential" }: { intent?: IntentKey }) {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
@@ -307,9 +385,10 @@ export default function ConciergeLeadCapture() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Always include all markets behind the scenes
   const segments = ["residential", "commercial", "government"];
   const segmentsCsv = segments.join(",");
+
+  const samples = useMemo(() => sampleCardsForIntent(intent), [intent]);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -324,7 +403,6 @@ export default function ConciergeLeadCapture() {
     if (!loc) return setError("Service area is required.");
     if (!kw) return setError("Keywords are required. (Comma-separated is fine.)");
 
-    // NAICS required
     if (!naicsCodes.length) {
       return setError("NAICS is required — essential for high-quality matching.");
     }
@@ -376,7 +454,6 @@ export default function ConciergeLeadCapture() {
           <div className="text-base font-semibold text-white sm:text-lg">Start your 7-day free trial</div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
-            {/* Email */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Work Email</div>
               <input
@@ -388,7 +465,6 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Service area */}
             <div className="min-w-0">
               <div className="text-xs font-semibold text-white/80">Service area</div>
               <input
@@ -399,7 +475,6 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* Keywords */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">Keywords</div>
@@ -413,7 +488,6 @@ export default function ConciergeLeadCapture() {
               />
             </div>
 
-            {/* NAICS (required) */}
             <div className="min-w-0">
               <div className="flex items-center justify-between">
                 <div className="text-xs font-semibold text-white/80">NAICS codes</div>
@@ -428,7 +502,6 @@ export default function ConciergeLeadCapture() {
               <div className="mt-2 text-[11px] text-white/55">Essential for high-quality matching.</div>
             </div>
 
-            {/* CTA */}
             <div className="pt-1">
               <button
                 type="submit"
@@ -459,41 +532,20 @@ export default function ConciergeLeadCapture() {
           </div>
 
           <div className="mt-4 space-y-4">
-            <SampleCard
-              market="Residential"
-              title="Roof leak repair + shingle replacement"
-              meta="San Diego, CA • Due in 6 days"
-              naics="238160"
-              value="$1.8k–$6.5k"
-              buyer="Homeowner"
-              verified={true}
-              score={86}
-              accent="blue"
-            />
-
-            <SampleCard
-              market="Commercial"
-              title="HVAC preventative maintenance (12-month)"
-              meta="Carlsbad, CA • Due in 8 days"
-              naics="238220"
-              value="$18k–$55k"
-              buyer="Retail Plaza Management"
-              verified={false}
-              score={89}
-              accent="indigo"
-            />
-
-            <SampleCard
-              market="Government"
-              title="On-call hauling + disposal services"
-              meta="Vista, CA • Due in 10 days"
-              naics="562111"
-              value="$60k–$220k"
-              buyer="City Procurement"
-              verified={false}
-              score={92}
-              accent="green"
-            />
+            {samples.map((s) => (
+              <SampleCard
+                key={`${s.market}-${s.title}`}
+                market={s.market}
+                title={s.title}
+                meta={s.meta}
+                naics={s.naics}
+                value={s.value}
+                buyer={s.buyer}
+                verified={s.verified}
+                score={s.score}
+                accent={s.accent}
+              />
+            ))}
           </div>
         </div>
       </div>
