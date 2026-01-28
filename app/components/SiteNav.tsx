@@ -24,7 +24,7 @@ export default function SiteNav() {
         </Link>
 
         {isLanding ? (
-          // ✅ Landing: remove header links, keep login small, CTA dominant
+          // Landing: keep login small, CTA dominant
           <nav className="flex items-center gap-4">
             <Link href="/login" className={LINK}>
               Log in
@@ -34,11 +34,8 @@ export default function SiteNav() {
             </Link>
           </nav>
         ) : (
-          // Other pages: keep a simple, non-distracting nav
+          // Other pages: simple nav (no Live Leads)
           <nav className="flex items-center gap-4">
-            <Link href="/live-opportunities" className={LINK}>
-              Live Leads
-            </Link>
             <Link href="/testimonials" className={LINK}>
               Reviews
             </Link>
