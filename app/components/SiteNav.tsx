@@ -1,84 +1,56 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import AmbitMark from "./AmbitMark";
 
-const PRIMARY_BTN =
-  "shrink-0 whitespace-nowrap rounded-xl bg-[#1A4FA3] px-3 py-2 text-xs font-semibold text-white hover:bg-[#15428B] sm:px-4 sm:text-sm";
-
-const GHOST_BTN =
-  "shrink-0 whitespace-nowrap rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white sm:px-4 sm:text-sm";
-
-const NAV_LINK = "text-sm font-semibold text-white/75 hover:text-white transition";
+const WRAP = "mx-auto max-w-[1200px] px-6 lg:px-10";
+const LINK = "text-sm font-semibold text-white/70 hover:text-white transition";
+const CTA =
+  "inline-flex items-center justify-center rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-[#061017] shadow-[0_10px_30px_rgba(0,0,0,0.25)] hover:brightness-110 transition";
 
 export default function SiteNav() {
+  const pathname = usePathname();
+  const isLanding = pathname === "/";
+
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1430]/70 backdrop-blur">
-      {/* Top row */}
-      <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-3 px-3 sm:px-6">
-        {/* Left */}
-        <div className="shrink-0">
-          <Link href="/" className="font-semibold tracking-tight text-white">
-            AMBIT
-          </Link>
-        </div>
+    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#070B18]/70 backdrop-blur">
+      <div className={`${WRAP} flex h-16 items-center justify-between`}>
+        <Link href="/" className="inline-flex items-center gap-2">
+          <span className="rounded-xl border border-white/10 bg-white/5 p-2">
+            <AmbitMark size={22} />
+          </span>
+          <span className="text-sm font-semibold text-white/90">AMBIT</span>
+        </Link>
 
-        {/* Center (desktop) */}
-        <nav className="hidden flex-1 items-center justify-center gap-8 md:flex">
-          <Link href="/preview/residential" className={NAV_LINK}>
-            Residential
-          </Link>
-          <Link href="/preview/commercial" className={NAV_LINK}>
-            Commercial
-          </Link>
-          <Link href="/preview/government" className={NAV_LINK}>
-            Government
-          </Link>
-          <Link href="/pricing" className={NAV_LINK}>
-            Pricing
-          </Link>
-        </nav>
-
-        {/* Right */}
-        <div className="ml-auto flex shrink-0 items-center gap-2 sm:gap-3">
-          <Link href="/login" className={GHOST_BTN}>
-            <span className="sm:hidden">Login</span>
-            <span className="hidden sm:inline">Log In</span>
-          </Link>
-
-          {/* Primary CTA */}
-          <Link href="/get-started" className={PRIMARY_BTN}>
-            Sign Up
-          </Link>
-        </div>
+        {isLanding ? (
+          // ✅ Landing: remove header links, keep login small, CTA dominant
+          <nav className="flex items-center gap-4">
+            <Link href="/login" className={LINK}>
+              Log in
+            </Link>
+            <Link href="/get-started" className={CTA}>
+              See My Matches — It’s Free
+            </Link>
+          </nav>
+        ) : (
+          // Other pages: keep a simple, non-distracting nav
+          <nav className="flex items-center gap-4">
+            <Link href="/live-opportunities" className={LINK}>
+              Live Leads
+            </Link>
+            <Link href="/testimonials" className={LINK}>
+              Reviews
+            </Link>
+            <Link href="/login" className={LINK}>
+              Log in
+            </Link>
+            <Link href="/get-started" className={CTA}>
+              Get started
+            </Link>
+          </nav>
+        )}
       </div>
-
-      {/* Mobile segmented nav */}
-      <nav className="mx-auto flex w-full max-w-7xl items-center gap-2 overflow-x-auto px-3 pb-3 md:hidden sm:px-6">
-        <div className="flex w-max items-center gap-2 whitespace-nowrap">
-          <Link
-            href="/preview/residential"
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-          >
-            Residential
-          </Link>
-          <Link
-            href="/preview/commercial"
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-          >
-            Commercial
-          </Link>
-          <Link
-            href="/preview/government"
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-          >
-            Government
-          </Link>
-          <Link
-            href="/pricing"
-            className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/80 hover:bg-white/10 hover:text-white"
-          >
-            Pricing
-          </Link>
-        </div>
-      </nav>
     </header>
   );
 }
