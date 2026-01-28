@@ -28,8 +28,44 @@ const INTENTS: Array<{
   { key: "government", label: "Government" },
 ];
 
+type Trade = "GC" | "Plumbing" | "Landscaping";
+
+function defaultTradeForIntent(intent: IntentKey): Trade {
+  // sensible defaults (you can tweak later)
+  if (intent === "residential") return "Plumbing";
+  if (intent === "commercial") return "GC";
+  return "GC";
+}
+
+function uniqueTokens(list: string[]) {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of list) {
+    const t = String(raw || "").trim().replace(/\s+/g, " ");
+    if (!t) continue;
+    const k = t.toLowerCase();
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(t);
+  }
+  return out;
+}
+
+function buildKeywordsString(tokens: string[]) {
+  return uniqueTokens(tokens).join(", ");
+}
+
+const KEYWORD_PRESETS: Record<IntentKey, string[]> = {
+  residential: ["Leak repair", "Water heater", "Drain cleanout", "Repipe", "Toilet install"],
+  commercial: ["Preventative maintenance", "Tenant improvement", "Concrete", "Paving", "Electrical"],
+  government: ["RFP", "On-call", "IDIQ", "Facilities", "Maintenance"],
+};
+
 export default function HomePage() {
   const [intent, setIntent] = useState<IntentKey>("residential");
+
+  // Lightweight “smart chips” just for passing to /get-started
+  const [chipKeywords, setChipKeywords] = useState<string[]>(() => []);
 
   const heroPill = useMemo(() => {
     if (intent === "commercial") return "Live commercial matches";
@@ -41,9 +77,24 @@ export default function HomePage() {
     return "Verified contracts delivered to your inbox daily. View current matches below.";
   }, []);
 
+  const trade = useMemo(() => defaultTradeForIntent(intent), [intent]);
+
   const ctaHref = useMemo(() => {
-    return `/get-started?intent=${encodeURIComponent(intent)}`;
-  }, [intent]);
+    // We pass what GetStartedClient understands:
+    // trade, market, keywords, area (optional)
+    const params = new URLSearchParams();
+    params.set("trade", trade);
+    params.set("market", intent);
+
+    const kw = buildKeywordsString(
+      chipKeywords.length ? chipKeywords : KEYWORD_PRESETS[intent].slice(0, 3)
+    );
+    if (kw) params.set("keywords", kw);
+
+    return `/get-started?${params.toString()}`;
+  }, [intent, trade, chipKeywords]);
+
+  const presetChips = useMemo(() => KEYWORD_PRESETS[intent], [intent]);
 
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
@@ -91,7 +142,10 @@ export default function HomePage() {
                       <button
                         key={i.key}
                         type="button"
-                        onClick={() => setIntent(i.key)}
+                        onClick={() => {
+                          setIntent(i.key);
+                          setChipKeywords([]); // reset per intent so chips stay relevant
+                        }}
                         className={[
                           TOGGLE_BTN,
                           "min-w-[160px]",
@@ -105,6 +159,42 @@ export default function HomePage() {
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Keyword chips (premium + reduces typing) */}
+                <div className="mx-auto mt-4 w-full max-w-3xl">
+                  <div className="flex flex-wrap items-center justify-center gap-2">
+                    {presetChips.map((k) => {
+                      const active = chipKeywords.some((x) => x.toLowerCase() === k.toLowerCase());
+                      return (
+                        <button
+                          key={k}
+                          type="button"
+                          onClick={() => {
+                            setChipKeywords((prev) => {
+                              const exists = prev.some((x) => x.toLowerCase() === k.toLowerCase());
+                              if (exists) return prev.filter((x) => x.toLowerCase() !== k.toLowerCase());
+                              return uniqueTokens([...prev, k]).slice(0, 6);
+                            });
+                          }}
+                          className={[
+                            "rounded-full border px-3 py-1.5 text-xs font-semibold transition",
+                            active
+                              ? "border-emerald-300/35 bg-emerald-400/15 text-white"
+                              : "border-white/10 bg-white/5 text-white/70 hover:bg-white/10 hover:text-white",
+                          ].join(" ")}
+                          aria-pressed={active}
+                        >
+                          {k}
+                          {active ? <span className="ml-2 text-white/80">✓</span> : null}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="mt-2 text-center text-[11px] font-semibold text-white/45">
+                    These prefill your setup in one click. (Trade default: <span className="text-white/70">{trade}</span>)
+                  </div>
                 </div>
 
                 {/* CTA row */}
