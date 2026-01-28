@@ -159,7 +159,6 @@ export default function HomePage() {
   const heroPill = useMemo(() => intentPill(intent), [intent]);
 
   const heroSubhead = useMemo(() => {
-    // ✅ Spec copy
     return "We find, rank, and deliver high-intent jobs directly to you. See what’s waiting in your area right now.";
   }, []);
 
@@ -201,12 +200,10 @@ export default function HomePage() {
                   {heroPill}
                 </div>
 
-                {/* ✅ Spec headline */}
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
                   Stop chasing leads. Start winning contracts.
                 </h1>
 
-                {/* ✅ Spec subhead */}
                 <p className="mx-auto mt-3 max-w-3xl text-sm text-white/70 sm:text-base">
                   {heroSubhead}
                 </p>
@@ -241,15 +238,15 @@ export default function HomePage() {
                     See My Matches — It’s Free
                   </Link>
 
-                  <Link href="/live-opportunities" className={LINK}>
-                    View Live Leads →
+                  {/* ✅ Changed from Live Leads -> Reviews */}
+                  <Link href="/testimonials" className={LINK}>
+                    Reviews →
                   </Link>
                 </div>
 
-                {/* ✅ Microtext near CTA */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">No credit card required.</p>
 
-                {/* ✅ Trust badges MOVED: directly under CTA/microtext (before preview) */}
+                {/* Trust badges */}
                 <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     Verified buyers
@@ -262,7 +259,6 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                {/* ✅ Mutating helper line */}
                 <p className="mt-3 text-xs text-white/55">{proofLine}</p>
               </div>
 
