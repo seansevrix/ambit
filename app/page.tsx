@@ -31,7 +31,6 @@ const INTENTS: Array<{
 type Trade = "GC" | "Plumbing" | "Landscaping";
 
 function defaultTradeForIntent(intent: IntentKey): Trade {
-  // sensible defaults (you can tweak later)
   if (intent === "residential") return "Plumbing";
   if (intent === "commercial") return "GC";
   return "GC";
@@ -56,35 +55,59 @@ function buildKeywordsString(tokens: string[]) {
 }
 
 const KEYWORD_PRESETS: Record<IntentKey, string[]> = {
-  residential: ["Leak repair", "Water heater", "Drain cleanout", "Repipe", "Toilet install"],
+  residential: ["Leak repair", "Water heater", "Drain cleanout", "Toilet install", "Repipe"],
   commercial: ["Preventative maintenance", "Tenant improvement", "Concrete", "Paving", "Electrical"],
-  government: ["RFP", "On-call", "IDIQ", "Facilities", "Maintenance"],
+  government: ["Facilities", "Maintenance", "On-call", "RFP", "IDIQ"],
 };
+
+function intentCopy(intent: IntentKey) {
+  if (intent === "commercial") {
+    return {
+      pill: "Live commercial matches",
+      proofTitle: "Proof that feels real — commercial",
+      proofNote:
+        "Examples of what matched opportunities + faster response can do for facilities + businesses.",
+      testimonialsTitle: "Commercial teams are moving faster with AMBIT.",
+    };
+  }
+  if (intent === "government") {
+    return {
+      pill: "Live government matches",
+      proofTitle: "Proof that feels real — government",
+      proofNote:
+        "Illustrative examples of matched bids + faster response cycles. Results vary by agency + NAICS.",
+      testimonialsTitle: "Gov-focused contractors are seeing cleaner bid pipelines.",
+    };
+  }
+  return {
+    pill: "Live residential matches",
+    proofTitle: "Proof that feels real — residential",
+    proofNote:
+      "Illustrative examples of better-fit homeowner jobs + faster response. Results vary by area + trade.",
+    testimonialsTitle: "Home-service pros are landing better jobs with AMBIT.",
+  };
+}
 
 export default function HomePage() {
   const [intent, setIntent] = useState<IntentKey>("residential");
-
-  // Lightweight “smart chips” just for passing to /get-started
   const [chipKeywords, setChipKeywords] = useState<string[]>(() => []);
 
-  const heroPill = useMemo(() => {
-    if (intent === "commercial") return "Live commercial matches";
-    if (intent === "government") return "Live government matches";
-    return "Live residential matches";
-  }, [intent]);
+  const trade = useMemo(() => defaultTradeForIntent(intent), [intent]);
+  const copy = useMemo(() => intentCopy(intent), [intent]);
 
+  // ✅ Subhead EXACT from your spec
   const heroSubhead = useMemo(() => {
-    return "Verified contracts delivered to your inbox daily. View current matches below.";
+    return "We find, rank, and deliver high-intent jobs directly to you. See what’s waiting in your area right now.";
   }, []);
 
-  const trade = useMemo(() => defaultTradeForIntent(intent), [intent]);
-
+  // ✅ Pass selection into /get-started as query params
+  // We include BOTH intent + market (market matches what your GetStartedClient expects),
+  // plus trade + optional keywords.
   const ctaHref = useMemo(() => {
-    // We pass what GetStartedClient understands:
-    // trade, market, keywords, area (optional)
     const params = new URLSearchParams();
-    params.set("trade", trade);
+    params.set("intent", intent);
     params.set("market", intent);
+    params.set("trade", trade);
 
     const kw = buildKeywordsString(
       chipKeywords.length ? chipKeywords : KEYWORD_PRESETS[intent].slice(0, 3)
@@ -98,7 +121,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
-      {/* Global background glow + subtle grid */}
+      {/* Global background glow + subtle grid (A: background depth) */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
@@ -123,7 +146,7 @@ export default function HomePage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
-                  {heroPill}
+                  {copy.pill}
                 </div>
 
                 {/* HERO HEADLINE */}
@@ -131,10 +154,10 @@ export default function HomePage() {
                   Stop chasing leads. Start winning contracts.
                 </h1>
 
-                {/* Punchy subhead */}
+                {/* ✅ Subhead updated */}
                 <p className="mt-3 text-sm text-white/70 sm:text-base">{heroSubhead}</p>
 
-                {/* Intent selector (no extra sublabels) */}
+                {/* Intent selector */}
                 <div className="mx-auto mt-6 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:justify-center">
                   {INTENTS.map((i) => {
                     const active = i.key === intent;
@@ -144,7 +167,7 @@ export default function HomePage() {
                         type="button"
                         onClick={() => {
                           setIntent(i.key);
-                          setChipKeywords([]); // reset per intent so chips stay relevant
+                          setChipKeywords([]); // keep chips relevant
                         }}
                         className={[
                           TOGGLE_BTN,
@@ -161,7 +184,7 @@ export default function HomePage() {
                   })}
                 </div>
 
-                {/* Keyword chips (premium + reduces typing) */}
+                {/* Chips */}
                 <div className="mx-auto mt-4 w-full max-w-3xl">
                   <div className="flex flex-wrap items-center justify-center gap-2">
                     {presetChips.map((k) => {
@@ -191,28 +214,31 @@ export default function HomePage() {
                       );
                     })}
                   </div>
-
-                  <div className="mt-2 text-center text-[11px] font-semibold text-white/45">
-                    These prefill your setup in one click. (Trade default: <span className="text-white/70">{trade}</span>)
-                  </div>
                 </div>
 
                 {/* CTA row */}
-                <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
-                    See My Matches — It’s Free
-                  </Link>
+                <div className="mt-6 flex flex-col items-center justify-center gap-2 sm:flex-row sm:gap-3">
+                  <div className="flex flex-col items-center gap-2">
+                    <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
+                      See My Matches — It’s Free
+                    </Link>
+
+                    {/* ✅ Microtext near CTA */}
+                    <div className="text-xs font-semibold text-white/70">
+                      No credit card required
+                    </div>
+                  </div>
 
                   <Link href="/live-opportunities" className={LINK}>
                     View Live Leads →
                   </Link>
                 </div>
 
-                {/* Clean value stack */}
-                <p className="mt-3 text-xs text-white/65 sm:text-sm">
-                  <span className="font-semibold text-white/85">7-day free trial</span>
-                  <span className="mx-2 text-white/35">•</span>
-                  No credit card required.
+                {/* Small value stack (keep, but not redundant) */}
+                <p className="mt-3 text-xs text-white/55 sm:text-sm">
+                  <span className="font-semibold text-white/80">7-day free trial</span>
+                  <span className="mx-2 text-white/30">•</span>
+                  Cancel anytime.
                 </p>
               </div>
 
@@ -221,11 +247,11 @@ export default function HomePage() {
                 <ConciergeLeadCapture />
               </div>
 
-              {/* Second-wave social proof */}
+              {/* Trust badges (A: keep clean; C later can reposition/upgrade) */}
               <div className="mx-auto mt-5 max-w-6xl">
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    Trusted by 200+ clients
+                    Verified sources
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     Secure Data
@@ -236,12 +262,19 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* PROOF DASHBOARD */}
+              {/* PROOF DASHBOARD (A: section mutates via headers) */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
+                <div className="mb-4 text-center">
+                  <h2 className="text-xl font-semibold tracking-tight text-white sm:text-2xl">
+                    {copy.proofTitle}
+                  </h2>
+                  <p className="mt-2 text-sm text-white/65">{copy.proofNote}</p>
+                </div>
+
                 <ProofDashboard />
               </div>
 
-              {/* TESTIMONIALS */}
+              {/* TESTIMONIALS (A: section mutates via headers) */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -250,7 +283,7 @@ export default function HomePage() {
                     </div>
 
                     <h2 className="mt-3 text-xl font-semibold tracking-tight text-white sm:text-2xl">
-                      Real contractors. Real results.
+                      {copy.testimonialsTitle}
                     </h2>
 
                     <p className="mt-2 max-w-2xl text-sm text-white/70">
