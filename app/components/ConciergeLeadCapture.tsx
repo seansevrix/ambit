@@ -93,7 +93,6 @@ async function postJson(url: string, body: any) {
 function MatchPill({ score }: { score: number }) {
   return (
     <div className="relative shrink-0">
-      {/* subtle “live” pulse ring */}
       <div className="pointer-events-none absolute inset-0 -m-1 rounded-2xl bg-white/30 blur-md opacity-60" />
       <div className="pointer-events-none absolute inset-0 rounded-2xl ring-2 ring-white/40 animate-pulse" />
 
@@ -143,7 +142,7 @@ function SampleCard({
             <span className={cx("rounded-full border px-2 py-0.5 font-semibold", badge)}>
               {market}
             </span>
-            <span className="text-slate-500">• {source}</span>
+            {/* removed: small grey descriptor "• {source}" */}
           </div>
 
           <div className="mt-1 truncate text-sm font-semibold text-slate-900">{title}</div>
@@ -199,7 +198,7 @@ export default function ConciergeLeadCapture() {
     if (!loc) return setError("Service area is required.");
     if (!kw) return setError("Keywords are required. (Comma-separated is fine.)");
 
-    // ✅ NAICS REQUIRED
+    // NAICS required
     if (!naicsCodes.length) {
       return setError("NAICS is required — essential for high-quality matching.");
     }
@@ -285,7 +284,7 @@ export default function ConciergeLeadCapture() {
               <input
                 value={keywordText}
                 onChange={(e) => setKeywordText(e.target.value)}
-                placeholder="Think services + equipment + materials (ex: asphalt, striping, concrete)"
+                placeholder="e.g., Roofing, HVAC, Paving"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
             </div>
@@ -299,7 +298,7 @@ export default function ConciergeLeadCapture() {
               <input
                 value={naicsInput}
                 onChange={(e) => setNaicsInput(e.target.value)}
-                placeholder="237310, 238220, 561730"
+                placeholder="e.g., 238160"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
               <div className="mt-2 text-[11px] text-white/55">
