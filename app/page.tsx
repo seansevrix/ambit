@@ -138,12 +138,12 @@ export default function HomePage() {
                 <p className="mt-2 text-xs text-white/55">{proofLine}</p>
               </div>
 
-              {/* SIGNUP / PREVIEW */}
+              {/* ✅ “Show me the goods” — higher than proof tiles */}
               <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
                 <ConciergeLeadCapture />
               </div>
 
-              {/* Second-wave social proof near CTA (small grayscale badges) */}
+              {/* Trust badges near CTA */}
               <div className="mx-auto mt-5 max-w-6xl">
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
@@ -158,12 +158,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* PROOF DASHBOARD (intent-aware) */}
-              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
-                <ProofDashboard intent={intent} />
-              </div>
-
-              {/* TESTIMONIALS */}
+              {/* TESTIMONIALS (before dashboard to keep “goods” momentum) */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
@@ -272,6 +267,17 @@ export default function HomePage() {
                   Testimonials are real feedback. Results vary by trade, service area, and response
                   time.
                 </p>
+              </div>
+
+              {/* ✅ Proof Dashboard moved AFTER “goods” + testimonials */}
+              <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="text-xs font-semibold text-white/70">PROOF DASHBOARD</div>
+                  <div className="text-xs text-white/45">Illustrative preview</div>
+                </div>
+
+                {/* NOTE: only keep this prop if ProofDashboard supports it */}
+                <ProofDashboard intent={intent} />
               </div>
             </div>
           </section>
