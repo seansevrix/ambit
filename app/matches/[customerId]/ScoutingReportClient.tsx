@@ -19,7 +19,6 @@ type Match = {
   reasons: string[];
   profileIncomplete: boolean;
 
-  // optional debug/meta from backend
   nearby?: boolean | null;
   customerState?: string | null;
   oppState?: string | null;
@@ -69,58 +68,57 @@ const PRICE_ALL = 59.99;
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-// UI: state name -> abbreviation (fallback)
 const STATE_NAME_TO_CODE: Record<string, string> = {
-  "alabama": "AL",
-  "alaska": "AK",
-  "arizona": "AZ",
-  "arkansas": "AR",
-  "california": "CA",
-  "colorado": "CO",
-  "connecticut": "CT",
-  "delaware": "DE",
-  "florida": "FL",
-  "georgia": "GA",
-  "hawaii": "HI",
-  "idaho": "ID",
-  "illinois": "IL",
-  "indiana": "IN",
-  "iowa": "IA",
-  "kansas": "KS",
-  "kentucky": "KY",
-  "louisiana": "LA",
-  "maine": "ME",
-  "maryland": "MD",
-  "massachusetts": "MA",
-  "michigan": "MI",
-  "minnesota": "MN",
-  "mississippi": "MS",
-  "missouri": "MO",
-  "montana": "MT",
-  "nebraska": "NE",
-  "nevada": "NV",
+  alabama: "AL",
+  alaska: "AK",
+  arizona: "AZ",
+  arkansas: "AR",
+  california: "CA",
+  colorado: "CO",
+  connecticut: "CT",
+  delaware: "DE",
+  florida: "FL",
+  georgia: "GA",
+  hawaii: "HI",
+  idaho: "ID",
+  illinois: "IL",
+  indiana: "IN",
+  iowa: "IA",
+  kansas: "KS",
+  kentucky: "KY",
+  louisiana: "LA",
+  maine: "ME",
+  maryland: "MD",
+  massachusetts: "MA",
+  michigan: "MI",
+  minnesota: "MN",
+  mississippi: "MS",
+  missouri: "MO",
+  montana: "MT",
+  nebraska: "NE",
+  nevada: "NV",
   "new hampshire": "NH",
   "new jersey": "NJ",
   "new mexico": "NM",
   "new york": "NY",
   "north carolina": "NC",
   "north dakota": "ND",
-  "ohio": "OH",
-  "oklahoma": "OK",
-  "oregon": "OR",
-  "pennsylvania": "PA",
+  ohio: "OH",
+  oklahoma: "OK",
+  oregon: "OR",
+  pennsylvania: "PA",
   "rhode island": "RI",
   "south carolina": "SC",
   "south dakota": "SD",
-  "tennessee": "TN",
-  "texas": "TX",
-  "utah": "UT",
-  "vermont": "VT",
-  "virginia": "VA",
-  "washington": "WA",
+  tennessee: "TN",
+  texas: "TX",
+  utah: "UT",
+  vermont: "VT",
+  virginia: "VA",
+  washington: "WA",
   "west virginia": "WV",
-  "wisconsin": "WI",
-  "wyoming": "WY",
+  wisconsin: "WI",
+  wyoming: "WY",
   "district of columbia": "DC",
 };
 
@@ -150,7 +148,6 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
   const [q, setQ] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("score");
 
-  // ✅ Plan selection (read from localStorage if available)
   const [plan, setPlan] = useState<PlanTier>(() => {
     if (typeof window === "undefined") return "single";
     try {
@@ -161,14 +158,12 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     }
   });
 
-  // ✅ Persist plan changes
   useEffect(() => {
     try {
       localStorage.setItem("ambit_plan", plan);
     } catch {}
   }, [plan]);
 
-  // Pagination / Load more
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   // Starred (localStorage)
@@ -395,13 +390,11 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
     return list;
   }, [filtered, sortKey, customerLoc]);
 
-  // Apply "Starred only" filter AFTER sorting/searching
   const finalList = useMemo(() => {
     if (!starredOnly) return sorted;
     return sorted.filter((m) => starred.has(m.id));
   }, [sorted, starredOnly, starred]);
 
-  // Reset pagination when list inputs change
   useEffect(() => {
     setVisibleCount(PAGE_SIZE);
   }, [q, sortKey, starredOnly, data?.matches?.length]);
@@ -416,28 +409,33 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
       ? "Track government + commercial + residential."
       : "Track 1 lead type (choose 1 segment).";
 
-  const showTrialBar = !loading && !needsSub && !isActive && !!trialEndsAt;
+  const showTrialPill = !loading && !needsSub && !isActive && !!trialEndsAt;
 
   return (
     <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
-      {/* Trial status bar */}
-      {showTrialBar ? (
-        <div className="mb-6 rounded-2xl border border-blue-400/25 bg-blue-500/10 px-4 py-3 text-white">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm">
-              <span className="font-semibold">Free trial</span>{" "}
+      {/* Top: lightweight status + actions */}
+      <div className="flex flex-col gap-4">
+        {/* Trial pill (lighter, less “dashboard”) */}
+        {showTrialPill ? (
+          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2 text-sm text-white/80">
+              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
+                Free trial
+              </span>
+
               {typeof daysLeft === "number" ? (
-                <span className="text-white/80">
-                  ends in <span className="font-semibold">{Math.max(daysLeft, 0)}</span>{" "}
+                <span>
+                  Ends in{" "}
+                  <span className="font-semibold text-white">{Math.max(daysLeft, 0)}</span>{" "}
                   {Math.max(daysLeft, 0) === 1 ? "day" : "days"}
                 </span>
               ) : (
-                <span className="text-white/80">active</span>
+                <span>Active</span>
               )}
-              <span className="mx-2 opacity-40">•</span>
-              <span className="text-white/80">
-                After trial, email delivery pauses until you upgrade.
-              </span>
+
+              <span className="opacity-40">•</span>
+              <span className="text-white/60">After trial, email delivery pauses until you upgrade.</span>
             </div>
 
             <div className="flex flex-wrap gap-2">
@@ -445,109 +443,110 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                 onClick={startCheckout}
                 className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/90"
               >
-                Upgrade now
+                Upgrade
               </button>
               <button
                 onClick={load}
-                className="rounded-xl border border-white/20 bg-white/5 px-4 py-2 text-sm font-semibold text-white/90 hover:bg-white/10"
+                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
               >
                 Refresh
               </button>
             </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-        <div className="min-w-0">
-          <div className="text-xs font-semibold tracking-wide text-white/60">AMBIT</div>
-          <h1 className="mt-1 text-2xl font-semibold text-white">Opportunity matches</h1>
-          <div className="mt-1 text-sm text-white/60">
-            Your company portal — ranked opportunities tailored to your profile.
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2">
-          <ProfileEditor
-            customerId={customerId}
-            onSaved={() => {
-              window.location.reload();
-            }}
-          />
-
-          <button
-            onClick={load}
-            className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-          >
-            Refresh
-          </button>
-          <button
-            onClick={() => (window.location.href = "/")}
-            className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-          >
-            Back home
-          </button>
-        </div>
-      </div>
-
-      {/* Search + Sort + Starred */}
-      <div className="mt-5 grid gap-3 md:grid-cols-3 md:items-end">
-        <div className="md:col-span-2">
-          <input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search by location, NAICS, agency, or keywords…"
-            className="w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-          />
-          <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/50">
-            <span>Tip: search filters live (no page reload).</span>
-            <span className="tabular-nums">
-              Starred: <span className="font-semibold text-white/80">{starred.size}</span>
-            </span>
-          </div>
-        </div>
-
-        <div className="grid gap-3">
-          <div>
-            <label className="block text-xs font-semibold text-white/60">Sort</label>
-            <select
-              value={sortKey}
-              onChange={(e) => setSortKey(e.target.value as SortKey)}
-              className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/35 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-            >
-              <option value="score">Highest score</option>
-              <option value="newest">Newest posted</option>
-              <option value="closest">Closest location</option>
-            </select>
-
-            {sortKey === "closest" && !customerLoc?.state ? (
-              <div className="mt-2 text-xs text-white/45">
-                Closest is best-effort (needs saved service area — use Edit profile).
-              </div>
-            ) : null}
+        {/* Header */}
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="min-w-0">
+            <div className="text-xs font-semibold tracking-wide text-white/50">AMBIT</div>
+            <h1 className="mt-1 text-3xl font-semibold text-white">Opportunity matches</h1>
+            <div className="mt-1 text-sm text-white/60">
+              Ranked opportunities tailored to your profile.
+            </div>
           </div>
 
-          <label className="flex items-center gap-2 text-sm text-white/70">
-            <input
-              type="checkbox"
-              checked={starredOnly}
-              onChange={(e) => setStarredOnly(e.target.checked)}
-              className="h-4 w-4 rounded border-white/20 bg-black/30"
+          <div className="flex flex-wrap gap-2">
+            <ProfileEditor
+              customerId={customerId}
+              onSaved={() => {
+                window.location.reload();
+              }}
             />
-            Show starred only
-          </label>
+
+            <button
+              onClick={load}
+              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+            >
+              Refresh
+            </button>
+
+            <button
+              onClick={() => (window.location.href = "/")}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+              Back home
+            </button>
+          </div>
+        </div>
+
+        {/* Controls (quieter) */}
+        <div className="mt-2 grid gap-3 md:grid-cols-3 md:items-end">
+          <div className="md:col-span-2">
+            <input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search by title, location, NAICS, agency, keywords…"
+              className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+            />
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/45">
+              <span>Filters update instantly.</span>
+              <span className="tabular-nums">
+                Starred: <span className="font-semibold text-white/80">{starred.size}</span>
+              </span>
+            </div>
+          </div>
+
+          <div className="grid gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-white/50">Sort</label>
+              <select
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as SortKey)}
+                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
+              >
+                <option value="score">Highest score</option>
+                <option value="newest">Newest posted</option>
+                <option value="closest">Closest location</option>
+              </select>
+
+              {sortKey === "closest" && !customerLoc?.state ? (
+                <div className="mt-2 text-xs text-white/40">
+                  Closest is best-effort (needs a saved service area — use Edit profile).
+                </div>
+              ) : null}
+            </div>
+
+            <label className="flex items-center gap-2 text-sm text-white/65">
+              <input
+                type="checkbox"
+                checked={starredOnly}
+                onChange={(e) => setStarredOnly(e.target.checked)}
+                className="h-4 w-4 rounded border-white/20 bg-black/30"
+              />
+              Show starred only
+            </label>
+          </div>
         </div>
       </div>
 
       {/* States */}
       {loading ? (
-        <Panel>
+        <InfoPanel>
           <div className="text-sm text-white/70">Loading matches…</div>
-        </Panel>
+        </InfoPanel>
       ) : needsSub ? (
-        <Panel>
-          <div className="text-xs font-semibold text-white/60">TRIAL ENDED / SUBSCRIPTION</div>
+        <InfoPanel>
+          <div className="text-xs font-semibold text-white/50">TRIAL ENDED / SUBSCRIPTION</div>
           <div className="mt-2 text-2xl font-semibold text-white">Your matches are waiting</div>
           <div className="mt-2 max-w-2xl text-sm text-white/70">
             Your free trial has ended, so daily email delivery is paused. Upgrade to resume daily
@@ -556,7 +555,9 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
 
           <div className="mt-2 text-xs text-white/45">
             {trialEndedAt ? (
-              <>Trial ended: <span className="text-white/70">{formatDate(trialEndedAt)}</span></>
+              <>
+                Trial ended: <span className="text-white/70">{formatDate(trialEndedAt)}</span>
+              </>
             ) : null}
             {subStatus ? (
               <>
@@ -581,9 +582,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
                 <div className="text-sm font-semibold text-white">Single market</div>
                 <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
               </div>
-              <div className="mt-1 text-sm text-white/70">
-                Track 1 lead type (choose 1 segment).
-              </div>
+              <div className="mt-1 text-sm text-white/70">Track 1 lead type (choose 1 segment).</div>
             </button>
 
             <button
@@ -641,9 +640,9 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
               {errMsg}
             </div>
           ) : null}
-        </Panel>
+        </InfoPanel>
       ) : !data ? (
-        <Panel>
+        <InfoPanel>
           <div className="text-sm font-semibold text-white">Couldn’t load matches</div>
           <div className="mt-1 text-sm text-white/70">{errMsg || "Unknown error"}</div>
           <button
@@ -652,9 +651,9 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
           >
             Refresh
           </button>
-        </Panel>
+        </InfoPanel>
       ) : !finalList.length ? (
-        <Panel>
+        <InfoPanel>
           <div className="text-sm font-semibold text-white">
             {starredOnly ? "No starred matches yet" : "No matches found"}
           </div>
@@ -680,96 +679,123 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
               </button>
             ) : null}
           </div>
-        </Panel>
+        </InfoPanel>
       ) : (
-        <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur overflow-hidden">
+        <div className="mt-8">
+          {/* Feed header (lighter) */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-sm font-semibold text-white">
               {starredOnly ? "Starred matches" : "Matches"}
             </div>
-
             <div className="text-xs text-white/50 tabular-nums">
               Showing <span className="font-semibold text-white/80">{visible.length}</span> of{" "}
               <span className="font-semibold text-white/80">{finalList.length}</span>
             </div>
           </div>
 
+          {/* Cards feed */}
           <div className="mt-4 grid gap-3">
             {visible.map((m) => {
               const isStarred = starred.has(m.id);
               const prettyLocation = m.location ? abbreviateState(m.location) : "—";
+              const score = clampScore(m.score);
+
+              const scoreTone =
+                score >= 100
+                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
+                  : score >= 95
+                  ? "border-blue-400/25 bg-blue-500/10 text-blue-100"
+                  : "border-white/12 bg-white/5 text-white/85";
+
+              const cardGlow =
+                score >= 100
+                  ? "hover:border-emerald-400/35 hover:bg-emerald-500/10"
+                  : "hover:border-white/20 hover:bg-white/7";
 
               return (
                 <div
                   key={m.id}
-                  className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 overflow-hidden"
+                  className={`group rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition ${cardGlow}`}
                 >
                   <div className="flex items-start justify-between gap-3">
+                    {/* Left: primary info */}
                     <div className="min-w-0">
                       <div
-                        className="text-sm font-semibold text-white leading-snug break-words"
+                        className="text-base font-semibold text-white leading-snug break-words"
                         title={m.title}
                       >
                         {m.title}
                       </div>
 
-                      <div className="mt-1 text-xs text-white/60 break-words">
-                        <span className="uppercase tracking-wide">{m.agency || "Unknown agency"}</span>
-                        <span className="mx-2 opacity-40">•</span>
-                        <span>{prettyLocation}</span>
-                        <span className="mx-2 opacity-40">•</span>
-                        <span>NAICS {m.naics || "—"}</span>
-                        <span className="mx-2 opacity-40">•</span>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
+                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
+                          {prettyLocation}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
+                          {m.agency || "Unknown agency"}
+                        </span>
+                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
+                          NAICS {m.naics || "—"}
+                        </span>
+                        <span className="opacity-40">•</span>
                         <span>Posted {formatDate(m.postedDate)}</span>
                         {m.dueDate ? (
                           <>
-                            <span className="mx-2 opacity-40">•</span>
+                            <span className="opacity-40">•</span>
                             <span>Due {formatDate(m.dueDate)}</span>
                           </>
                         ) : null}
                       </div>
+
+                      {m.summary ? (
+                        <div className="mt-3 text-sm text-white/70 break-words leading-relaxed">
+                          {m.summary}
+                        </div>
+                      ) : null}
                     </div>
 
+                    {/* Right: decision + actions */}
                     <div className="flex shrink-0 items-center gap-2">
                       <button
                         onClick={() => toggleStar(m.id)}
-                        className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+                        className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
                         aria-label={isStarred ? "Unstar" : "Star"}
                         title={isStarred ? "Unstar" : "Star"}
                       >
                         {isStarred ? "★" : "☆"}
                       </button>
 
-                      <span className="rounded-full border border-white/15 bg-white/5 px-3 py-1 text-xs font-semibold text-white tabular-nums">
-                        {clampScore(m.score)}
+                      <span
+                        className={`rounded-full border px-3 py-1 text-xs font-semibold tabular-nums ${scoreTone}`}
+                        title="Match score"
+                      >
+                        {score}
                       </span>
 
                       {m.url ? (
-                        <a href={m.url} target="_blank" rel="noreferrer">
-                          <button className="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white">
-                            Source
-                          </button>
-                        </a>
-                      ) : (
-                        <button
-                          disabled
-                          className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/30"
+                        <a
+                          href={m.url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
+                          title="Open source"
                         >
                           Source
-                        </button>
+                        </a>
+                      ) : (
+                        <span className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/30">
+                          Source
+                        </span>
                       )}
                     </div>
                   </div>
-
-                  {m.summary ? (
-                    <div className="mt-3 text-sm text-white/70 break-words">{m.summary}</div>
-                  ) : null}
                 </div>
               );
             })}
           </div>
 
-          <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          {/* Footer controls */}
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-xs text-white/50">
               {canLoadMore ? "Load more to see additional matches." : "You’re all caught up."}
             </div>
@@ -807,7 +833,7 @@ export default function ScoutingReportClient({ customerId }: { customerId: numbe
 }
 
 /* UI helpers */
-function Panel({ children }: { children: React.ReactNode }) {
+function InfoPanel({ children }: { children: React.ReactNode }) {
   return (
     <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur overflow-hidden">
       {children}
