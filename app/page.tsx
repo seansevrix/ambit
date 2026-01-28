@@ -271,7 +271,7 @@ export default function HomePage() {
                   <p className="mt-2 text-sm text-white/65">{copy.proofNote}</p>
                 </div>
 
-                <ProofDashboard />
+                <ProofDashboard intent={intent}/>
               </div>
 
               {/* TESTIMONIALS (A: section mutates via headers) */}
