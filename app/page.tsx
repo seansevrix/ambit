@@ -32,31 +32,18 @@ const INTENTS: Array<{
 export default function HomePage() {
   const [intent, setIntent] = useState<IntentKey>("residential");
 
-  const heroCopy = useMemo(() => {
-    // You can tune these later. Keep it simple + believable for now.
-    if (intent === "commercial") {
-      return {
-        pill: "Live commercial matches",
-        subhead:
-          "We find, rank, and deliver high-intent commercial jobs directly to you. See what’s waiting in your area right now.",
-      };
-    }
-    if (intent === "government") {
-      return {
-        pill: "Live government matches",
-        subhead:
-          "We find, rank, and deliver high-intent bid opportunities directly to you. See what’s waiting in your area right now.",
-      };
-    }
-    return {
-      pill: "Live local matches",
-      subhead:
-        "We find, rank, and deliver high-intent residential jobs directly to you. See what’s waiting in your area right now.",
-    };
+  const heroPill = useMemo(() => {
+    if (intent === "commercial") return "Live commercial matches";
+    if (intent === "government") return "Live government matches";
+    return "Live residential matches";
   }, [intent]);
 
+  const heroSubhead = useMemo(() => {
+    // Punchy, consistent, no over-explaining.
+    return "Verified contracts delivered to your inbox daily. View current matches below.";
+  }, []);
+
   const ctaHref = useMemo(() => {
-    // We’ll use this later to prefill onboarding.
     return `/get-started?intent=${encodeURIComponent(intent)}`;
   }, [intent]);
 
@@ -87,18 +74,16 @@ export default function HomePage() {
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
                   </span>
-                  {heroCopy.pill}
+                  {heroPill}
                 </div>
 
-                {/* NEW HERO HEADLINE */}
+                {/* HERO HEADLINE */}
                 <h1 className="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl">
                   Stop chasing leads. Start winning contracts.
                 </h1>
 
-                {/* NEW SUBHEAD */}
-                <p className="mt-3 text-sm text-white/70 sm:text-base">
-                  {heroCopy.subhead}
-                </p>
+                {/* Punchy subhead */}
+                <p className="mt-3 text-sm text-white/70 sm:text-base">{heroSubhead}</p>
 
                 {/* Intent selector */}
                 <div className="mx-auto mt-6 flex w-full max-w-xl flex-col gap-2 sm:flex-row sm:justify-center">
@@ -128,11 +113,7 @@ export default function HomePage() {
 
                 {/* CTA row */}
                 <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-                  {/* HIGH-CONTRAST CTA */}
-                  <Link
-                    href={ctaHref}
-                    className={`${PRIMARY_CTA} bg-emerald-400`}
-                  >
+                  <Link href={ctaHref} className={`${PRIMARY_CTA} bg-emerald-400`}>
                     See My Matches — It’s Free
                   </Link>
 
@@ -141,19 +122,24 @@ export default function HomePage() {
                   </Link>
                 </div>
 
-                {/* Micro trust line */}
+                {/* Clean value stack (only the big hook) */}
                 <p className="mt-3 text-xs text-white/65 sm:text-sm">
                   <span className="font-semibold text-white/85">7-day free trial</span>
                   <span className="mx-2 text-white/35">•</span>
                   No credit card required
-                  <span className="mx-2 text-white/35">•</span>
-                  Trusted by 200+ clients
                 </p>
+              </div>
 
-                {/* Small trust badges (grayscale, subtle) */}
-                <div className="mt-3 flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
+              {/* SIGNUP AREA */}
+              <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
+                <ConciergeLeadCapture />
+              </div>
+
+              {/* Second-wave social proof (moved down) */}
+              <div className="mx-auto mt-5 max-w-6xl">
+                <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-white/55">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
-                    Verified Homeowners
+                    Trusted by 200+ clients
                   </span>
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1">
                     Secure Data
@@ -164,17 +150,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* SIGNUP AREA (first) */}
-              <div id="preview" className="mx-auto mt-8 max-w-6xl sm:mt-10">
-                <ConciergeLeadCapture />
-              </div>
-
-              {/* PROOF DASHBOARD (below signup) */}
+              {/* PROOF DASHBOARD */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <ProofDashboard />
               </div>
 
-              {/* TESTIMONIALS (below graphs) */}
+              {/* TESTIMONIALS */}
               <div className="mx-auto mt-10 max-w-6xl sm:mt-12">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                   <div>
