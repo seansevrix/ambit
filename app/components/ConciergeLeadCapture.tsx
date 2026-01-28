@@ -116,7 +116,9 @@ function MatchPill({ score }: { score: number }) {
 
       <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)] transition">
         <div className="text-[11px] font-semibold text-slate-500">Match</div>
-        <div className="text-xl font-extrabold tracking-tight text-slate-900">{score}</div>
+        <div className="text-xl font-extrabold tracking-tight text-slate-900">
+          {score}
+        </div>
       </div>
     </div>
   );
@@ -131,12 +133,22 @@ function MarketIcon({ market }: { market: string }) {
     <span className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-slate-500">
       {m === "commercial" ? (
         // building icon
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-3.5 w-3.5"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M4 22h16v-2H4v2zm2-4h12V2H6v16zm2-2V4h8v12H8zm1-9h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
         </svg>
       ) : (
         // seal/shield icon
-        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          className="h-3.5 w-3.5"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4zm0 3.2L6 7.7V12c0 3.9 2.5 7.4 6 8 3.5-.6 6-4.1 6-8V7.7l-6-2.5z" />
         </svg>
       )}
@@ -160,6 +172,7 @@ function SampleCard({
   naics,
   value,
   buyer,
+  verified,
   score,
   accent,
 }: {
@@ -169,6 +182,7 @@ function SampleCard({
   naics: string;
   value: string;
   buyer: string;
+  verified?: boolean;
   score: number;
   accent: "blue" | "indigo" | "green";
 }) {
@@ -179,10 +193,6 @@ function SampleCard({
       ? "bg-indigo-600/10 text-indigo-700 border-indigo-600/20"
       : "bg-blue-600/10 text-blue-700 border-blue-600/20";
 
-  const isResidential = market.toLowerCase() === "residential";
-  const isCommercial = market.toLowerCase() === "commercial";
-  const isGovernment = market.toLowerCase() === "government";
-
   return (
     <div className="rounded-2xl border border-white/20 bg-white/95 p-3 shadow-sm sm:p-4">
       <div className="flex items-start justify-between gap-3">
@@ -192,17 +202,19 @@ function SampleCard({
               {market}
             </span>
 
-            {/* LIVE indicator (requested) */}
+            {/* LIVE indicator */}
             <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 font-semibold text-slate-600">
               <LiveDot />
               LIVE
             </span>
 
-            {/* Brand-ish icons for Commercial + Government (requested) */}
+            {/* Brand-ish icons for Commercial + Government */}
             <MarketIcon market={market} />
           </div>
 
-          <div className="mt-1 truncate text-sm font-semibold text-slate-900">{title}</div>
+          <div className="mt-1 truncate text-sm font-semibold text-slate-900">
+            {title}
+          </div>
           <div className="mt-1 text-xs text-slate-600">{meta}</div>
         </div>
 
@@ -217,17 +229,17 @@ function SampleCard({
           <span className="text-slate-400">Est value:</span> {value}
         </div>
 
-        {/* Buyer w/ verified check for residential (requested) */}
+        {/* Buyer w/ verified check (prop-driven) */}
         <div className="min-w-0">
           <span className="text-slate-400">Buyer:</span>{" "}
           <span className="inline-flex items-center gap-1.5">
             {buyer}
-            {isResidential ? <BlueVerifiedCheck /> : null}
+            {verified ? <BlueVerifiedCheck /> : null}
           </span>
         </div>
       </div>
 
-      {/* Blurred feed (requested) */}
+      {/* Blurred feed */}
       <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
         <div className="absolute inset-0 backdrop-blur-[6px]" />
         <div className="absolute inset-0 bg-white/35" />
@@ -428,7 +440,9 @@ export default function ConciergeLeadCapture() {
         {/* RIGHT */}
         <div className="min-w-0">
           <div className="flex items-center justify-between">
-            <div className="text-base font-semibold text-white sm:text-lg">Sample matches</div>
+            <div className="text-base font-semibold text-white sm:text-lg">
+              Sample matches
+            </div>
             <div className="text-xs text-white/60">Examples only</div>
           </div>
 
@@ -439,7 +453,8 @@ export default function ConciergeLeadCapture() {
               meta="San Diego, CA • Due in 6 days"
               naics="238160"
               value="$1.8k–$6.5k"
-              buyer="Homeowner (verified)"
+              buyer="Homeowner"
+              verified={true}
               score={86}
               accent="blue"
             />
