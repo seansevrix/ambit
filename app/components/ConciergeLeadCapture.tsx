@@ -90,6 +90,7 @@ async function postJson(url: string, body: any) {
   return { res, json };
 }
 
+/** UI bits */
 function BlueVerifiedCheck() {
   return (
     <span
@@ -116,9 +117,7 @@ function MatchPill({ score }: { score: number }) {
 
       <div className="relative rounded-2xl border border-white/30 bg-white px-3 py-2 text-center shadow-[0_10px_30px_rgba(255,255,255,0.18)] hover:shadow-[0_14px_40px_rgba(255,255,255,0.25)] transition">
         <div className="text-[11px] font-semibold text-slate-500">Match</div>
-        <div className="text-xl font-extrabold tracking-tight text-slate-900">
-          {score}
-        </div>
+        <div className="text-xl font-extrabold tracking-tight text-slate-900">{score}</div>
       </div>
     </div>
   );
@@ -126,29 +125,16 @@ function MatchPill({ score }: { score: number }) {
 
 function MarketIcon({ market }: { market: string }) {
   const m = market.toLowerCase();
-  // Only show icons for Commercial + Government (per your note)
   if (m !== "commercial" && m !== "government") return null;
 
   return (
     <span className="inline-flex items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-1.5 py-1 text-slate-500">
       {m === "commercial" ? (
-        // building icon
-        <svg
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
           <path d="M4 22h16v-2H4v2zm2-4h12V2H6v16zm2-2V4h8v12H8zm1-9h2v2H9V7zm0 4h2v2H9v-2zm0 4h2v2H9v-2zm4-8h2v2h-2V7zm0 4h2v2h-2v-2zm0 4h2v2h-2v-2z" />
         </svg>
       ) : (
-        // seal/shield icon
-        <svg
-          viewBox="0 0 24 24"
-          className="h-3.5 w-3.5"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden="true">
           <path d="M12 2l8 4v6c0 5-3.4 9.4-8 10-4.6-.6-8-5-8-10V6l8-4zm0 3.2L6 7.7V12c0 3.9 2.5 7.4 6 8 3.5-.6 6-4.1 6-8V7.7l-6-2.5z" />
         </svg>
       )}
@@ -163,6 +149,42 @@ function LiveDot() {
       <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
     </span>
   );
+}
+
+/** Helpers for “city-specific” locked line */
+function metaToCity(meta: string) {
+  // meta like: "San Diego, CA • Due in 6 days"
+  const left = String(meta || "").split("•")[0]?.trim();
+  return left || "your area";
+}
+
+/** Locked feed rows (feel live, still blurred) */
+type FeedRow = { title: string; right: string };
+function getFeedRows(market: string): FeedRow[] {
+  const m = market.toLowerCase();
+  if (m === "government") {
+    return [
+      { title: "On-call hauling + disposal (IDQ)", right: "$60k" },
+      { title: "Debris removal + trucking", right: "$18k" },
+      { title: "Recycling services + pickups", right: "$9.5k" },
+      { title: "Bulk waste pickup (events)", right: "$7k" },
+    ];
+  }
+  if (m === "commercial") {
+    return [
+      { title: "HVAC preventative maintenance", right: "$22k" },
+      { title: "Rooftop unit service + filters", right: "$6.8k" },
+      { title: "Quarterly inspections (12 mo)", right: "$4.2k" },
+      { title: "After-hours repair coverage", right: "$3.1k" },
+    ];
+  }
+  // residential
+  return [
+    { title: "Roof leak repair", right: "$1.9k" },
+    { title: "Shingle replacement", right: "$4.8k" },
+    { title: "Gutter install + cleanup", right: "$1.2k" },
+    { title: "Drywall patch + paint", right: "$850" },
+  ];
 }
 
 function SampleCard({
@@ -193,6 +215,9 @@ function SampleCard({
       ? "bg-indigo-600/10 text-indigo-700 border-indigo-600/20"
       : "bg-blue-600/10 text-blue-700 border-blue-600/20";
 
+  const city = metaToCity(meta);
+  const feed = getFeedRows(market);
+
   return (
     <div className="rounded-2xl border border-white/20 bg-white/95 p-3 shadow-sm sm:p-4">
       <div className="flex items-start justify-between gap-3">
@@ -208,13 +233,11 @@ function SampleCard({
               LIVE
             </span>
 
-            {/* Brand-ish icons for Commercial + Government */}
+            {/* Icons for Commercial + Government */}
             <MarketIcon market={market} />
           </div>
 
-          <div className="mt-1 truncate text-sm font-semibold text-slate-900">
-            {title}
-          </div>
+          <div className="mt-1 truncate text-sm font-semibold text-slate-900">{title}</div>
           <div className="mt-1 text-xs text-slate-600">{meta}</div>
         </div>
 
@@ -229,7 +252,7 @@ function SampleCard({
           <span className="text-slate-400">Est value:</span> {value}
         </div>
 
-        {/* Buyer w/ verified check (prop-driven) */}
+        {/* Buyer + verified */}
         <div className="min-w-0">
           <span className="text-slate-400">Buyer:</span>{" "}
           <span className="inline-flex items-center gap-1.5">
@@ -239,24 +262,18 @@ function SampleCard({
         </div>
       </div>
 
-      {/* Blurred feed */}
+      {/* Locked / blurred “feed” */}
       <div className="relative mt-3 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
-        <div className="absolute inset-0 backdrop-blur-[6px]" />
-        <div className="absolute inset-0 bg-white/35" />
+        <div className="absolute inset-0 backdrop-blur-[7px]" />
+        <div className="absolute inset-0 bg-white/40" />
 
         <div className="relative space-y-2 text-xs text-slate-700">
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Full Roof Replace</div>
-            <div className="text-slate-500">$18k</div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Deck Build</div>
-            <div className="text-slate-500">$7k</div>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="font-semibold">Concrete Patch + Grind</div>
-            <div className="text-slate-500">$3.2k</div>
-          </div>
+          {feed.slice(0, 4).map((r) => (
+            <div key={r.title} className="flex items-center justify-between">
+              <div className="font-semibold">{r.title}</div>
+              <div className="text-slate-500">{r.right}</div>
+            </div>
+          ))}
         </div>
 
         <div className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full border border-slate-200 bg-white/80 px-2 py-1 text-[11px] font-semibold text-slate-600">
@@ -266,8 +283,9 @@ function SampleCard({
           Locked
         </div>
 
+        {/* ✅ Spec line (city-specific) */}
         <div className="relative mt-3 text-[11px] font-semibold text-slate-600">
-          View more open opportunities in your area today.{" "}
+          View more open opportunities in <span className="text-slate-900">{city}</span> today.{" "}
           <span className="text-slate-900">Sign up to unlock.</span>
         </div>
       </div>
@@ -355,9 +373,7 @@ export default function ConciergeLeadCapture() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* LEFT */}
         <div className="min-w-0">
-          <div className="text-base font-semibold text-white sm:text-lg">
-            Start your 7-day free trial
-          </div>
+          <div className="text-base font-semibold text-white sm:text-lg">Start your 7-day free trial</div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
             {/* Email */}
@@ -409,9 +425,7 @@ export default function ConciergeLeadCapture() {
                 placeholder="e.g., 238160"
                 className="mt-2 w-full rounded-2xl border border-white/20 bg-white/90 px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:border-white/40"
               />
-              <div className="mt-2 text-[11px] text-white/55">
-                Essential for high-quality matching.
-              </div>
+              <div className="mt-2 text-[11px] text-white/55">Essential for high-quality matching.</div>
             </div>
 
             {/* CTA */}
@@ -440,9 +454,7 @@ export default function ConciergeLeadCapture() {
         {/* RIGHT */}
         <div className="min-w-0">
           <div className="flex items-center justify-between">
-            <div className="text-base font-semibold text-white sm:text-lg">
-              Sample matches
-            </div>
+            <div className="text-base font-semibold text-white sm:text-lg">Sample matches</div>
             <div className="text-xs text-white/60">Examples only</div>
           </div>
 
@@ -466,6 +478,7 @@ export default function ConciergeLeadCapture() {
               naics="238220"
               value="$18k–$55k"
               buyer="Retail Plaza Management"
+              verified={false}
               score={89}
               accent="indigo"
             />
@@ -477,6 +490,7 @@ export default function ConciergeLeadCapture() {
               naics="562111"
               value="$60k–$220k"
               buyer="City Procurement"
+              verified={false}
               score={92}
               accent="green"
             />
