@@ -44,15 +44,15 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
 function SignupSocialProof() {
   const logos = [
     {
-      src: "/landing/social/golden-state-landscapes.png",
+      src: "/landing/social/golden-state-landscapes.jpeg",
       alt: "Golden State Landscapes",
     },
     {
-      src: "/landing/social/old-dominion-plumbing.png",
+      src: "/landing/social/old-dominion-plumbing.jpeg",
       alt: "Old Dominion Plumbing Co.",
     },
     {
-      src: "/landing/social/power-mechanical.png",
+      src: "/landing/social/power-mechanical.jpeg",
       alt: "Power Mechanical",
     },
   ];
