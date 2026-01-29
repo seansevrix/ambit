@@ -18,10 +18,6 @@ function marketSub(m: Market) {
   return "Verified homeowner requests matched to your service area.";
 }
 
-// ✅ Baby-blue page background (no dark navy)
-const BG =
-  "min-h-screen bg-[#EAF3FF] text-black [background-image:linear-gradient(135deg,rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.05)_1px,transparent_1px)] [background-size:140px_140px]";
-
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
 
 function ArrowBadge() {
@@ -49,7 +45,7 @@ export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<"company" | "individual">("company");
 
-  // ✅ Force html/body background to baby blue (kills any leftover dark wrapper)
+  // ✅ Hard-force baby-blue everywhere (this hides any dark background coming from layout)
   useEffect(() => {
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBody = document.body.style.backgroundColor;
@@ -76,7 +72,14 @@ export default function HomePage() {
   const heroSubtitle = useMemo(() => marketSub(market), [market]);
 
   return (
-    <div className={BG}>
+    <div className="relative min-h-screen text-black">
+      {/* ✅ Baby-blue full-bleed background (covers any dark frame behind) */}
+      <div className="pointer-events-none fixed inset-0 -z-20 bg-[#EAF3FF]" />
+      {/* subtle pattern (light) */}
+      <div className="pointer-events-none fixed inset-0 -z-10 opacity-[0.18] [background-image:linear-gradient(135deg,rgba(0,0,0,0.12)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.12)_1px,transparent_1px)] [background-size:180px_180px]" />
+      {/* soft glow */}
+      <div className="pointer-events-none fixed inset-0 -z-10 bg-[radial-gradient(1000px_650px_at_50%_0%,rgba(92,116,255,0.16),transparent_60%)]" />
+
       <SignupModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
@@ -84,10 +87,9 @@ export default function HomePage() {
         market={market}
       />
 
-      {/* HERO (more whitespace like Malakye) */}
+      {/* HERO */}
       <section className={`${CONTAINER} pt-20 pb-16`}>
         <div className="text-center">
-          {/* ✅ Single-line headline (no forced line break) */}
           <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
             Stop hunting. Start receiving.
           </h1>
@@ -96,7 +98,6 @@ export default function HomePage() {
             Tailored for business growth.
           </p>
 
-          {/* ONE CTA */}
           <div className="mt-10 flex items-center justify-center">
             <button
               onClick={() => {
@@ -140,7 +141,6 @@ export default function HomePage() {
               </div>
 
               <div className="grid gap-7 lg:grid-cols-2">
-                {/* Left */}
                 <div className="rounded-3xl border border-black/10 bg-[#FAFAF7] p-6">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-semibold">Match opportunities</div>
@@ -154,7 +154,6 @@ export default function HomePage() {
                   </div>
                 </div>
 
-                {/* Right */}
                 <div className="rounded-3xl border border-black/10 bg-[#FAFAF7] p-6">
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-semibold">Activity & momentum</div>
@@ -175,7 +174,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRUST (light, no dark bands) */}
+      {/* TRUST */}
       <section className={`${CONTAINER} pb-20`}>
         <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur px-8 py-10 shadow-[0_22px_70px_rgba(0,0,0,0.08)]">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
@@ -205,17 +204,6 @@ export default function HomePage() {
               </div>
             </div>
           </div>
-        </div>
-
-        {/* extra “length” like Malakye */}
-        <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-          {["Partner", "Trusted", "Network", "Verified", "Secure", "Fast"].map((x) => (
-            <div
-              key={x}
-              className="h-10 w-24 rounded-full border border-black/10 bg-white shadow-sm"
-              title={x}
-            />
-          ))}
         </div>
       </section>
 
@@ -261,20 +249,6 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* extra “copy band” to lengthen like Malakye */}
-        <div className="mt-14 rounded-3xl border border-black/10 bg-white px-8 py-10 shadow-[0_18px_60px_rgba(0,0,0,0.08)]">
-          <div className="grid gap-10 lg:grid-cols-2">
-            <div>
-              <div className="text-xs font-semibold tracking-widest text-black/50">THE DIFFERENCE</div>
-              <div className="mt-3 text-3xl font-black">A clean signal — not a noisy feed.</div>
-            </div>
-            <div className="text-black/70">
-              AMBIT is designed to reduce uncertainty. Clear summaries, clear fit, clear next steps —
-              so you can move quickly without guessing.
-            </div>
-          </div>
-        </div>
       </section>
 
       {/* TESTIMONIALS */}
@@ -296,36 +270,12 @@ export default function HomePage() {
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {[
-            {
-              name: "Sarah K.",
-              role: "Janitorial • Florida",
-              quote: "Setup was simple. The organization alone saved us hours every week.",
-            },
-            {
-              name: "Mark T.",
-              role: "Plumbing • California",
-              quote: "It’s clean. It’s fast. We know what to look at first.",
-            },
-            {
-              name: "Tanya W.",
-              role: "Home Services • Colorado",
-              quote: "Feels like we finally have a system instead of chaos.",
-            },
-            {
-              name: "David C.",
-              role: "Ops • Nevada",
-              quote: "We stopped wasting time digging. The summaries are the win.",
-            },
-            {
-              name: "Ariana M.",
-              role: "Facilities • Arizona",
-              quote: "It filters noise and highlights what matters. That’s the whole game.",
-            },
-            {
-              name: "Jordan S.",
-              role: "HVAC • Texas",
-              quote: "Match quality improved quickly once we tightened our keywords.",
-            },
+            { name: "Sarah K.", role: "Janitorial • Florida", quote: "Setup was simple. The organization alone saved us hours every week." },
+            { name: "Mark T.", role: "Plumbing • California", quote: "It’s clean. It’s fast. We know what to look at first." },
+            { name: "Tanya W.", role: "Home Services • Colorado", quote: "Feels like we finally have a system instead of chaos." },
+            { name: "David C.", role: "Ops • Nevada", quote: "We stopped wasting time digging. The summaries are the win." },
+            { name: "Ariana M.", role: "Facilities • Arizona", quote: "It filters noise and highlights what matters. That’s the whole game." },
+            { name: "Jordan S.", role: "HVAC • Texas", quote: "Match quality improved quickly once we tightened our keywords." },
           ].map((x) => (
             <div
               key={x.name}
@@ -353,7 +303,9 @@ export default function HomePage() {
             }}
             className="mt-10 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] hover:bg-[#465DFF]"
           >
-            <ArrowBadge />
+            <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
+              <span className="text-lg font-black">→</span>
+            </span>
             Sign Up
           </button>
 
