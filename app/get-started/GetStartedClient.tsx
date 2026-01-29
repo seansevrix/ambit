@@ -4,18 +4,20 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AmbitMark from "../components/AmbitMark";
+import LoadingOverlay from "../components/LoadingOverlay";
 
 const API_BASE =
   (process.env.NEXT_PUBLIC_API_BASE_URL ||
     process.env.NEXT_PUBLIC_API_BASE ||
     "http://localhost:5001")?.replace(/\/$/, "");
 
-async function postJson(url: string, body: any) {
+async function postJson(url: string, body: any, signal?: AbortSignal) {
   const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
     body: JSON.stringify(body),
+    signal,
   });
   const json = await res.json().catch(() => ({}));
   return { res, json };
@@ -57,6 +59,33 @@ export default function GetStartedClient() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState("");
 
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Pre-warm backend to reduce Render cold-start pain
+  useEffect(() => {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), 6000);
+
+    fetch(`${API_BASE}/engine/health`, {
+      method: "GET",
+      credentials: "include",
+      signal: controller.signal,
+      cache: "no-store",
+    }).catch(() => {});
+
+    return () => {
+      clearTimeout(t);
+      controller.abort();
+    };
+  }, []);
+
   // Prefill from query params: area + keywords + focus (optional)
   useEffect(() => {
     if (didPrefillRef.current) return;
@@ -84,8 +113,13 @@ export default function GetStartedClient() {
   }, [companyName, email, serviceArea, keywords]);
 
   async function createCustomer() {
+    if (loading) return;
+
     setErr("");
-    setLoading(true);
+    setLoading(true); // turn on overlay immediately
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30000);
 
     try {
       const company = companyName.trim();
@@ -112,7 +146,11 @@ export default function GetStartedClient() {
         localStorage.setItem("ambit_email", mail);
       } catch {}
 
-      const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
+      const { res, json } = await postJson(
+        `${API_BASE}/engine/customers`,
+        payload,
+        controller.signal
+      );
 
       if (!res.ok) {
         const msg = String(json?.message || json?.error || `Signup failed (${res.status})`);
@@ -124,17 +162,36 @@ export default function GetStartedClient() {
         throw new Error("Customer created, but no customer id returned.");
       }
 
-      router.push(`/matches/${id}`);
-      router.refresh();
+      // Keep overlay up (do NOT setLoading(false)) — navigation will replace the page
+      router.push(`/matches/${id}?new=1`);
+      return;
     } catch (e: any) {
-      setErr(e?.message || "Signup failed");
+      const msg =
+        e?.name === "AbortError"
+          ? "That took too long. Please try again (our server may be waking up)."
+          : e?.message || "Signup failed";
+
+      if (mountedRef.current) {
+        setErr(msg);
+        setLoading(false); // only turn off overlay on error
+      }
     } finally {
-      setLoading(false);
+      clearTimeout(timeout);
     }
   }
 
   return (
     <section className="mx-auto w-full max-w-2xl">
+      {/* Fullscreen loading overlay */}
+      {loading && (
+        <LoadingOverlay
+          serviceArea={serviceArea}
+          naics={undefined}
+          keywords={keywords}
+          title="Looking for your matches"
+        />
+      )}
+
       {/* Top trust row */}
       <div className="mb-6 flex items-start justify-between gap-6">
         <div className="flex items-center gap-3">
@@ -154,9 +211,7 @@ export default function GetStartedClient() {
           </div>
         </div>
 
-        <div className="text-xs text-white/55">
-          Secure signup • Encrypted
-        </div>
+        <div className="text-xs text-white/55">Secure signup • Encrypted</div>
       </div>
 
       {/* Trust + form card */}
@@ -169,9 +224,7 @@ export default function GetStartedClient() {
           <div className="mt-2 text-sm text-white/80">
             “Ambit found us a $50k municipal contract in our first week.”
           </div>
-          <div className="mt-2 text-xs text-white/55">
-            — Contractor, California
-          </div>
+          <div className="mt-2 text-xs text-white/55">— Contractor, California</div>
         </div>
 
         {/* Optional preference (not required) */}
@@ -196,6 +249,7 @@ export default function GetStartedClient() {
                       : "border-white/10 bg-slate-950/25 text-white/70 hover:text-white hover:bg-slate-950/35",
                   ].join(" ")}
                   aria-pressed={active}
+                  disabled={loading}
                 >
                   {focusLabel(f)}
                 </button>
@@ -222,6 +276,7 @@ export default function GetStartedClient() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@company.com"
                 autoComplete="email"
+                disabled={loading}
               />
             </label>
 
@@ -233,6 +288,7 @@ export default function GetStartedClient() {
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="Your company"
                 autoComplete="organization"
+                disabled={loading}
               />
             </label>
           </div>
@@ -245,6 +301,7 @@ export default function GetStartedClient() {
               onChange={(e) => setServiceArea(e.target.value)}
               placeholder="City, State (or Nationwide)"
               autoComplete="address-level2"
+              disabled={loading}
             />
           </label>
 
@@ -255,6 +312,7 @@ export default function GetStartedClient() {
               value={keywords}
               onChange={(e) => setKeywords(e.target.value)}
               placeholder="dumpster rental, concrete, striping, HVAC"
+              disabled={loading}
             />
             <div className="text-xs text-white/55">
               Add services, equipment, materials, and job types.
@@ -290,7 +348,7 @@ export default function GetStartedClient() {
             disabled={!canSubmit || loading}
             className="mt-1 inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white hover:bg-[#15428B] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Creating…" : "Start free trial"}
+            {loading ? "Finding matches…" : "Start free trial"}
           </button>
 
           <div className="pt-1 text-center text-sm text-white/70">
