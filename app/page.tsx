@@ -22,29 +22,16 @@ const BG =
 
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
 
-function ArrowBadge() {
+function ArrowBadge({ dark }: { dark?: boolean }) {
   return (
-    <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-black">
+    <span
+      className={[
+        "mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2",
+        dark ? "border-white" : "border-black",
+      ].join(" ")}
+    >
       <span className="text-lg font-black">→</span>
     </span>
-  );
-}
-
-function AvatarRow({ countText }: { countText: string }) {
-  return (
-    <div className="mt-4 flex items-center justify-center">
-      <div className="flex -space-x-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="h-10 w-10 rounded-full border-2 border-[#F7F5F2] bg-gradient-to-br from-black/10 to-black/0"
-          />
-        ))}
-        <div className="flex h-10 items-center justify-center rounded-full border-2 border-[#F7F5F2] bg-[#E8E2D7] px-3 text-xs font-semibold text-black/70">
-          {countText}
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -75,7 +62,7 @@ export default function HomePage() {
         market={market}
       />
 
-      {/* HERO (Malakye-style: centered, huge type, two buttons) */}
+      {/* HERO (Malakye-style: centered, huge type, ONE CTA) */}
       <section className={`${CONTAINER} pt-14 pb-10`}>
         <div className="text-center">
           <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
@@ -88,23 +75,10 @@ export default function HomePage() {
             Tailored for business growth.
           </p>
 
-          <div className="mt-8 flex flex-col items-center justify-center gap-4 sm:flex-row">
-            {/* Outline (Company) */}
+          <div className="mt-8 flex items-center justify-center">
             <button
               onClick={() => {
                 setModalKind("company");
-                setModalOpen(true);
-              }}
-              className="group inline-flex w-full max-w-sm items-center justify-center rounded-full border-2 border-black bg-transparent px-7 py-4 text-base font-semibold hover:bg-black/[0.04] sm:w-auto"
-            >
-              <ArrowBadge />
-              Sign Up as Company
-            </button>
-
-            {/* Filled (Individual) */}
-            <button
-              onClick={() => {
-                setModalKind("individual");
                 setModalOpen(true);
               }}
               className="group inline-flex w-full max-w-sm items-center justify-center rounded-full bg-[#5C74FF] px-7 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] hover:bg-[#465DFF] sm:w-auto"
@@ -112,20 +86,11 @@ export default function HomePage() {
               <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
                 <span className="text-lg font-black">→</span>
               </span>
-              Sign Up as Individual
+              Sign Up
             </button>
           </div>
 
-          <div className="mt-4 grid gap-6 sm:grid-cols-2 sm:gap-10">
-            <div>
-              <AvatarRow countText="+301077" />
-            </div>
-            <div>
-              <AvatarRow countText="+301077" />
-            </div>
-          </div>
-
-          {/* Embedded product preview strip (mirrors Malakye “app preview” imagery) */}
+          {/* Embedded preview strip */}
           <div className="mt-10 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_22px_70px_rgba(0,0,0,0.10)]">
             <div className="flex items-center justify-between border-b border-black/10 px-5 py-3">
               <div className="text-sm font-semibold text-black/80">AMBIT</div>
@@ -190,7 +155,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRUST (Malakye-style stats + logos row) */}
+      {/* TRUST (kept, but no +301077 section, no trade row) */}
       <section className={`${CONTAINER} pb-14`}>
         <div className="rounded-3xl bg-[#2E2E2E] px-8 py-10 text-white shadow-[0_30px_90px_rgba(0,0,0,0.18)]">
           <div className="grid gap-8 lg:grid-cols-2">
@@ -217,31 +182,14 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-
-        {/* “logos” row — use trade chips until you have real logos */}
-        <div className="mt-8 flex flex-wrap items-center justify-center gap-6 text-sm font-semibold text-black/50">
-          {[
-            "Landscaping",
-            "HVAC",
-            "Junk Removal",
-            "Electrical",
-            "Concrete",
-            "Painting",
-            "Cleaning",
-            "Roofing",
-            "Plumbing",
-          ].map((x) => (
-            <span key={x} className="uppercase tracking-widest">
-              {x}
-            </span>
-          ))}
-        </div>
       </section>
 
-      {/* FEATURE BLOCKS (Malakye-style 2x2) */}
+      {/* FEATURE BLOCKS (kept) */}
       <section className={`${CONTAINER} pb-14`}>
         <h2 className="text-5xl font-black tracking-tight">
-          Ambit makes finding jobs and showcasing yourself effortless
+          Ambit makes finding jobs effortless.
+          <br />
+          Stop hunting, start receiving.
         </h2>
 
         <div className="mt-8 grid gap-6 lg:grid-cols-2">
@@ -263,60 +211,24 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#5C74FF] p-8 text-white lg:col-span-1">
             <div className="text-2xl font-black">A Command Center for Your Company.</div>
             <div className="mt-3 text-white/85">
-              Leave nothing to chance. Use precision matchmaking and simple summaries to analyze
-              the landscape—giving you a direct line to decision-makers that matter.
+              Leave nothing to chance. Use precision match making to find your jobs and leverage
+              simple summaries to analyze the competitive landscape—giving you the direct line to
+              the decision-makers that matter.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#E8E2D7] p-8">
             <div className="text-2xl font-black">Visibility Without Guesswork.</div>
             <div className="mt-3 text-black/70">
-              You deserve a seat at the table. We’ve engineered AMBIT to prioritize transparency so
-              your expertise is recognized and your status is clear at every stage of the process.
+              You deserve a seat at the table, not a spot in a hole. We’ve engineered the Ambit
+              platform to prioritize transparency, ensuring your expertise is recognized and your
+              status is clear at every stage of the process.
             </div>
           </div>
         </div>
       </section>
 
-      {/* GETTING STARTED (Malakye-style stepper) */}
-      <section className={`${CONTAINER} pb-14`}>
-        <h2 className="text-5xl font-black tracking-tight">Getting started is simple</h2>
-
-        <div className="mt-8 grid gap-8 lg:grid-cols-2">
-          <div className="space-y-4">
-            {[
-              "Build a great looking profile",
-              "Share your experience & interest",
-              "Find amazing connections",
-              "High quality tool for finding jobs & networking",
-              "Immerse into this unique community",
-            ].map((x, idx) => (
-              <div
-                key={x}
-                className={[
-                  "flex items-center gap-4 rounded-2xl border border-black/10 px-5 py-4",
-                  idx === 0 ? "bg-[#EEF1FF]" : "bg-[#F7F5F2]",
-                ].join(" ")}
-              >
-                <div className="w-8 text-2xl font-black text-black/70">{idx + 1}</div>
-                <div className="text-lg font-semibold">{x}</div>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex items-center justify-center rounded-3xl border border-black/10 bg-white p-10 shadow-[0_22px_70px_rgba(0,0,0,0.10)]">
-            <div className="w-full max-w-sm rounded-3xl border border-black/10 bg-[#FAFAF7] p-6 text-center">
-              <div className="mx-auto h-16 w-16 rounded-full border border-black/10 bg-black/5" />
-              <div className="mt-4 text-xl font-black">AMBIT Profile</div>
-              <div className="mt-2 text-sm text-black/60">
-                A clean profile powers better matching and clearer opportunities.
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* TESTIMONIALS + CTA BAND (mirrors Malakye footer CTA vibe) */}
+      {/* TESTIMONIALS (kept) */}
       <section className={`${CONTAINER} pb-20`}>
         <h2 className="text-5xl font-black tracking-tight">Check out what they’re sayin’</h2>
 
@@ -334,63 +246,9 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Pricing (Malakye-style cards) */}
-        <div className="mt-16 text-center">
-          <h3 className="text-5xl font-black tracking-tight">
-            Basic has everything you need. Pro gives you some really useful tools.
-          </h3>
-
-          <div className="mt-10 grid gap-6 lg:grid-cols-2">
-            <div className="rounded-3xl bg-[#E8E2D7] p-8 text-left">
-              <div className="text-sm font-semibold text-black/60">Basic</div>
-              <div className="mt-2 text-4xl font-black">Starter</div>
-              <ul className="mt-6 space-y-3 text-black/70">
-                <li>• Build a great looking profile</li>
-                <li>• Save and manage searches</li>
-                <li>• Track opportunities</li>
-                <li>• Basic match feed access</li>
-              </ul>
-              <button
-                onClick={() => {
-                  setModalKind("individual");
-                  setModalOpen(true);
-                }}
-                className="mt-8 inline-flex items-center justify-center rounded-full border-2 border-black bg-transparent px-6 py-3 text-sm font-semibold hover:bg-black/[0.04]"
-              >
-                <ArrowBadge />
-                Sign Up
-              </button>
-            </div>
-
-            <div className="rounded-3xl bg-[#2E2E2E] p-8 text-left text-white">
-              <div className="text-sm font-semibold text-white/60">Pro</div>
-              <div className="mt-2 text-4xl font-black">All Markets</div>
-              <ul className="mt-6 space-y-3 text-white/75">
-                <li>• Everything in Starter</li>
-                <li>• Full match scoring + summaries</li>
-                <li>• Activity & momentum dashboard</li>
-                <li>• Priority support</li>
-              </ul>
-              <button
-                onClick={() => {
-                  setModalKind("company");
-                  setModalOpen(true);
-                }}
-                className="mt-8 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] hover:bg-[#465DFF]"
-              >
-                <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
-                  <span className="text-lg font-black">→</span>
-                </span>
-                Sign Up
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Final CTA band */}
+        {/* Final CTA band (kept, but removed +301077 row + removed pricing section earlier) */}
         <div className="mt-16 rounded-3xl bg-[#2E2E2E] px-8 py-12 text-center text-white shadow-[0_30px_90px_rgba(0,0,0,0.18)]">
-          <AvatarRow countText="+301077" />
-          <div className="mt-6 text-4xl font-black">
+          <div className="text-4xl font-black">
             Plug into AMBIT to keep growing your business
           </div>
           <div className="mt-3 text-white/70">
@@ -404,9 +262,7 @@ export default function HomePage() {
             }}
             className="mt-8 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-8 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] hover:bg-[#465DFF]"
           >
-            <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
-              <span className="text-lg font-black">→</span>
-            </span>
+            <ArrowBadge dark />
             Sign Up
           </button>
 
