@@ -41,18 +41,9 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
  */
 function SignupSocialProof() {
   const logos = [
-    {
-      src: "/landing/social/golden-state-landscapes.jpeg",
-      alt: "Golden State Landscapes",
-    },
-    {
-      src: "/landing/social/old-dominion-plumbing.jpeg",
-      alt: "Old Dominion Plumbing Co.",
-    },
-    {
-      src: "/landing/social/power-mechanical.jpeg",
-      alt: "Power Mechanical",
-    },
+    { src: "/landing/social/golden-state-landscapes.jpeg", alt: "Golden State Landscapes" },
+    { src: "/landing/social/old-dominion-plumbing.jpeg", alt: "Old Dominion Plumbing Co." },
+    { src: "/landing/social/power-mechanical.jpeg", alt: "Power Mechanical" },
   ];
 
   return (
@@ -91,8 +82,8 @@ function SignupSocialProof() {
     </div>
   );
 }
-// ---------- LIVE PREVIEW (conversion-friendly) ----------
 
+// ---------- LIVE PREVIEW (conversion-friendly) ----------
 type PreviewMatch = {
   title: string;
   location: string;
@@ -248,7 +239,6 @@ function PreviewMatches({ market }: { market: Market }) {
           </div>
         ))}
 
-        {/* subtle “more” fade to imply depth */}
         <div className="relative -mt-2 h-8 w-full overflow-hidden rounded-xl">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white" />
         </div>
@@ -281,7 +271,12 @@ function PreviewActivity({ market }: { market: Market }) {
           { k: "Verified", v: "9" },
         ];
 
-  const bars = market === "government" ? [30, 55, 45, 70, 60, 80, 65] : market === "commercial" ? [35, 60, 50, 75, 68, 88, 72] : [40, 70, 55, 82, 74, 92, 78];
+  const bars =
+    market === "government"
+      ? [30, 55, 45, 70, 60, 80, 65]
+      : market === "commercial"
+      ? [35, 60, 50, 75, 68, 88, 72]
+      : [40, 70, 55, 82, 74, 92, 78];
 
   const feed =
     market === "government"
@@ -314,15 +309,8 @@ function PreviewActivity({ market }: { market: Market }) {
 
         <div className="mt-2 flex items-end gap-1.5">
           {bars.map((h, i) => (
-            <div
-              key={i}
-              className="w-full rounded-md bg-black/10"
-              style={{ height: 44 }}
-            >
-              <div
-                className="w-full rounded-md bg-[#5C74FF]"
-                style={{ height: `${h}%` }}
-              />
+            <div key={i} className="w-full rounded-md bg-black/10" style={{ height: 44 }}>
+              <div className="w-full rounded-md bg-[#5C74FF]" style={{ height: `${h}%` }} />
             </div>
           ))}
         </div>
@@ -330,7 +318,10 @@ function PreviewActivity({ market }: { market: Market }) {
 
       <div className="mt-3 space-y-2">
         {feed.map((t, i) => (
-          <div key={i} className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2">
+          <div
+            key={i}
+            className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2"
+          >
             <div className="text-[12px] font-semibold text-black/70">{t}</div>
             <div className="text-[11px] font-semibold text-black/35">
               {i === 0 ? "2m" : i === 1 ? "12m" : "1h"}
@@ -385,12 +376,7 @@ export default function HomePage() {
       {/* Soft glow (still light) */}
       <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.16),transparent_62%)]" />
 
-      <SignupModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        kind={modalKind}
-        market={market}
-      />
+      <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
@@ -417,7 +403,6 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Social proof avatars */}
             <SignupSocialProof />
 
             {/* Preview strip */}
@@ -454,26 +439,20 @@ export default function HomePage() {
                   <div className="rounded-3xl border border-black/10 bg-[#FAFAF7] p-6">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">Match opportunities</div>
-                      <div className="text-xs text-black/45">Screenshot</div>
+                      <div className="text-xs text-black/45">Live preview</div>
                     </div>
-                    <div className="mt-4 rounded-2xl border border-black/10 bg-white p-8 text-sm text-black/55">
-                      Drop your screenshot here:
-                      <div className="mt-2 font-mono text-xs text-black/45">
-                        /public/landing/matches-{market}.png
-                      </div>
+                    <div className="mt-4">
+                      <PreviewMatches market={market} />
                     </div>
                   </div>
 
                   <div className="rounded-3xl border border-black/10 bg-[#FAFAF7] p-6">
                     <div className="flex items-center justify-between">
                       <div className="text-sm font-semibold">Activity &amp; momentum</div>
-                      <div className="text-xs text-black/45">Screenshot</div>
+                      <div className="text-xs text-black/45">Live preview</div>
                     </div>
-                    <div className="mt-4 rounded-2xl border border-black/10 bg-white p-8 text-sm text-black/55">
-                      Drop your screenshot here:
-                      <div className="mt-2 font-mono text-xs text-black/45">
-                        /public/landing/dashboard-{market}.png
-                      </div>
+                    <div className="mt-4">
+                      <PreviewActivity market={market} />
                     </div>
                   </div>
                 </div>
