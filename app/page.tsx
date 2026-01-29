@@ -38,7 +38,7 @@ export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<"company" | "individual">("company");
 
-  // ✅ HARD FORCE: no dark background anywhere — html + body + a fixed baby-blue layer
+  // Hard-force baby-blue everywhere (html + body)
   useEffect(() => {
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBody = document.body.style.backgroundColor;
@@ -67,13 +67,13 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen text-black">
-      {/* ✅ Full-bleed baby-blue base (covers EVERYTHING behind) */}
+      {/* Full-bleed baby-blue base */}
       <div className="pointer-events-none fixed inset-0 -z-50 bg-[#EAF3FF]" />
 
-      {/* very subtle pattern (still light) */}
+      {/* Subtle pattern (light) */}
       <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.10] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
 
-      {/* soft baby-blue glow (NOT dark) */}
+      {/* Soft glow (still light) */}
       <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.16),transparent_62%)]" />
 
       <SignupModal
@@ -83,9 +83,10 @@ export default function HomePage() {
         market={market}
       />
 
-      {/* HERO (light panel like Malakye) */}
+      {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] border border-black/10 bg-[#F7F5F2]/90 shadow-[0_24px_70px_rgba(0,0,0,0.10)] backdrop-blur px-8 py-14 sm:px-14">
+        {/* ✅ Removed border + made this same as baby-blue background */}
+        <div className="rounded-[44px] bg-[#EAF3FF] px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
@@ -108,7 +109,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* Preview strip (still light) */}
+            {/* Preview strip */}
             <div className="mt-12 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
               <div className="flex items-center justify-between border-b border-black/10 px-6 py-4">
                 <div className="text-sm font-semibold text-black/80">AMBIT</div>
@@ -173,7 +174,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRUST (light — no dark bars) */}
+      {/* TRUST */}
       <section className={`${CONTAINER} pb-20`}>
         <div className="rounded-3xl border border-black/10 bg-white/75 backdrop-blur px-10 py-12 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <div className="grid gap-10 lg:grid-cols-2">
@@ -199,7 +200,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURE BLOCKS (no dark blocks) */}
+      {/* FEATURE BLOCKS */}
       <section className={`${CONTAINER} pb-20`}>
         <h2 className="text-5xl font-black tracking-tight">
           Ambit makes finding jobs effortless.
@@ -243,7 +244,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS (light) */}
+      {/* TESTIMONIALS */}
       <section className={`${CONTAINER} pb-24`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -262,11 +263,26 @@ export default function HomePage() {
 
         <div className="mt-10 grid gap-6 md:grid-cols-3">
           {[
-            { name: "Sarah K.", role: "Janitorial • Florida", quote: "Setup was simple. The organization alone saved us hours every week." },
-            { name: "Mark T.", role: "Plumbing • California", quote: "It’s clean. It’s fast. We know what to look at first." },
-            { name: "Tanya W.", role: "Home Services • Colorado", quote: "Feels like we finally have a system instead of chaos." },
+            {
+              name: "Sarah K.",
+              role: "Janitorial • Florida",
+              quote: "Setup was simple. The organization alone saved us hours every week.",
+            },
+            {
+              name: "Mark T.",
+              role: "Plumbing • California",
+              quote: "It’s clean. It’s fast. We know what to look at first.",
+            },
+            {
+              name: "Tanya W.",
+              role: "Home Services • Colorado",
+              quote: "Feels like we finally have a system instead of chaos.",
+            },
           ].map((x) => (
-            <div key={x.name} className="rounded-3xl border border-black/10 bg-white p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+            <div
+              key={x.name}
+              className="rounded-3xl border border-black/10 bg-white p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+            >
               <div className="h-44 rounded-2xl bg-black/5" />
               <div className="mt-5 text-lg font-black">{x.name}</div>
               <div className="mt-1 text-sm text-black/60">{x.role}</div>
@@ -275,7 +291,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* FINAL CTA (still light) */}
+        {/* FINAL CTA */}
         <div className="mt-16 rounded-3xl border border-black/10 bg-white/85 backdrop-blur px-10 py-14 text-center shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
           <div className="mt-4 text-lg text-black/70">
@@ -294,12 +310,24 @@ export default function HomePage() {
           </button>
 
           <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm font-semibold text-black/55">
-            <Link href="/" className="hover:text-black">Home</Link>
-            <Link href="/about" className="hover:text-black">About Us</Link>
-            <Link href="/testimonials" className="hover:text-black">Testimonials</Link>
-            <Link href="/privacy" className="hover:text-black">Privacy</Link>
-            <Link href="/terms" className="hover:text-black">Terms</Link>
-            <Link href="/login" className="hover:text-black">Log In</Link>
+            <Link href="/" className="hover:text-black">
+              Home
+            </Link>
+            <Link href="/about" className="hover:text-black">
+              About Us
+            </Link>
+            <Link href="/testimonials" className="hover:text-black">
+              Testimonials
+            </Link>
+            <Link href="/privacy" className="hover:text-black">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-black">
+              Terms
+            </Link>
+            <Link href="/login" className="hover:text-black">
+              Log In
+            </Link>
           </div>
         </div>
       </section>
