@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className="bg-[#EAF3FF]">
       <head>
         {/* Meta Pixel */}
         <Script id="meta-pixel" strategy="afterInteractive">
@@ -60,11 +60,13 @@ export default function RootLayout({
         </Script>
       </head>
 
-      <body className="min-h-screen bg-gradient-to-b from-[#0B1430] via-[#0D1A3A] to-[#0F2048] text-white">
+      {/* ✅ Removed dark gradient background entirely */}
+      <body className="min-h-screen bg-[#EAF3FF] text-black">
         <div className="min-h-screen flex flex-col">
           <SiteNav />
 
-          <main className="flex-1 mx-auto w-full max-w-7xl px-6 py-10">
+          {/* ✅ Let pages control their own width/padding (Malakye-style) */}
+          <main className="flex-1 w-full">
             {children}
           </main>
 
