@@ -11,6 +11,37 @@ const TRUST_BADGES = [
   "No spam",
 ];
 
+function LoadingFallback() {
+  return (
+    <div className="h-[420px] flex items-center justify-center">
+      <div className="w-full max-w-xl rounded-3xl border border-white/10 bg-[#0B1325]/50 p-6">
+        <div className="flex items-start gap-3">
+          <div className="h-10 w-10 rounded-2xl bg-emerald-400/15 flex items-center justify-center">
+            <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/35 border-t-white" />
+          </div>
+
+          <div className="min-w-0">
+            <div className="text-white text-base font-semibold">
+              Getting your setup ready…
+            </div>
+            <div className="text-white/70 text-sm mt-0.5">
+              Loading your profile builder.
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-5 h-2 w-full rounded-full bg-white/10 overflow-hidden">
+          <div className="h-full w-[55%] bg-emerald-400/80" />
+        </div>
+
+        <div className="mt-4 text-xs text-white/60">
+          One moment — this usually takes a second.
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <div className="min-h-screen bg-[#070B18] text-white">
@@ -47,7 +78,10 @@ export default function Page() {
 
           <p className="mt-2 max-w-2xl text-white/70">
             Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
-            <span className="font-semibold text-white/85">Residential • Commercial • Government</span>.
+            <span className="font-semibold text-white/85">
+              Residential • Commercial • Government
+            </span>
+            .
           </p>
 
           {/* Trust bar */}
@@ -65,7 +99,7 @@ export default function Page() {
 
         {/* Form container */}
         <div className="mt-10 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.35)] sm:p-8">
-          <Suspense fallback={<div className="h-[420px]" />}>
+          <Suspense fallback={<LoadingFallback />}>
             <GetStartedClient />
           </Suspense>
         </div>
