@@ -468,8 +468,8 @@ export default function HomePage() {
             </h1>
 
             <p className="mx-auto mt-5 max-w-2xl text-lg text-black/65">
-              Tailored for business growth.
-            </p>
+  Matched opportunities, emailed daily.
+</p>
 
             <div className="mt-10 flex items-center justify-center">
               <button
