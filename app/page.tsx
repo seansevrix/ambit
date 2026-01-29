@@ -83,13 +83,46 @@ function SignupSocialProof() {
   );
 }
 
-// ---------- LIVE PREVIEW (conversion-friendly) ----------
+/* ---------- LIVE PREVIEW (more “holy shit” / conversion-friendly) ---------- */
+
 type PreviewMatch = {
   title: string;
   location: string;
   score: number;
   badges: Array<{ label: string; tone: "new" | "verified" | "due" }>;
   reasons: string[];
+
+  valueRange: string; // e.g. "$1,200–$2,800"
+  margin: "High" | "Medium" | "Low";
+  closeTime: string; // e.g. "1–3 days"
+
+  summary: string; // quick peek
+  buyerNote: string;
+  nextStep: string;
+};
+
+const PROFILE_HINT: Record<
+  Market,
+  { location: string; trade: string; radius: string; trust: string[] }
+> = {
+  residential: {
+    location: "San Diego, CA",
+    trade: "Landscaping",
+    radius: "25mi radius",
+    trust: ["Verified buyers", "Updated frequently", "Ranked by fit"],
+  },
+  commercial: {
+    location: "Austin, TX",
+    trade: "Facilities Services",
+    radius: "50mi radius",
+    trust: ["Recurring work orders", "Fast response routing", "Ranked by fit"],
+  },
+  government: {
+    location: "San Diego, CA",
+    trade: "Janitorial (561720)",
+    radius: "250mi radius",
+    trust: ["Public sources monitored", "Deadline-aware ranking", "Ranked by fit"],
+  },
 };
 
 const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
@@ -103,6 +136,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
         { label: "New", tone: "new" },
       ],
       reasons: ["Within 8 miles", "High intent", "Same-day response"],
+      valueRange: "$1,200–$2,800",
+      margin: "High",
+      closeTime: "1–3 days",
+      summary:
+        "Homeowner wants debris removal, trimming, and a full backyard reset. Photos included and scope is clear. Prefers an estimate today.",
+      buyerNote: "They responded to the last two contractors within 30 minutes.",
+      nextStep: "Send a same-day estimate and offer a next-morning slot.",
     },
     {
       title: "Sprinkler repair (zone not turning on)",
@@ -110,6 +150,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       score: 93,
       badges: [{ label: "Due soon", tone: "due" }],
       reasons: ["Service area match", "Repeat buyer signals", "Quick win"],
+      valueRange: "$180–$420",
+      margin: "Medium",
+      closeTime: "Same day",
+      summary:
+        "Single zone not activating. Buyer wants diagnosis and repair. Access is easy and they can be home after 4pm.",
+      buyerNote: "Clear availability window and short scope.",
+      nextStep: "Offer a diagnostic window and confirm parts availability.",
     },
     {
       title: "Fence + gate install estimate",
@@ -117,6 +164,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       score: 91,
       badges: [{ label: "New", tone: "new" }],
       reasons: ["Good margin", "Nearby", "Clear scope"],
+      valueRange: "$3,800–$7,500",
+      margin: "High",
+      closeTime: "3–7 days",
+      summary:
+        "Buyer needs a new side gate and partial fence replacement. Material preference noted and dimensions provided.",
+      buyerNote: "They requested two quotes and plan to decide this week.",
+      nextStep: "Schedule a quick site measure and send an itemized quote.",
     },
   ],
   commercial: [
@@ -126,6 +180,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       score: 95,
       badges: [{ label: "New", tone: "new" }],
       reasons: ["Recurring revenue", "Fits crew size", "Fast close"],
+      valueRange: "$2,400–$4,500/mo",
+      margin: "High",
+      closeTime: "3–10 days",
+      summary:
+        "Property manager wants a monthly maintenance plan plus seasonal cleanup. Multi-tenant plaza with consistent scope.",
+      buyerNote: "They prefer vendors who can start within two weeks.",
+      nextStep: "Send a monthly plan with two tier options and a start date.",
     },
     {
       title: "Restaurant: grease trap service",
@@ -133,6 +194,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       score: 92,
       badges: [{ label: "Due soon", tone: "due" }],
       reasons: ["Local match", "High urgency", "Simple scope"],
+      valueRange: "$350–$700",
+      margin: "Medium",
+      closeTime: "1–2 days",
+      summary:
+        "Service request for grease trap pump and documentation. Requires quick turnaround and receipt for compliance.",
+      buyerNote: "They flagged urgency and can approve same-day.",
+      nextStep: "Confirm schedule and send a fixed-price quote with paperwork.",
     },
     {
       title: "Office building: plumbing maintenance",
@@ -140,6 +208,13 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       score: 90,
       badges: [{ label: "New", tone: "new" }],
       reasons: ["Work order stream", "Good LTV", "Clear requirements"],
+      valueRange: "$1,500–$3,000/mo",
+      margin: "Medium",
+      closeTime: "7–14 days",
+      summary:
+        "Facilities team wants a vendor for recurring PM and on-call response. Clear SLA expectations and approval process.",
+      buyerNote: "They want a vendor who can handle after-hours issues.",
+      nextStep: "Send a maintenance agreement outline and response-time tiers.",
     },
   ],
   government: [
@@ -148,21 +223,42 @@ const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
       location: "Tampa, FL",
       score: 97,
       badges: [{ label: "Due soon", tone: "due" }],
-      reasons: ["NAICS aligned", "Set-aside likely", "Strong fit"],
+      reasons: ["NAICS aligned", "Likely set-aside", "Strong fit"],
+      valueRange: "$45k–$110k",
+      margin: "Medium",
+      closeTime: "10–21 days",
+      summary:
+        "Recurring janitorial requirements with a defined schedule and deliverables. Documentation requirements look standard for the scope.",
+      buyerNote: "Deadline is tight; early questions can improve fit.",
+      nextStep: "Pull requirements, confirm scope, and draft clarifying questions.",
     },
     {
       title: "HVAC PM + filter replacement",
       location: "Norfolk, VA",
       score: 94,
       badges: [{ label: "New", tone: "new" }],
-      reasons: ["Service area match", "Clear schedule", "Good margin"],
+      reasons: ["Clear schedule", "Good margin", "Scope match"],
+      valueRange: "$18k–$55k",
+      margin: "Medium",
+      closeTime: "14–30 days",
+      summary:
+        "Preventive maintenance with scheduled filter replacement. Locations and frequency appear straightforward.",
+      buyerNote: "The scope is repeatable and easy to operationalize.",
+      nextStep: "Confirm counts and schedule, then price the maintenance plan.",
     },
     {
       title: "Grounds maintenance (multi-site)",
       location: "San Diego, CA",
       score: 92,
       badges: [{ label: "Verified", tone: "verified" }],
-      reasons: ["Past award signals", "Nearby", "Scope match"],
+      reasons: ["Nearby", "Scope match", "Past award signals"],
+      valueRange: "$65k–$160k",
+      margin: "Medium",
+      closeTime: "14–45 days",
+      summary:
+        "Multiple sites with defined service windows. If you have a crew, this is a predictable route with consistent work.",
+      buyerNote: "Multi-site jobs favor organized teams with a clear plan.",
+      nextStep: "Map routes, confirm site list, then propose the staffing plan.",
     },
   ],
 };
@@ -187,57 +283,146 @@ function LivePill() {
   );
 }
 
+function PreviewContextBar({ market }: { market: Market }) {
+  const ctx = PROFILE_HINT[market];
+  return (
+    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="text-sm font-semibold text-black/70">
+        Showing matches for:{" "}
+        <span className="font-black text-black/85">
+          {ctx.location} • {ctx.trade} • {ctx.radius}
+        </span>
+      </div>
+
+      <div className="flex flex-wrap items-center gap-2">
+        {ctx.trust.map((t) => (
+          <span
+            key={t}
+            className="rounded-full border border-black/10 bg-white px-3 py-1 text-[11px] font-semibold text-black/60"
+          >
+            {t}
+          </span>
+        ))}
+        <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-[11px] font-semibold text-black/55">
+          Edit
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ScoreInfo({ text }: { text: string }) {
+  return (
+    <span
+      className="inline-flex h-6 w-6 items-center justify-center rounded-full border border-black/10 bg-white text-[11px] font-black text-black/60"
+      title={text}
+      aria-label={text}
+    >
+      i
+    </span>
+  );
+}
+
 function PreviewMatches({ market }: { market: Market }) {
   const rows = PREVIEW_DATA[market];
+  const [openIdx, setOpenIdx] = useState(0);
+
+  useEffect(() => {
+    setOpenIdx(0);
+  }, [market]);
 
   return (
-    <div className="rounded-2xl border border-black/10 bg-white p-4">
+    <div className="relative rounded-2xl border border-black/10 bg-white p-4">
       <div className="flex items-center justify-between">
         <div className="text-xs font-semibold text-black/55">Top matches</div>
         <LivePill />
       </div>
 
-      <div className="mt-3 space-y-3">
-        {rows.map((m, idx) => (
-          <div
-            key={`${m.title}-${idx}`}
-            className="rounded-xl border border-black/10 bg-[#FAFAF7] p-3 hover:bg-white transition"
-          >
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-black">{m.title}</div>
-                <div className="mt-0.5 text-xs text-black/55">{m.location}</div>
-              </div>
+      <div className="pointer-events-none absolute inset-x-4 top-10 h-10 rounded-2xl bg-gradient-to-r from-transparent via-black/5 to-transparent opacity-30 animate-pulse" />
 
-              <div className="flex shrink-0 items-center gap-2">
-                <div className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-xs font-bold text-black/80">
-                  {m.score}
+      <div className="mt-3 space-y-3">
+        {rows.map((m, idx) => {
+          const open = idx === openIdx;
+          const scoreExplain = `Why ${m.score}: ${m.reasons.join(" • ")}`;
+          const meta = `${m.valueRange} • ${m.margin} margin • Close: ${m.closeTime}`;
+
+          return (
+            <button
+              key={`${m.title}-${idx}`}
+              type="button"
+              onClick={() => setOpenIdx(idx)}
+              className={[
+                "group w-full text-left rounded-xl border border-black/10 bg-[#FAFAF7] p-3 transition",
+                "hover:bg-white hover:shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:-translate-y-[1px]",
+                open ? "bg-white shadow-[0_10px_30px_rgba(0,0,0,0.06)]" : "",
+              ].join(" ")}
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-semibold text-black">{m.title}</div>
+                  <div className="mt-0.5 text-xs text-black/55">{m.location}</div>
+                  <div className="mt-2 text-[11px] font-semibold text-black/60">{meta}</div>
+                </div>
+
+                <div className="flex shrink-0 items-center gap-2">
+                  <div className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-xs font-black text-black/80">
+                    {m.score}
+                  </div>
+                  <ScoreInfo text={scoreExplain} />
                 </div>
               </div>
-            </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              {m.badges.map((b, bi) => (
-                <span
-                  key={`${b.label}-${bi}`}
-                  className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${toneClasses(
-                    b.tone
-                  )}`}
-                >
-                  {b.label}
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                {m.badges.map((b, bi) => (
+                  <span
+                    key={`${b.label}-${bi}`}
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${toneClasses(
+                      b.tone
+                    )}`}
+                  >
+                    {b.label}
+                  </span>
+                ))}
+                {m.reasons.slice(0, 2).map((r, ri) => (
+                  <span
+                    key={`${r}-${ri}`}
+                    className="rounded-full border border-black/10 bg-white px-2 py-0.5 text-[11px] font-semibold text-black/60"
+                  >
+                    {r}
+                  </span>
+                ))}
+
+                <span className="ml-auto hidden sm:inline-flex rounded-full border border-black/10 bg-white px-2 py-0.5 text-[11px] font-semibold text-black/55 opacity-0 transition group-hover:opacity-100">
+                  Quick view
                 </span>
-              ))}
-              {m.reasons.slice(0, 2).map((r, ri) => (
-                <span
-                  key={`${r}-${ri}`}
-                  className="rounded-full border border-black/10 bg-white px-2 py-0.5 text-[11px] font-semibold text-black/60"
-                >
-                  {r}
-                </span>
-              ))}
-            </div>
-          </div>
-        ))}
+              </div>
+
+              {open ? (
+                <div className="mt-3 rounded-xl border border-black/10 bg-white p-3">
+                  <div className="text-[12px] font-semibold text-black/70">Quick peek</div>
+                  <div className="mt-2 text-[12px] text-black/70 leading-relaxed">{m.summary}</div>
+
+                  <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                    <div className="rounded-lg border border-black/10 bg-[#FAFAF7] px-3 py-2">
+                      <div className="text-[11px] font-semibold text-black/55">Buyer note</div>
+                      <div className="mt-1 text-[12px] font-semibold text-black/70">
+                        {m.buyerNote}
+                      </div>
+                    </div>
+                    <div className="rounded-lg border border-black/10 bg-[#FAFAF7] px-3 py-2">
+                      <div className="text-[11px] font-semibold text-black/55">
+                        Recommended next step
+                      </div>
+                      <div className="mt-1 text-[12px] font-semibold text-black/70">
+                        {m.nextStep}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : null}
+            </button>
+          );
+        })}
 
         <div className="relative -mt-2 h-8 w-full overflow-hidden rounded-xl">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white" />
@@ -245,7 +430,7 @@ function PreviewMatches({ market }: { market: Market }) {
       </div>
 
       <div className="mt-2 text-[11px] text-black/50">
-        Full details + links available for active subscribers.
+        Full details and links are available for active subscribers.
       </div>
     </div>
   );
@@ -280,21 +465,31 @@ function PreviewActivity({ market }: { market: Market }) {
 
   const feed =
     market === "government"
-      ? ["Scanned SAM.gov + OpenGov", "3 high-fit bids flagged", "Digest queued for 5:00pm"]
+      ? ["Sources scanned across public portals", "3 high-fit opportunities flagged", "Digest queued for 5:00pm"]
       : market === "commercial"
       ? ["New work orders detected", "2 buyers replied today", "Top match score: 95"]
       : ["Verified buyer lead added", "2 calls booked", "Top match score: 96"];
+
+  const [animateBars, setAnimateBars] = useState(false);
+  useEffect(() => {
+    setAnimateBars(false);
+    const t = setTimeout(() => setAnimateBars(true), 60);
+    return () => clearTimeout(t);
+  }, [market]);
 
   return (
     <div className="rounded-2xl border border-black/10 bg-white p-4">
       <div className="flex items-center justify-between">
         <div className="text-xs font-semibold text-black/55">Momentum</div>
-        <div className="text-[11px] font-semibold text-black/45">Engine v1.0</div>
+        <div className="text-[11px] font-semibold text-black/45">Auto-ranked daily</div>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
         {stats.map((s) => (
-          <div key={s.k} className="rounded-xl border border-black/10 bg-[#FAFAF7] px-3 py-2">
+          <div
+            key={s.k}
+            className="rounded-xl border border-black/10 bg-[#FAFAF7] px-3 py-2 transition hover:bg-white hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+          >
             <div className="text-lg font-black text-black">{s.v}</div>
             <div className="text-[11px] font-semibold text-black/55">{s.k}</div>
           </div>
@@ -310,7 +505,10 @@ function PreviewActivity({ market }: { market: Market }) {
         <div className="mt-2 flex items-end gap-1.5">
           {bars.map((h, i) => (
             <div key={i} className="w-full rounded-md bg-black/10" style={{ height: 44 }}>
-              <div className="w-full rounded-md bg-[#5C74FF]" style={{ height: `${h}%` }} />
+              <div
+                className="w-full rounded-md bg-[#5C74FF] transition-[height] duration-500 ease-out"
+                style={{ height: `${animateBars ? h : 0}%` }}
+              />
             </div>
           ))}
         </div>
@@ -320,7 +518,7 @@ function PreviewActivity({ market }: { market: Market }) {
         {feed.map((t, i) => (
           <div
             key={i}
-            className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2"
+            className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2 transition hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
           >
             <div className="text-[12px] font-semibold text-black/70">{t}</div>
             <div className="text-[11px] font-semibold text-black/35">
@@ -338,7 +536,7 @@ export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<"company" | "individual">("company");
 
-  // Hard-force baby-blue everywhere (html + body)
+  // Matte background everywhere (html + body)
   useEffect(() => {
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBody = document.body.style.backgroundColor;
@@ -367,16 +565,21 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen text-black">
-      {/* Full-bleed baby-blue base */}
+      {/* Full-bleed matte base */}
       <div className="pointer-events-none fixed inset-0 -z-50 bg-[#DEDEDE]" />
 
-      {/* Subtle pattern (light) */}
-      <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.10] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
+      {/* Subtle pattern */}
+      <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.08] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
 
-      {/* Soft glow (still light) */}
-      <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.16),transparent_62%)]" />
+      {/* Soft brand glow (subtle) */}
+      <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.10),transparent_62%)]" />
 
-      <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
+      <SignupModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        kind={modalKind}
+        market={market}
+      />
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
@@ -413,6 +616,8 @@ export default function HomePage() {
               </div>
 
               <div className="p-7 sm:p-10">
+                <PreviewContextBar market={market} />
+
                 {/* market toggle */}
                 <div className="mb-6 inline-flex rounded-full border border-black/10 bg-white p-1">
                   {MARKETS.map((m) => {
