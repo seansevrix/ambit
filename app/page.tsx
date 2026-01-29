@@ -33,22 +33,47 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
   );
 }
 
+/**
+ * ✅ Put your 3 logo images in:
+ *   /public/landing/social/golden-state-landscapes.png
+ *   /public/landing/social/old-dominion-plumbing.png
+ *   /public/landing/social/power-mechanical.png
+ *
+ * Then these will render inside the avatar circles under the Sign Up button.
+ */
 function SignupSocialProof() {
-  // Placeholder “people” bubbles (no photos needed yet)
-  const initials = ["SK", "JM", "AR"];
+  const logos = [
+    {
+      src: "/landing/social/golden-state-landscapes.png",
+      alt: "Golden State Landscapes",
+    },
+    {
+      src: "/landing/social/old-dominion-plumbing.png",
+      alt: "Old Dominion Plumbing Co.",
+    },
+    {
+      src: "/landing/social/power-mechanical.png",
+      alt: "Power Mechanical",
+    },
+  ];
 
   return (
     <div className="mt-5 flex flex-col items-center gap-2">
       <div className="flex items-center justify-center">
         <div className="flex -space-x-3">
-          {initials.map((it, idx) => (
+          {logos.map((l) => (
             <div
-              key={`${it}-${idx}`}
-              className="h-10 w-10 rounded-full border border-black/10 bg-white/80 shadow-sm flex items-center justify-center text-xs font-semibold text-black/70"
-              aria-hidden="true"
-              title="AMBIT user"
+              key={l.src}
+              className="h-10 w-10 overflow-hidden rounded-full border border-black/10 bg-white shadow-sm"
+              title={l.alt}
+              aria-label={l.alt}
             >
-              {it}
+              <img
+                src={l.src}
+                alt={l.alt}
+                className="h-full w-full object-contain p-1"
+                loading="lazy"
+              />
             </div>
           ))}
 
@@ -145,7 +170,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* ✅ NEW: social proof under signup */}
+            {/* ✅ Social proof avatars */}
             <SignupSocialProof />
 
             {/* Preview strip */}
