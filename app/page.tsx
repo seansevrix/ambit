@@ -33,6 +33,42 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
   );
 }
 
+function SignupSocialProof() {
+  // Placeholder “people” bubbles (no photos needed yet)
+  const initials = ["SK", "JM", "AR"];
+
+  return (
+    <div className="mt-5 flex flex-col items-center gap-2">
+      <div className="flex items-center justify-center">
+        <div className="flex -space-x-3">
+          {initials.map((it, idx) => (
+            <div
+              key={`${it}-${idx}`}
+              className="h-10 w-10 rounded-full border border-black/10 bg-white/80 shadow-sm flex items-center justify-center text-xs font-semibold text-black/70"
+              aria-hidden="true"
+              title="AMBIT user"
+            >
+              {it}
+            </div>
+          ))}
+
+          <div
+            className="h-10 w-10 rounded-full border border-black/10 bg-white/90 shadow-sm flex items-center justify-center text-xs font-semibold text-black/70"
+            aria-hidden="true"
+            title="More users"
+          >
+            +200
+          </div>
+        </div>
+      </div>
+
+      <div className="text-xs text-black/55">
+        Trusted by <span className="font-semibold text-black/70">200+</span> local businesses
+      </div>
+    </div>
+  );
+}
+
 export default function HomePage() {
   const [market, setMarket] = useState<Market>("residential");
   const [modalOpen, setModalOpen] = useState(false);
@@ -108,6 +144,9 @@ export default function HomePage() {
                 Sign Up
               </button>
             </div>
+
+            {/* ✅ NEW: social proof under signup */}
+            <SignupSocialProof />
 
             {/* Preview strip */}
             <div className="mt-12 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
