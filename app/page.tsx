@@ -35,9 +35,9 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
 
 /**
  * ✅ Put your 3 logo images in:
- *   /public/landing/social/golden-state-landscapes.png
- *   /public/landing/social/old-dominion-plumbing.png
- *   /public/landing/social/power-mechanical.png
+ *   /public/landing/social/golden-state-landscapes.jpeg
+ *   /public/landing/social/old-dominion-plumbing.jpeg
+ *   /public/landing/social/power-mechanical.jpeg
  *
  * Then these will render inside the avatar circles under the Sign Up button.
  */
