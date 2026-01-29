@@ -87,10 +87,9 @@ export default function HomePage() {
       {/* HERO (more whitespace like Malakye) */}
       <section className={`${CONTAINER} pt-20 pb-16`}>
         <div className="text-center">
-          <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
-            Stop hunting.
-            <br />
-            Start receiving.
+          {/* ✅ Single-line headline (no forced line break) */}
+          <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
+            Stop hunting. Start receiving.
           </h1>
 
           <p className="mx-auto mt-5 max-w-2xl text-lg text-black/70">
