@@ -486,8 +486,8 @@ export default function HomePage() {
 
             <SignupSocialProof />
 
-            <div className="mt-12 overflow-hidden rounded-3xl border border-black/10 bg-white shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-              <div className="flex items-center justify-between border-b border-black/10 px-6 py-4">
+            <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10 overflow-hidden rounded-3xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
+              <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
                 <div className="text-sm font-semibold text-black/80">AMBIT</div>
                 <div className="text-xs text-black/45">Preview</div>
               </div>
