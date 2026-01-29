@@ -18,8 +18,9 @@ function marketSub(m: Market) {
   return "Verified homeowner requests matched to your service area.";
 }
 
+// ✅ Baby-blue page background (no dark navy)
 const BG =
-  "min-h-screen bg-[#F7F5F2] text-black [background-image:linear-gradient(135deg,rgba(0,0,0,0.06)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.06)_1px,transparent_1px)] [background-size:140px_140px]";
+  "min-h-screen bg-[#EAF3FF] text-black [background-image:linear-gradient(135deg,rgba(0,0,0,0.05)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.05)_1px,transparent_1px)] [background-size:140px_140px]";
 
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
 
@@ -47,6 +48,20 @@ export default function HomePage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalKind, setModalKind] = useState<"company" | "individual">("company");
+
+  // ✅ Force html/body background to baby blue (kills any leftover dark wrapper)
+  useEffect(() => {
+    const prevHtml = document.documentElement.style.backgroundColor;
+    const prevBody = document.body.style.backgroundColor;
+
+    document.documentElement.style.backgroundColor = "#EAF3FF";
+    document.body.style.backgroundColor = "#EAF3FF";
+
+    return () => {
+      document.documentElement.style.backgroundColor = prevHtml;
+      document.body.style.backgroundColor = prevBody;
+    };
+  }, []);
 
   useEffect(() => {
     function onOpen(e: any) {
@@ -161,7 +176,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRUST (NO dark background now) */}
+      {/* TRUST (light, no dark bands) */}
       <section className={`${CONTAINER} pb-20`}>
         <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur px-8 py-10 shadow-[0_22px_70px_rgba(0,0,0,0.08)]">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-start">
@@ -193,7 +208,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Extra whitespace + “logo strip” style length (Malakye feel) */}
+        {/* extra “length” like Malakye */}
         <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
           {["Partner", "Trusted", "Network", "Verified", "Secure", "Fast"].map((x) => (
             <div
@@ -205,7 +220,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FEATURE BLOCKS (kept + more spacing) */}
+      {/* FEATURE BLOCKS */}
       <section className={`${CONTAINER} pb-20`}>
         <h2 className="text-5xl font-black tracking-tight">
           Ambit makes finding jobs effortless.
@@ -248,14 +263,12 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Add a second “copy band” to lengthen like Malakye */}
+        {/* extra “copy band” to lengthen like Malakye */}
         <div className="mt-14 rounded-3xl border border-black/10 bg-white px-8 py-10 shadow-[0_18px_60px_rgba(0,0,0,0.08)]">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <div className="text-xs font-semibold tracking-widest text-black/50">THE DIFFERENCE</div>
-              <div className="mt-3 text-3xl font-black">
-                A clean signal — not a noisy feed.
-              </div>
+              <div className="mt-3 text-3xl font-black">A clean signal — not a noisy feed.</div>
             </div>
             <div className="text-black/70">
               AMBIT is designed to reduce uncertainty. Clear summaries, clear fit, clear next steps —
@@ -265,7 +278,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS (more length + no dark band) */}
+      {/* TESTIMONIALS */}
       <section className={`${CONTAINER} pb-24`}>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
@@ -315,7 +328,10 @@ export default function HomePage() {
               quote: "Match quality improved quickly once we tightened our keywords.",
             },
           ].map((x) => (
-            <div key={x.name} className="rounded-3xl border border-black/10 bg-white p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)]">
+            <div
+              key={x.name}
+              className="rounded-3xl border border-black/10 bg-white p-7 shadow-[0_12px_40px_rgba(0,0,0,0.06)]"
+            >
               <div className="h-44 rounded-2xl bg-black/5" />
               <div className="mt-5 text-lg font-black">{x.name}</div>
               <div className="mt-1 text-sm text-black/60">{x.role}</div>
@@ -324,7 +340,7 @@ export default function HomePage() {
           ))}
         </div>
 
-        {/* Final CTA (light, longer spacing) */}
+        {/* Final CTA (light, no dark band) */}
         <div className="mt-16 rounded-3xl border border-black/10 bg-white/80 backdrop-blur px-10 py-14 text-center shadow-[0_22px_70px_rgba(0,0,0,0.08)]">
           <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
           <div className="mt-4 text-lg text-black/70">
@@ -338,9 +354,7 @@ export default function HomePage() {
             }}
             className="mt-10 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] hover:bg-[#465DFF]"
           >
-            <span className="mr-3 inline-flex h-9 w-9 items-center justify-center rounded-full border-2 border-white">
-              <span className="text-lg font-black">→</span>
-            </span>
+            <ArrowBadge />
             Sign Up
           </button>
 
