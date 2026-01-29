@@ -34,12 +34,10 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
 }
 
 /**
- * ✅ Put your 3 logo images in:
+ * Put your 3 logo images in:
  *   /public/landing/social/golden-state-landscapes.jpeg
  *   /public/landing/social/old-dominion-plumbing.jpeg
  *   /public/landing/social/power-mechanical.jpeg
- *
- * Then these will render inside the avatar circles under the Sign Up button.
  */
 function SignupSocialProof() {
   const logos = [
@@ -60,25 +58,25 @@ function SignupSocialProof() {
   return (
     <div className="mt-5 flex flex-col items-center gap-2">
       <div className="flex items-center justify-center">
-        <div className="flex -space-x-3">
+        <div className="flex -space-x-4">
           {logos.map((l) => (
             <div
               key={l.src}
-              className="h-10 w-10 overflow-hidden rounded-full border border-black/10 bg-white shadow-sm"
+              className="h-11 w-11 overflow-hidden rounded-full bg-white shadow-sm border border-black/10 ring-2 ring-black/5"
               title={l.alt}
               aria-label={l.alt}
             >
               <img
                 src={l.src}
                 alt={l.alt}
-                className="h-full w-full object-contain p-1"
+                className="h-full w-full object-cover object-center"
                 loading="lazy"
               />
             </div>
           ))}
 
           <div
-            className="h-10 w-10 rounded-full border border-black/10 bg-white/90 shadow-sm flex items-center justify-center text-xs font-semibold text-black/70"
+            className="h-11 w-11 rounded-full bg-white shadow-sm border border-black/10 ring-2 ring-black/5 flex items-center justify-center text-xs font-semibold text-black/70"
             aria-hidden="true"
             title="More users"
           >
@@ -146,7 +144,6 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        {/* ✅ Removed border + made this same as baby-blue background */}
         <div className="rounded-[44px] bg-[#EAF3FF] px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
@@ -170,7 +167,7 @@ export default function HomePage() {
               </button>
             </div>
 
-            {/* ✅ Social proof avatars */}
+            {/* Social proof avatars */}
             <SignupSocialProof />
 
             {/* Preview strip */}
