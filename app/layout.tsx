@@ -41,7 +41,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="bg-[#EAF3FF]">
+    <html lang="en" className="bg-[#F2F2F2]">
       <head>
         {/* Meta Pixel */}
         <Script id="meta-pixel" strategy="afterInteractive">
@@ -61,7 +61,7 @@ export default function RootLayout({
       </head>
 
       {/* ✅ Removed dark gradient background entirely */}
-      <body className="min-h-screen bg-[#EAF3FF] text-black">
+      <body className="min-h-screen bg-[#F2F2F2] text-black">
         <div className="min-h-screen flex flex-col">
           <SiteNav />
 

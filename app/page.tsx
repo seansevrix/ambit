@@ -343,8 +343,8 @@ export default function HomePage() {
     const prevHtml = document.documentElement.style.backgroundColor;
     const prevBody = document.body.style.backgroundColor;
 
-    document.documentElement.style.backgroundColor = "#EAF3FF";
-    document.body.style.backgroundColor = "#EAF3FF";
+    document.documentElement.style.backgroundColor = "#F2F2F2";
+    document.body.style.backgroundColor = "#F2F2F2";
 
     return () => {
       document.documentElement.style.backgroundColor = prevHtml;
@@ -368,7 +368,7 @@ export default function HomePage() {
   return (
     <div className="relative min-h-screen text-black">
       {/* Full-bleed baby-blue base */}
-      <div className="pointer-events-none fixed inset-0 -z-50 bg-[#EAF3FF]" />
+      <div className="pointer-events-none fixed inset-0 -z-50 bg-[#F2F2F2]" />
 
       {/* Subtle pattern (light) */}
       <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.10] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
@@ -380,7 +380,7 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] bg-[#EAF3FF] px-8 py-14 sm:px-14">
+        <div className="rounded-[44px] bg-[#F2F2F2] px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
