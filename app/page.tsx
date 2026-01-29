@@ -91,6 +91,256 @@ function SignupSocialProof() {
     </div>
   );
 }
+// ---------- LIVE PREVIEW (conversion-friendly) ----------
+
+type PreviewMatch = {
+  title: string;
+  location: string;
+  score: number;
+  badges: Array<{ label: string; tone: "new" | "verified" | "due" }>;
+  reasons: string[];
+};
+
+const PREVIEW_DATA: Record<Market, PreviewMatch[]> = {
+  residential: [
+    {
+      title: "Backyard cleanup + hauling",
+      location: "San Diego, CA",
+      score: 96,
+      badges: [
+        { label: "Verified", tone: "verified" },
+        { label: "New", tone: "new" },
+      ],
+      reasons: ["Within 8 miles", "High intent", "Same-day response"],
+    },
+    {
+      title: "Sprinkler repair (zone not turning on)",
+      location: "Chula Vista, CA",
+      score: 93,
+      badges: [{ label: "Due soon", tone: "due" }],
+      reasons: ["Service area match", "Repeat buyer signals", "Quick win"],
+    },
+    {
+      title: "Fence + gate install estimate",
+      location: "La Mesa, CA",
+      score: 91,
+      badges: [{ label: "New", tone: "new" }],
+      reasons: ["Good margin", "Nearby", "Clear scope"],
+    },
+  ],
+  commercial: [
+    {
+      title: "Retail plaza: monthly landscaping",
+      location: "Austin, TX",
+      score: 95,
+      badges: [{ label: "New", tone: "new" }],
+      reasons: ["Recurring revenue", "Fits crew size", "Fast close"],
+    },
+    {
+      title: "Restaurant: grease trap service",
+      location: "Phoenix, AZ",
+      score: 92,
+      badges: [{ label: "Due soon", tone: "due" }],
+      reasons: ["Local match", "High urgency", "Simple scope"],
+    },
+    {
+      title: "Office building: plumbing maintenance",
+      location: "Orlando, FL",
+      score: 90,
+      badges: [{ label: "New", tone: "new" }],
+      reasons: ["Work order stream", "Good LTV", "Clear requirements"],
+    },
+  ],
+  government: [
+    {
+      title: "Janitorial services (base facility)",
+      location: "Tampa, FL",
+      score: 97,
+      badges: [{ label: "Due soon", tone: "due" }],
+      reasons: ["NAICS aligned", "Set-aside likely", "Strong fit"],
+    },
+    {
+      title: "HVAC PM + filter replacement",
+      location: "Norfolk, VA",
+      score: 94,
+      badges: [{ label: "New", tone: "new" }],
+      reasons: ["Service area match", "Clear schedule", "Good margin"],
+    },
+    {
+      title: "Grounds maintenance (multi-site)",
+      location: "San Diego, CA",
+      score: 92,
+      badges: [{ label: "Verified", tone: "verified" }],
+      reasons: ["Past award signals", "Nearby", "Scope match"],
+    },
+  ],
+};
+
+function toneClasses(tone: "new" | "verified" | "due") {
+  if (tone === "verified") return "bg-emerald-50 text-emerald-800 border-emerald-200";
+  if (tone === "due") return "bg-amber-50 text-amber-800 border-amber-200";
+  return "bg-blue-50 text-blue-800 border-blue-200";
+}
+
+function LivePill() {
+  return (
+    <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-[11px] font-semibold text-black/70">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5C74FF] opacity-40" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-[#5C74FF]" />
+      </span>
+      Live scan
+      <span className="text-black/40">•</span>
+      Updated 2m ago
+    </div>
+  );
+}
+
+function PreviewMatches({ market }: { market: Market }) {
+  const rows = PREVIEW_DATA[market];
+
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-4">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold text-black/55">Top matches</div>
+        <LivePill />
+      </div>
+
+      <div className="mt-3 space-y-3">
+        {rows.map((m, idx) => (
+          <div
+            key={`${m.title}-${idx}`}
+            className="rounded-xl border border-black/10 bg-[#FAFAF7] p-3 hover:bg-white transition"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <div className="truncate text-sm font-semibold text-black">{m.title}</div>
+                <div className="mt-0.5 text-xs text-black/55">{m.location}</div>
+              </div>
+
+              <div className="flex shrink-0 items-center gap-2">
+                <div className="rounded-full border border-black/10 bg-white px-2.5 py-1 text-xs font-bold text-black/80">
+                  {m.score}
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {m.badges.map((b, bi) => (
+                <span
+                  key={`${b.label}-${bi}`}
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${toneClasses(
+                    b.tone
+                  )}`}
+                >
+                  {b.label}
+                </span>
+              ))}
+              {m.reasons.slice(0, 2).map((r, ri) => (
+                <span
+                  key={`${r}-${ri}`}
+                  className="rounded-full border border-black/10 bg-white px-2 py-0.5 text-[11px] font-semibold text-black/60"
+                >
+                  {r}
+                </span>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* subtle “more” fade to imply depth */}
+        <div className="relative -mt-2 h-8 w-full overflow-hidden rounded-xl">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white" />
+        </div>
+      </div>
+
+      <div className="mt-2 text-[11px] text-black/50">
+        Full details + links available for active subscribers.
+      </div>
+    </div>
+  );
+}
+
+function PreviewActivity({ market }: { market: Market }) {
+  const stats =
+    market === "government"
+      ? [
+          { k: "New today", v: "12" },
+          { k: "Saved", v: "4" },
+          { k: "Due soon", v: "3" },
+        ]
+      : market === "commercial"
+      ? [
+          { k: "New today", v: "18" },
+          { k: "Saved", v: "6" },
+          { k: "Emailed", v: "3" },
+        ]
+      : [
+          { k: "New today", v: "21" },
+          { k: "Saved", v: "7" },
+          { k: "Verified", v: "9" },
+        ];
+
+  const bars = market === "government" ? [30, 55, 45, 70, 60, 80, 65] : market === "commercial" ? [35, 60, 50, 75, 68, 88, 72] : [40, 70, 55, 82, 74, 92, 78];
+
+  const feed =
+    market === "government"
+      ? ["Scanned SAM.gov + OpenGov", "3 high-fit bids flagged", "Digest queued for 5:00pm"]
+      : market === "commercial"
+      ? ["New work orders detected", "2 buyers replied today", "Top match score: 95"]
+      : ["Verified buyer lead added", "2 calls booked", "Top match score: 96"];
+
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white p-4">
+      <div className="flex items-center justify-between">
+        <div className="text-xs font-semibold text-black/55">Momentum</div>
+        <div className="text-[11px] font-semibold text-black/45">Engine v1.0</div>
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {stats.map((s) => (
+          <div key={s.k} className="rounded-xl border border-black/10 bg-[#FAFAF7] px-3 py-2">
+            <div className="text-lg font-black text-black">{s.v}</div>
+            <div className="text-[11px] font-semibold text-black/55">{s.k}</div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-3 rounded-xl border border-black/10 bg-[#FAFAF7] p-3">
+        <div className="flex items-center justify-between">
+          <div className="text-[11px] font-semibold text-black/55">Last 7 days</div>
+          <div className="text-[11px] font-semibold text-black/40">Matches</div>
+        </div>
+
+        <div className="mt-2 flex items-end gap-1.5">
+          {bars.map((h, i) => (
+            <div
+              key={i}
+              className="w-full rounded-md bg-black/10"
+              style={{ height: 44 }}
+            >
+              <div
+                className="w-full rounded-md bg-[#5C74FF]"
+                style={{ height: `${h}%` }}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="mt-3 space-y-2">
+        {feed.map((t, i) => (
+          <div key={i} className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2">
+            <div className="text-[12px] font-semibold text-black/70">{t}</div>
+            <div className="text-[11px] font-semibold text-black/35">
+              {i === 0 ? "2m" : i === 1 ? "12m" : "1h"}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const [market, setMarket] = useState<Market>("residential");
