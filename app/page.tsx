@@ -41,18 +41,9 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
  */
 function SignupSocialProof() {
   const logos = [
-    {
-      src: "/landing/social/golden-state-landscapes.jpeg",
-      alt: "Golden State Landscapes",
-    },
-    {
-      src: "/landing/social/old-dominion-plumbing.jpeg",
-      alt: "Old Dominion Plumbing Co.",
-    },
-    {
-      src: "/landing/social/power-mechanical.jpeg",
-      alt: "Power Mechanical",
-    },
+    { src: "/landing/social/golden-state-landscapes.jpeg", alt: "Golden State Landscapes" },
+    { src: "/landing/social/old-dominion-plumbing.jpeg", alt: "Old Dominion Plumbing Co." },
+    { src: "/landing/social/power-mechanical.jpeg", alt: "Power Mechanical" },
   ];
 
   return (
@@ -108,29 +99,27 @@ type PreviewMatch = {
   nextStep: string;
 };
 
-const PROFILE_HINT: Record<
-  Market,
-  { location: string; trade: string; radius: string; trust: string[] }
-> = {
-  residential: {
-    location: "San Diego, CA",
-    trade: "Landscaping",
-    radius: "25mi radius",
-    trust: ["Verified buyers", "Updated frequently", "Ranked by fit"],
-  },
-  commercial: {
-    location: "Austin, TX",
-    trade: "Facilities Services",
-    radius: "50mi radius",
-    trust: ["Recurring work orders", "Fast response routing", "Ranked by fit"],
-  },
-  government: {
-    location: "San Diego, CA",
-    trade: "Janitorial (561720)",
-    radius: "250mi radius",
-    trust: ["Public sources monitored", "Deadline-aware ranking", "Ranked by fit"],
-  },
-};
+const PROFILE_HINT: Record<Market, { location: string; trade: string; radius: string; trust: string[] }> =
+  {
+    residential: {
+      location: "San Diego, CA",
+      trade: "Landscaping",
+      radius: "25mi radius",
+      trust: ["Verified buyers", "Updated frequently", "Ranked by fit"],
+    },
+    commercial: {
+      location: "Austin, TX",
+      trade: "Facilities Services",
+      radius: "50mi radius",
+      trust: ["Recurring work orders", "Fast response routing", "Ranked by fit"],
+    },
+    government: {
+      location: "San Diego, CA",
+      trade: "Janitorial (561720)",
+      radius: "250mi radius",
+      trust: ["Public sources monitored", "Deadline-aware ranking", "Ranked by fit"],
+    },
+  };
 
 const PREVIEW_DATA: Record<Market, PreviewMatch> = {
   residential: {
@@ -193,9 +182,7 @@ function LivePill() {
         <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5C74FF] opacity-40" />
         <span className="relative inline-flex h-2 w-2 rounded-full bg-[#5C74FF]" />
       </span>
-      Live scan
-      <span className="text-black/40">•</span>
-      Updated 2m ago
+      Live scan <span className="text-black/40">•</span> Updated 2m ago
     </div>
   );
 }
@@ -275,9 +262,7 @@ function PreviewMatches({ market }: { market: Market }) {
             {m.badges.map((b, bi) => (
               <span
                 key={`${b.label}-${bi}`}
-                className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${toneClasses(
-                  b.tone
-                )}`}
+                className={`rounded-full border px-2 py-0.5 text-[11px] font-semibold ${toneClasses(b.tone)}`}
               >
                 {b.label}
               </span>
@@ -305,9 +290,7 @@ function PreviewMatches({ market }: { market: Market }) {
                 <div className="mt-1 text-[12px] font-semibold text-black/70">{m.buyerNote}</div>
               </div>
               <div className="rounded-lg border border-black/10 bg-[#FAFAF7] px-3 py-2">
-                <div className="text-[11px] font-semibold text-black/55">
-                  Recommended next step
-                </div>
+                <div className="text-[11px] font-semibold text-black/55">Recommended next step</div>
                 <div className="mt-1 text-[12px] font-semibold text-black/70">{m.nextStep}</div>
               </div>
             </div>
@@ -411,9 +394,7 @@ function PreviewActivity({ market }: { market: Market }) {
             className="flex items-center justify-between rounded-xl border border-black/10 bg-white px-3 py-2 transition hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
           >
             <div className="text-[12px] font-semibold text-black/70">{t}</div>
-            <div className="text-[11px] font-semibold text-black/35">
-              {i === 0 ? "2m" : i === 1 ? "12m" : "1h"}
-            </div>
+            <div className="text-[11px] font-semibold text-black/35">{i === 0 ? "2m" : i === 1 ? "12m" : "1h"}</div>
           </div>
         ))}
       </div>
@@ -444,9 +425,7 @@ const TESTIMONIALS: Testimonial[] = [
   {
     segment: "Commercial",
     quote: [
-      {
-        t: "I sat on AMBIT for weeks because I thought setup would be complicated. ",
-      },
+      { t: "I sat on AMBIT for weeks because I thought setup would be complicated. " },
       { t: "Fully up and running in under 5 minutes.", strong: true },
       { t: " Now we get opportunities every morning instead of searching for hours." },
     ],
@@ -505,11 +484,7 @@ function StarRow({ count }: { count: number }) {
   );
 }
 
-function TestimonialsSection({
-  onOpenSignup,
-}: {
-  onOpenSignup: () => void;
-}) {
+function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
   return (
     <section className={`${CONTAINER} pb-24`}>
       <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_30px_120px_rgba(0,0,0,0.28)]">
@@ -598,6 +573,7 @@ function TestimonialsSection({
         </div>
       </div>
 
+      {/* FINAL CTA (no extra links) */}
       <div className="mt-16 rounded-3xl border border-black/10 bg-white/85 backdrop-blur px-10 py-14 text-center shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
         <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
         <div className="mt-4 text-lg text-black/70">
@@ -611,27 +587,6 @@ function TestimonialsSection({
           <ArrowBadge />
           Sign Up
         </button>
-
-        <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm font-semibold text-black/55">
-          <Link href="/" className="hover:text-black">
-            Home
-          </Link>
-          <Link href="/about" className="hover:text-black">
-            About Us
-          </Link>
-          <Link href="/testimonials" className="hover:text-black">
-            Testimonials
-          </Link>
-          <Link href="/privacy" className="hover:text-black">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-black">
-            Terms
-          </Link>
-          <Link href="/login" className="hover:text-black">
-            Log In
-          </Link>
-        </div>
       </div>
     </section>
   );
@@ -675,12 +630,7 @@ export default function HomePage() {
       <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.08] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
       <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.10),transparent_62%)]" />
 
-      <SignupModal
-        open={modalOpen}
-        onClose={() => setModalOpen(false)}
-        kind={modalKind}
-        market={market}
-      />
+      <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
@@ -729,9 +679,7 @@ export default function HomePage() {
                         onClick={() => setMarket(m.key)}
                         className={[
                           "rounded-full px-5 py-2.5 text-sm font-semibold transition",
-                          active
-                            ? "bg-black text-white"
-                            : "text-black/70 hover:text-black hover:bg-black/[0.04]",
+                          active ? "bg-black text-white" : "text-black/70 hover:text-black hover:bg-black/[0.04]",
                         ].join(" ")}
                       >
                         {m.label}
@@ -788,8 +736,8 @@ export default function HomePage() {
             </div>
 
             <div className="text-black/70">
-              AMBIT is built for speed, clarity, and momentum—so you’re not guessing where to focus.
-              See what’s relevant, understand it fast, and act with confidence.
+              AMBIT is built for speed, clarity, and momentum—so you’re not guessing where to focus. See what’s
+              relevant, understand it fast, and act with confidence.
             </div>
           </div>
         </div>
@@ -807,8 +755,8 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated positions that align your specific
-              background with the sectors you actually care about.
+              Stop searching and start selecting. Access curated positions that align your specific background with
+              the sectors you actually care about.
             </div>
           </div>
 
@@ -822,18 +770,14 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_14px_40px_rgba(0,0,0,0.10)]">
             <div className="text-2xl font-black">A Command Center for Your Company.</div>
             <div className="mt-3 text-white/90">
-              Leave nothing to chance. Use precision match making to find your jobs and leverage
-              simple summaries to analyze the competitive landscape—giving you the direct line to
-              the decision-makers that matter.
+              Use precision matching to find the right jobs and simple summaries to decide fast.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Visibility Without Guesswork.</div>
             <div className="mt-3 text-black/70">
-              You deserve a seat at the table. We’ve engineered the Ambit platform to prioritize
-              transparency—so your expertise is recognized and your status is clear at every stage
-              of the process.
+              Built to prioritize transparency—so your status is clear at every stage.
             </div>
           </div>
         </div>
