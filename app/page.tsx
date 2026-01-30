@@ -635,19 +635,28 @@ export default function HomePage() {
   const heroSubtitle = useMemo(() => marketSub(market), [market]);
 
   return (
-    <div className="relative min-h-screen overflow-hidden text-black">
-      {/* Base background */}
-      <div className="pointer-events-none fixed inset-0 -z-50 bg-[#DEDEDE]" />
-      {/* NEW: Topo/Blueprint + Soft Radial Depth (no motion) */}
-      <div className="pointer-events-none fixed inset-0 -z-40">
-        <LandingBackground />
-      </div>
+  <div className="relative min-h-screen overflow-hidden text-black">
+    {/* Landing background should sit BEHIND the site-wide grid */}
+    <div className="pointer-events-none fixed inset-0 -z-[70]">
+      <LandingBackground />
+    </div>
+
+    <SignupModal
+      open={modalOpen}
+      onClose={() => setModalOpen(false)}
+      kind={modalKind}
+      market={market}
+    />
+
+    {/* HERO */}
+    ...
+
 
       <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] bg-[#DEDEDE] px-8 py-14 sm:px-14">
+        <div className="rounded-[44px] bg-white/60 backdrop-blur px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
