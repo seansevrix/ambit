@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Opportunity = {
   id?: number | string;
@@ -30,28 +33,14 @@ const PRIMARY =
 const SECONDARY =
   "inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white hover:bg-white/10";
 
-// ✅ Important: set NEXT_PUBLIC_API_BASE_URL on Vercel to your Render backend
-// Fallback to Render so production never points at localhost.
+// ✅ IMPORTANT:
+// Client-safe API base (no build-time server fetch). This prevents Vercel export timeouts.
 const API_BASE = (
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_BASE ||
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
   "https://ambit-0dnp.onrender.com"
 ).replace(/\/$/, "");
-
-async function getOpportunities(): Promise<Opportunity[]> {
-  try {
-    const res = await fetch(`${API_BASE}/engine/opportunities`, {
-      // ✅ Reduce cold-start pain; still “fresh enough” for a preview feed
-      next: { revalidate: 60 },
-    });
-
-    if (!res.ok) return [];
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
-  } catch {
-    return [];
-  }
-}
 
 function normalize(o: any): Opportunity {
   return {
@@ -64,7 +53,9 @@ function normalize(o: any): Opportunity {
 }
 
 function keyOf(o: Opportunity) {
-  return `${(o.title || "").toLowerCase()}|${(o.location || "").toLowerCase()}|${(o.naics || "").toLowerCase()}`;
+  return `${(o.title || "").toLowerCase()}|${(o.location || "").toLowerCase()}|${(
+    o.naics || ""
+  ).toLowerCase()}`;
 }
 
 function dedupe(list: Opportunity[]) {
@@ -155,13 +146,89 @@ const SAMPLE_PREVIEW: Opportunity[] = [
   { title: "Janitorial Services (Nightly)", location: "Las Vegas, NV", naics: "561720", createdAt: new Date().toISOString() },
 ];
 
-export default async function OpportunitiesPreviewPage() {
-  const raw = await getOpportunities();
-  const uniqueReal = dedupe(raw.map(normalize)).filter((o) => withinLast12Months(o.createdAt));
-  const combined = shuffle(uniqueReal).concat(shuffle(SAMPLE_PREVIEW));
+async function fetchOpportunitiesClient(signal?: AbortSignal): Promise<Opportunity[]> {
+  const res = await fetch(`${API_BASE}/engine/opportunities`, {
+    method: "GET",
+    cache: "no-store",
+    credentials: "include",
+    signal,
+  });
 
-  // 1 unlocked featured + 10 locked
-  const lockedList = dedupe(combined).slice(0, 10);
+  if (!res.ok) return [];
+  const data = await res.json().catch(() => null);
+
+  // Your backend sometimes returns an array directly; keep it permissive.
+  if (Array.isArray(data)) return data;
+  if (Array.isArray((data as any)?.opportunities)) return (data as any).opportunities;
+  if (Array.isArray((data as any)?.items)) return (data as any).items;
+
+  return [];
+}
+
+function SkeletonCard() {
+  return (
+    <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-[#0B1430]/40 p-6">
+      <div className="absolute right-4 top-4 h-6 w-20 rounded-full bg-white/10" />
+      <div className="h-5 w-10/12 rounded bg-white/10" />
+      <div className="mt-4 flex flex-wrap gap-2">
+        <div className="h-6 w-44 rounded-full bg-white/10" />
+        <div className="h-6 w-28 rounded-full bg-white/10" />
+        <div className="h-6 w-24 rounded-full bg-white/10" />
+        <div className="h-6 w-20 rounded-full bg-white/10" />
+      </div>
+      <div className="mt-5 rounded-2xl border border-white/10 bg-white/5 p-4">
+        <div className="h-4 w-32 rounded bg-white/10" />
+        <div className="mt-3 space-y-2">
+          <div className="h-3 w-full rounded bg-white/10" />
+          <div className="h-3 w-11/12 rounded bg-white/10" />
+          <div className="h-3 w-10/12 rounded bg-white/10" />
+        </div>
+        <div className="mt-4 flex gap-2">
+          <div className="h-10 w-44 rounded-xl bg-white/10" />
+          <div className="h-10 w-44 rounded-xl bg-white/10" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function OpportunitiesPreviewPage() {
+  const [raw, setRaw] = useState<Opportunity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [warn, setWarn] = useState<string | null>(null);
+
+  useEffect(() => {
+    const ac = new AbortController();
+
+    (async () => {
+      setLoading(true);
+      setWarn(null);
+
+      try {
+        // Hard timeout so the client never hangs on cold start
+        const t = setTimeout(() => ac.abort(), 15000);
+        const data = await fetchOpportunitiesClient(ac.signal);
+        clearTimeout(t);
+
+        setRaw(Array.isArray(data) ? data : []);
+      } catch {
+        // Cold start / network issue — still show the page using SAMPLE_PREVIEW only
+        setWarn("Live feed is warming up. Showing sample preview items for now.");
+        setRaw([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+
+    return () => ac.abort();
+  }, []);
+
+  const lockedList = useMemo(() => {
+    const uniqueReal = dedupe(raw.map(normalize)).filter((o) => withinLast12Months(o.createdAt));
+    const combined = shuffle(uniqueReal).concat(shuffle(SAMPLE_PREVIEW));
+    // 10 locked cards
+    return dedupe(combined).slice(0, 10);
+  }, [raw]);
 
   return (
     <div className="space-y-10">
@@ -183,6 +250,12 @@ export default async function OpportunitiesPreviewPage() {
               <span className="font-semibold">Disclaimer:</span>{" "}
               Verify all details on the official source before bidding.
             </div>
+
+            {warn ? (
+              <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/70">
+                {warn}
+              </div>
+            ) : null}
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row">
@@ -205,7 +278,9 @@ export default async function OpportunitiesPreviewPage() {
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
         <div className="mb-5 flex items-center justify-between">
           <div className="text-sm font-semibold text-white">Featured unlocked example</div>
-          <div className="text-xs text-white/60">1 item unlocked • {lockedList.length} locked</div>
+          <div className="text-xs text-white/60">
+            1 item unlocked • {lockedList.length} locked
+          </div>
         </div>
 
         <UnlockedCard o={FEATURED_UNLOCKED} />
@@ -214,13 +289,24 @@ export default async function OpportunitiesPreviewPage() {
       <section className="rounded-3xl border border-white/10 bg-white/5 p-10">
         <div className="flex items-center justify-between">
           <div className="text-sm font-semibold text-white">Preview feed (locked)</div>
-          <div className="text-xs text-white/60">Showing {lockedList.length} locked items</div>
+          <div className="text-xs text-white/60">
+            {loading ? "Loading…" : `Showing ${lockedList.length} locked items`}
+          </div>
         </div>
 
         <div className="mt-6 grid gap-5 lg:grid-cols-2">
-          {lockedList.map((o, idx) => (
-            <LockedCard key={String(o.id ?? `${keyOf(o)}|${idx}`)} o={o} />
-          ))}
+          {loading ? (
+            <>
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+              <SkeletonCard />
+            </>
+          ) : (
+            lockedList.map((o, idx) => (
+              <LockedCard key={String(o.id ?? `${keyOf(o)}|${idx}`)} o={o} />
+            ))
+          )}
         </div>
       </section>
 
