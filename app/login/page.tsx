@@ -1,104 +1,310 @@
-// app/login/page.tsx
+"use client";
+
 import Link from "next/link";
-import LoginClient from "./LoginClient";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 
-export const metadata = {
-  title: "Log In | AMBIT",
-  description: "Log in to view your match history.",
-};
+const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
+const DEV_BACKEND = "http://localhost:5001";
+const FALLBACK = process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
 
-export default function LoginPage({
-  searchParams,
-}: {
-  searchParams?: { next?: string };
-}) {
-  const nextParam = typeof searchParams?.next === "string" ? searchParams.next : "";
-  const safeNext = nextParam.startsWith("/") ? nextParam : "";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  FALLBACK
+).replace(/\/$/, "");
+
+const REQUEST_TIMEOUT_MS = 15000;
+const EMAIL_KEY = "ambit_login_email";
+
+function PageBackdrop() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden">
+      {/* base */}
+      <div className="absolute inset-0 bg-[#EAF3FF]" />
+
+      {/* blueprint grid (visible) */}
+      <div
+        className="absolute inset-0 opacity-[0.16]"
+        style={{
+          backgroundImage:
+            "linear-gradient(to right, rgba(26,79,163,0.22) 1px, transparent 1px), linear-gradient(to bottom, rgba(26,79,163,0.22) 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+        }}
+      />
+
+      {/* soft glow blobs */}
+      <div
+        className="absolute inset-0 opacity-100"
+        style={{
+          backgroundImage:
+            "radial-gradient(circle at 18% 10%, rgba(99,167,255,0.55), transparent 55%), radial-gradient(circle at 78% 18%, rgba(26,79,163,0.22), transparent 52%), radial-gradient(circle at 70% 78%, rgba(99,167,255,0.30), transparent 58%)",
+        }}
+      />
+
+      {/* vignette / fade */}
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundImage:
+            "linear-gradient(to bottom, rgba(234,243,255,0.00), rgba(234,243,255,0.85) 65%, rgba(234,243,255,1))",
+        }}
+      />
+    </div>
+  );
+}
+
+async function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  try {
+    return await fetch(url, { ...init, signal: ac.signal });
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function prettyErr(e: any) {
+  if (e?.name === "AbortError") return "Server is waking up — please retry in a few seconds.";
+  return e?.message || "Something went wrong. Please try again.";
+}
+
+function extractCustomerId(json: any) {
+  return (
+    json?.customerId ??
+    json?.customer?.id ??
+    json?.id ??
+    json?.customer?.customerId ??
+    null
+  );
+}
+
+function isActiveFrom(json: any) {
+  return Boolean(
+    json?.access?.isActive ??
+      json?.isActive ??
+      json?.customer?.isActive ??
+      false
+  );
+}
+
+export default function LoginPage() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [remember, setRemember] = useState(true);
+
+  const [loadingLogin, setLoadingLogin] = useState(false);
+  const [loadingCheckout, setLoadingCheckout] = useState(false);
+
+  const [err, setErr] = useState<string | null>(null);
+
+  // If login returns customerId, store it so Finish Signup can reuse it
+  const [customerId, setCustomerId] = useState<number | null>(null);
+  const [isActive, setIsActive] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(EMAIL_KEY) || "";
+      if (stored) setEmail(stored);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    if (!remember) return;
+    const e = email.trim().toLowerCase();
+    if (!e) return;
+    try {
+      localStorage.setItem(EMAIL_KEY, e);
+    } catch {}
+  }, [email, remember]);
+
+  const canSubmit = useMemo(() => email.trim().length > 0, [email]);
+
+  async function loginOnly(): Promise<{ id: number | null; active: boolean }> {
+    setErr(null);
+
+    const trimmed = email.trim().toLowerCase();
+    if (!trimmed) throw new Error("Enter your email.");
+
+    const res = await abortableFetch(`${API_BASE}/engine/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email: trimmed }),
+    });
+
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      throw new Error(json?.error || json?.message || `Login failed (${res.status})`);
+    }
+
+    const id = extractCustomerId(json);
+    const active = isActiveFrom(json);
+
+    setIsActive(active);
+    setCustomerId(typeof id === "number" ? id : id ? Number(id) : null);
+
+    return { id: id ? Number(id) : null, active };
+  }
+
+  async function onShowMatches() {
+    if (!canSubmit || loadingLogin || loadingCheckout) return;
+
+    setLoadingLogin(true);
+    try {
+      const { id } = await loginOnly();
+      if (id) router.push(`/matches/${id}`);
+      else router.push(`/matches`);
+    } catch (e: any) {
+      setErr(prettyErr(e));
+    } finally {
+      setLoadingLogin(false);
+    }
+  }
+
+  async function onFinishSignup() {
+    if (!canSubmit || loadingLogin || loadingCheckout) return;
+
+    setLoadingCheckout(true);
+    try {
+      // Always login first so we reliably get customerId
+      const { id, active } = await loginOnly();
+
+      if (!id) throw new Error("Missing customer id. Please try again.");
+      if (active) {
+        // Already active -> send to matches
+        router.push(`/matches/${id}`);
+        return;
+      }
+
+      // Now create Stripe checkout session
+      const res = await abortableFetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId: id }),
+      });
+
+      const txt = await res.text().catch(() => "");
+      if (!res.ok) throw new Error(txt || `Checkout failed (${res.status})`);
+
+      const { url } = JSON.parse(txt || "{}");
+      if (!url) throw new Error("Missing Stripe checkout URL.");
+
+      window.location.href = url;
+    } catch (e: any) {
+      setErr(prettyErr(e));
+    } finally {
+      setLoadingCheckout(false);
+    }
+  }
 
   return (
-    <div className="min-h-screen bg-[#070B18] text-white">
-      {/* Background glow + subtle grid */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
-        <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] [background-size:72px_72px]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
-      </div>
+    <main className="relative min-h-[calc(100vh-72px)] px-6 py-14 text-black">
+      <PageBackdrop />
 
-      <div className="mx-auto max-w-[1200px] px-6 py-10 lg:px-10">
-        <div className="grid items-start gap-8 lg:grid-cols-[minmax(0,560px)_minmax(0,420px)]">
-          {/* LEFT: Single card (no extra header above it) */}
-          <div className="mx-auto w-full max-w-[560px] lg:mx-0">
-            <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.35)] sm:p-8">
-              {/* subtle corner glows */}
-              <div className="pointer-events-none absolute -left-24 -top-24 h-64 w-64 rounded-full bg-white/7 blur-3xl opacity-40" />
-              <div className="pointer-events-none absolute -right-24 -bottom-24 h-64 w-64 rounded-full bg-white/6 blur-3xl opacity-35" />
+      <div className="relative z-10 mx-auto max-w-[980px]">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-black/70 hover:text-black"
+        >
+          <span aria-hidden>←</span> Back
+        </Link>
 
-              <div className="relative">
-                {/* small top row */}
-                <div className="mb-4 flex items-center justify-between">
-                  <Link href="/" className="text-sm font-semibold text-white/60 hover:text-white/80">
-                    ← Back
+        <div className="mx-auto mt-10 w-full max-w-[720px] rounded-[28px] bg-white/75 backdrop-blur-md shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
+          <div className="px-8 py-7 sm:px-10 sm:py-9">
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[11px] font-black tracking-[0.16em] text-black/50">
+                  COMPANY PORTAL
+                </div>
+                <h1 className="mt-2 text-3xl font-black tracking-tight sm:text-4xl">
+                  Log in to your matches
+                </h1>
+                <p className="mt-2 text-sm text-black/60">
+                  Enter the email you signed up with.
+                </p>
+              </div>
+
+              <div className="hidden sm:flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/60">
+                Secure login
+              </div>
+            </div>
+
+            <div className="mt-7 grid gap-4">
+              <div>
+                <div className="text-xs font-semibold text-black/55">Email</div>
+                <input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@company.com"
+                  className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+                />
+                <div className="mt-2 flex items-center justify-between text-xs text-black/55">
+                  <label className="inline-flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={remember}
+                      onChange={(e) => setRemember(e.target.checked)}
+                    />
+                    Remember me
+                  </label>
+
+                  <Link href="/get-started" className="font-semibold text-[#1A4FA3] hover:underline">
+                    New here? Create your profile →
                   </Link>
-
-                  <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
-                    <span className="relative flex h-2 w-2">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400/60" />
-                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
-                    </span>
-                    Secure login
-                  </span>
                 </div>
+              </div>
 
-                {/* Your existing form UI lives here */}
-                <LoginClient safeNext={safeNext} />
+              {err ? (
+                <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {err}
+                </div>
+              ) : null}
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  onClick={onShowMatches}
+                  disabled={!canSubmit || loadingLogin || loadingCheckout}
+                  className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(26,79,163,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {loadingLogin ? "Signing in…" : "Show My Matches"}
+                </button>
+
+                {/* ✅ new green button */}
+                <button
+                  onClick={onFinishSignup}
+                  disabled={!canSubmit || loadingLogin || loadingCheckout || isActive}
+                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(16,185,129,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+                  title={isActive ? "You’re already subscribed." : "Finish signup and subscribe."}
+                >
+                  {loadingCheckout
+                    ? "Opening Checkout…"
+                    : isActive
+                      ? "Subscribed ✓"
+                      : "Finish Signing Up"}
+                </button>
+              </div>
+
+              <div className="pt-1 text-center text-xs text-black/45">
+                Finish Signing Up takes you to secure checkout to add a card and activate your subscription.
+              </div>
+
+              {/* helpful if login already returned id */}
+              {customerId ? (
+                <div className="text-center text-xs text-black/35">
+                  Account detected: Customer #{customerId}
+                </div>
+              ) : null}
+
+              <div className="pt-1 text-center text-xs text-black/40">
+                Secure login • No spam
               </div>
             </div>
-
-            <p className="mt-5 text-center text-xs text-white/45">
-              By continuing, you agree to our{" "}
-              <Link href="/terms" className="underline underline-offset-2 hover:text-white/70">
-                Terms
-              </Link>{" "}
-              and{" "}
-              <Link href="/privacy" className="underline underline-offset-2 hover:text-white/70">
-                Privacy Policy
-              </Link>
-              .
-            </p>
           </div>
-
-          {/* RIGHT: Optional helper panel (desktop only) */}
-          <aside className="hidden lg:block">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_10px_60px_rgba(0,0,0,0.25)]">
-              <div className="text-sm font-semibold text-white/85">What you’ll see inside</div>
-              <p className="mt-2 text-sm text-white/65">
-                Your matched opportunities, ranked and summarized—so you can respond faster.
-              </p>
-
-              <div className="mt-5 space-y-3">
-                {[
-                  { title: "Daily matches", desc: "Fresh local leads delivered every morning." },
-                  { title: "Clear summaries", desc: "Know why it matches before you click." },
-                  { title: "Better fit", desc: "Less noise. More bid-ready work." },
-                ].map((x) => (
-                  <div key={x.title} className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="text-sm font-semibold text-white/80">{x.title}</div>
-                    <div className="mt-1 text-sm text-white/60">{x.desc}</div>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                <div className="text-xs font-semibold text-white/75">Tip</div>
-                <div className="mt-1 text-sm text-white/60">
-                  If you’re not seeing matches yet, tighten your service area + keywords.
-                </div>
-              </div>
-            </div>
-          </aside>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
