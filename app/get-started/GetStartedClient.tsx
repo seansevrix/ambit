@@ -101,7 +101,6 @@ export default function GetStartedClient() {
         json?.customer?.customerId ??
         null;
 
-      // If we got an id, route to matches. Otherwise, go to /matches (or wherever your flow expects).
       if (id) router.push(`/matches/${id}`);
       else router.push(`/matches`);
     } catch (e: any) {
@@ -114,29 +113,36 @@ export default function GetStartedClient() {
     <main className="relative min-h-[calc(100vh-72px)] px-6 py-14 text-black">
       {/* Top bar */}
       <div className="mx-auto max-w-[980px]">
-        <Link href="/" className="inline-flex items-center gap-2 text-sm font-semibold text-black/70 hover:text-black">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-sm font-semibold text-black/70 hover:text-black"
+        >
           <span aria-hidden>←</span> Back
         </Link>
       </div>
 
       {/* Centered card (modal-style) */}
       <div className="mx-auto mt-10 max-w-[980px]">
-        <div className="mx-auto w-full max-w-[780px] rounded-[28px] border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
+        {/* ✅ OUTER BORDER REMOVED HERE */}
+        <div className="mx-auto w-full max-w-[780px] rounded-[28px] bg-white/75 backdrop-blur-md shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
           <div className="px-8 py-7 sm:px-10 sm:py-9">
             <div className="text-[11px] font-black tracking-[0.16em] text-black/50">SIGN UP</div>
 
             <div className="mt-2 flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">Create your AMBIT profile</h1>
+                <h1 className="text-3xl font-black tracking-tight sm:text-4xl">
+                  Create your AMBIT profile
+                </h1>
                 <p className="mt-2 text-sm text-black/60">
                   Enter the basics — we’ll tailor your matches automatically.
                 </p>
               </div>
             </div>
 
-            {/* Markets line (replaces Market: Residential) */}
+            {/* Markets line */}
             <div className="mt-5 text-sm font-semibold text-black/70">
-              Markets: <span className="font-black text-black/85">Residential, Commercial, Government</span>
+              Markets:{" "}
+              <span className="font-black text-black/85">Residential, Commercial, Government</span>
             </div>
 
             {/* Form */}
