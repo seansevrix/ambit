@@ -581,13 +581,22 @@ function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
           Join the platform where who you are is just as important as what you do.
         </div>
 
-        <button
-          onClick={onOpenSignup}
-          className="mt-10 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
-        >
-          <ArrowBadge />
-          Sign Up
-        </button>
+        <div className="mt-10 flex items-center justify-center">
+          <div className="relative inline-flex">
+            {/* CTA HALO */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
+            />
+            <button
+              onClick={onOpenSignup}
+              className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
+            >
+              <ArrowBadge />
+              Sign Up
+            </button>
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -626,10 +635,13 @@ export default function HomePage() {
   const heroSubtitle = useMemo(() => marketSub(market), [market]);
 
   return (
-    <div className="relative min-h-screen text-black">
+    <div className="relative min-h-screen overflow-hidden text-black">
+      {/* Base background */}
       <div className="pointer-events-none fixed inset-0 -z-50 bg-[#DEDEDE]" />
-      <div className="pointer-events-none fixed inset-0 -z-40 opacity-[0.08] [background-image:linear-gradient(135deg,rgba(0,0,0,0.10)_1px,transparent_1px),linear-gradient(45deg,rgba(0,0,0,0.10)_1px,transparent_1px)] [background-size:180px_180px]" />
-      <div className="pointer-events-none fixed inset-0 -z-40 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.10),transparent_62%)]" />
+      {/* NEW: Topo/Blueprint + Soft Radial Depth (no motion) */}
+      <div className="pointer-events-none fixed inset-0 -z-40">
+        <LandingBackground />
+      </div>
 
       <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
 
@@ -646,22 +658,29 @@ export default function HomePage() {
             </p>
 
             <div className="mt-10 flex items-center justify-center">
-              <button
-                onClick={() => {
-                  setModalKind("company");
-                  setModalOpen(true);
-                }}
-                className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
-              >
-                <ArrowBadge />
-                Sign Up
-              </button>
+              <div className="relative inline-flex">
+                {/* CTA HALO */}
+                <span
+                  aria-hidden
+                  className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
+                />
+                <button
+                  onClick={() => {
+                    setModalKind("company");
+                    setModalOpen(true);
+                  }}
+                  className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
+                >
+                  <ArrowBadge />
+                  Sign Up
+                </button>
+              </div>
             </div>
 
             <SignupSocialProof />
 
-            {/* Preview strip */}
-            <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10 overflow-hidden rounded-3xl bg-white shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
+            {/* Preview strip (slight glass lift) */}
+            <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10 overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-white/60 shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
               <div className="flex items-center justify-between border-b border-black/5 px-6 py-4">
                 <div className="text-sm font-semibold text-black/80">AMBIT</div>
                 <div className="text-xs text-black/45">Preview</div>
