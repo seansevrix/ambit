@@ -36,8 +36,8 @@ export default function GetStartedClient() {
   // but we don't show "Market: X" anymore.
   const intent = useMemo(() => normalizeMarket(sp.get("intent")), [sp]);
 
-  const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
+  const [email, setEmail] = useState("");
   const [serviceArea, setServiceArea] = useState("");
   const [keywords, setKeywords] = useState("");
   const [naics, setNaics] = useState("");
