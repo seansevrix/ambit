@@ -31,7 +31,7 @@ function LockIcon() {
 
 function LoadingFallback() {
   return (
-    <div className="h-[420px] flex items-center justify-center">
+    <div className="h-[360px] flex items-center justify-center">
       <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)]">
         <div className="flex items-start gap-3">
           <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center">
@@ -54,6 +54,28 @@ function LoadingFallback() {
   );
 }
 
+function Step({
+  n,
+  title,
+  desc,
+}: {
+  n: number;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-black text-black/70">
+        {n}
+      </div>
+      <div>
+        <div className="font-semibold text-black/85">{title}</div>
+        <div className="text-black/60 text-sm">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <main className="min-h-screen text-black">
@@ -62,9 +84,7 @@ export default function Page() {
 
       {/* Blueprint grid (minor + major) */}
       <div className="pointer-events-none fixed inset-0 -z-[85]">
-        {/* minor */}
         <div className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
-        {/* major */}
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(0,0,0,0.20)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.20)_1px,transparent_1px)] [background-size:360px_360px]" />
       </div>
 
@@ -75,146 +95,126 @@ export default function Page() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.18] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-[1100px] px-6 py-12 lg:px-10">
+      <div className="mx-auto max-w-[980px] px-6 py-12 lg:px-10">
         {/* Top row */}
         <div className="flex items-center justify-between">
           <Link href="/" className="text-sm font-semibold text-black/60 hover:text-black">
             ← Back
           </Link>
 
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 py-1 text-[11px] font-semibold text-black/70 backdrop-blur">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#5C74FF] opacity-30" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-[#5C74FF]" />
+          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 py-1 text-[11px] font-semibold text-black/70 backdrop-blur">
+            <span className="text-black/70">
+              <LockIcon />
             </span>
-            Live setup
-          </div>
+            Secure signup
+          </span>
         </div>
 
         {/* Header */}
         <div className="mt-8">
-          <div className="max-w-3xl">
-            <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
-              Get your first matches in 60 seconds.
-            </h1>
+          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+            Start getting matched opportunities today
+          </h1>
 
-            <p className="mt-3 text-base sm:text-lg text-black/65">
-              AMBIT emails you ranked opportunities daily across{" "}
-              <span className="font-semibold text-black/80">Residential • Commercial • Government</span>.
-              No credit card required.
-            </p>
+          <p className="mt-3 max-w-2xl text-black/65">
+            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
+            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>.
+          </p>
 
-            {/* Trust row */}
+          {/* Trust bar */}
+          <div className="mt-4 flex flex-wrap gap-2">
+            {TRUST_BADGES.map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70 backdrop-blur"
+              >
+                {t}
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* SIGNUP CARD (keep this as the main centerpiece) */}
+        <div className="mt-10 rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+          <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center font-black">
+                A
+              </div>
+              <div>
+                <div className="text-sm font-black">AMBIT</div>
+                <div className="text-xs text-black/55">Secure signup • Encrypted</div>
+              </div>
+            </div>
+
+            <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 py-1 text-[11px] font-semibold text-black/70 backdrop-blur">
+              <span className="text-black/70">
+                <LockIcon />
+              </span>
+              No credit card required
+            </span>
+          </div>
+
+          <div className="px-6 py-6 sm:px-8 sm:py-8">
+            <Suspense fallback={<LoadingFallback />}>
+              <GetStartedClient />
+            </Suspense>
+          </div>
+        </div>
+
+        {/* BELOW THE SIGNUP CARD: add the “other shit” in stacked sections */}
+        <div className="mt-8 space-y-4">
+          {/* What happens next */}
+          <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
+            <div className="text-lg font-black">What happens next</div>
+
+            <div className="mt-4 space-y-4">
+              <Step
+                n={1}
+                title="We build your profile"
+                desc="Service area + keywords + NAICS → match accuracy."
+              />
+              <Step
+                n={2}
+                title="Matches email daily"
+                desc="Ranked opportunities delivered every morning."
+              />
+              <Step
+                n={3}
+                title="You get the winning plan"
+                desc="Reply to connect with an AMBIT associate for strategy."
+              />
+            </div>
+
+            <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and
+              deliver opportunities. No spam.
+            </div>
+          </div>
+
+          {/* Perfect for */}
+          <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
+            <div className="text-lg font-black">Perfect for</div>
+
             <div className="mt-4 flex flex-wrap gap-2">
-              {TRUST_BADGES.map((t) => (
+              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map((t) => (
                 <span
                   key={t}
-                  className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70 backdrop-blur"
+                  className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70"
                 >
                   {t}
                 </span>
               ))}
             </div>
+
+            <div className="mt-4 text-sm text-black/55">
+              You can update keywords/NAICS anytime to refine matches.
+            </div>
           </div>
         </div>
 
-        {/* Main layout */}
-        <div className="mt-10 grid gap-6 lg:grid-cols-[1.15fr_0.85fr]">
-          {/* Form card */}
-          <div className="rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
-            <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center font-black">
-                  A
-                </div>
-                <div>
-                  <div className="text-sm font-black">AMBIT</div>
-                  <div className="text-xs text-black/55">Secure signup • Encrypted</div>
-                </div>
-              </div>
-
-              <div className="hidden sm:flex items-center gap-2 text-xs text-black/55">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-black/10 bg-white/60 px-3 py-1 backdrop-blur">
-                  <span className="text-black/70">
-                    <LockIcon />
-                  </span>
-                  No credit card required
-                </span>
-              </div>
-            </div>
-
-            <div className="px-6 py-6 sm:px-8 sm:py-8">
-              <Suspense fallback={<LoadingFallback />}>
-                <GetStartedClient />
-              </Suspense>
-
-              <div className="mt-6 text-center text-xs text-black/45">
-                Tip: Keywords + NAICS makes matching dramatically more accurate.
-              </div>
-            </div>
-          </div>
-
-          {/* Right side: trust + “what happens next” */}
-          <aside className="space-y-4">
-            <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-              <div className="text-sm font-black">What happens next</div>
-
-              <div className="mt-4 space-y-3 text-sm text-black/70">
-                <div className="flex gap-3">
-                  <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-black text-black/70">
-                    1
-                  </div>
-                  <div>
-                    <div className="font-semibold text-black/80">We build your profile</div>
-                    <div className="text-black/60">Service area + keywords + NAICS → match accuracy.</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-black text-black/70">
-                    2
-                  </div>
-                  <div>
-                    <div className="font-semibold text-black/80">Matches email daily</div>
-                    <div className="text-black/60">Ranked opportunities delivered every morning.</div>
-                  </div>
-                </div>
-
-                <div className="flex gap-3">
-                  <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-black text-black/70">
-                    3
-                  </div>
-                  <div>
-                    <div className="font-semibold text-black/80">You get the winning plan</div>
-                    <div className="text-black/60">Reply to connect with an AMBIT associate for strategy.</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-xs text-black/60">
-                <span className="font-semibold text-black/70">Privacy:</span> AMBIT uses your profile only to match and
-                deliver opportunities. No spam.
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-              <div className="text-sm font-black">Perfect for</div>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map((t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70"
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
-
-              <div className="mt-4 text-xs text-black/50">
-                You can update keywords/NAICS anytime to refine matches.
-              </div>
-            </div>
-          </aside>
+        <div className="mt-8 text-center text-xs text-black/45">
+          Tip: Keywords + NAICS makes matching dramatically more accurate.
         </div>
       </div>
     </main>
