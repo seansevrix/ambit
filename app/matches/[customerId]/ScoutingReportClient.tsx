@@ -1,8 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
+import { useEffect, useMemo, useState, type ComponentType } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+
+// If you have this component already, keep it.
+// If not, you can remove this import + the modal block at the bottom.
 import ProfileEditor from "./ProfileEditor";
+const ProfileEditorAny = ProfileEditor as unknown as ComponentType<any>;
 
 type Match = {
   id: number;
@@ -19,6 +24,9 @@ type Match = {
   reasons: string[];
   profileIncomplete: boolean;
 
+  segment?: string | null;
+  source?: string | null;
+
   nearby?: boolean | null;
   customerState?: string | null;
   oppState?: string | null;
@@ -34,867 +42,421 @@ type MatchesResponse = {
   segments?: string[];
 };
 
-type ProfileResponse = {
-  ok: boolean;
-  customer?: {
-    id: number;
-    email?: string | null;
-    name?: string | null;
-    location?: string | null;
-    serviceArea?: string | null;
-    naics?: string | null;
-    keywords?: string | null;
-    services?: string | null;
-    segments?: string[];
-  };
-  error?: string;
-};
+const API_BASE =
+  (
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_BASE ||
+    "http://localhost:5001"
+  ).replace(/\/$/, "");
 
-const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  "http://localhost:5001"
-).replace(/\/$/, "");
-
-const CHECKOUT_PATH = "/engine/billing/create-checkout-session";
-
-type SortKey = "score" | "newest" | "closest";
-const PAGE_SIZE = 10;
-
-// Pricing tiers
-type PlanTier = "single" | "all";
-const PRICE_SINGLE = 39.99;
-const PRICE_ALL = 59.99;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-const STATE_NAME_TO_CODE: Record<string, string> = {
-  alabama: "AL",
-  alaska: "AK",
-  arizona: "AZ",
-  arkansas: "AR",
-  california: "CA",
-  colorado: "CO",
-  connecticut: "CT",
-  delaware: "DE",
-  florida: "FL",
-  georgia: "GA",
-  hawaii: "HI",
-  idaho: "ID",
-  illinois: "IL",
-  indiana: "IN",
-  iowa: "IA",
-  kansas: "KS",
-  kentucky: "KY",
-  louisiana: "LA",
-  maine: "ME",
-  maryland: "MD",
-  massachusetts: "MA",
-  michigan: "MI",
-  minnesota: "MN",
-  mississippi: "MS",
-  missouri: "MO",
-  montana: "MT",
-  nebraska: "NE",
-  nevada: "NV",
-  "new hampshire": "NH",
-  "new jersey": "NJ",
-  "new mexico": "NM",
-  "new york": "NY",
-  "north carolina": "NC",
-  "north dakota": "ND",
-  ohio: "OH",
-  oklahoma: "OK",
-  oregon: "OR",
-  pennsylvania: "PA",
-  "rhode island": "RI",
-  "south carolina": "SC",
-  "south dakota": "SD",
-  tennessee: "TN",
-  texas: "TX",
-  utah: "UT",
-  vermont: "VT",
-  virginia: "VA",
-  washington: "WA",
-  "west virginia": "WV",
-  wisconsin: "WI",
-  wyoming: "WY",
-  "district of columbia": "DC",
-};
-
-function abbreviateState(location: string) {
-  let out = location;
-  for (const [name, code] of Object.entries(STATE_NAME_TO_CODE)) {
-    const pattern = name.replace(/\s+/g, "\\s+");
-    const re = new RegExp(pattern, "ig");
-    out = out.replace(re, code);
-  }
-  return out;
+function cx(...classes: Array<string | false | undefined | null>) {
+  return classes.filter(Boolean).join(" ");
 }
 
-export default function ScoutingReportClient({ customerId }: { customerId: number }) {
-  const searchParams = useSearchParams();
-
-  const [data, setData] = useState<MatchesResponse | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  // Paywall / trial ended
-  const [needsSub, setNeedsSub] = useState(false);
-  const [trialEndedAt, setTrialEndedAt] = useState<string | null>(null);
-  const [subStatus, setSubStatus] = useState<string | null>(null);
-
-  const [errMsg, setErrMsg] = useState<string>("");
-
-  const [q, setQ] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("score");
-
-  const [plan, setPlan] = useState<PlanTier>(() => {
-    if (typeof window === "undefined") return "single";
-    try {
-      const saved = localStorage.getItem("ambit_plan");
-      return saved === "all" ? "all" : "single";
-    } catch {
-      return "single";
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("ambit_plan", plan);
-    } catch {}
-  }, [plan]);
-
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  // Starred (localStorage)
-  const [starred, setStarred] = useState<Set<number>>(new Set());
-  const [starredOnly, setStarredOnly] = useState(false);
-
-  // Used only for "Closest location" sorting
-  const [customerLoc, setCustomerLoc] = useState<{ city?: string; state?: string } | null>(null);
-
-  const storageKey = useMemo(() => `ambit_starred_matches_${customerId}`, [customerId]);
-
-  const matches = useMemo(() => data?.matches || [], [data]);
-
-  const access = data?.access;
-  const trialEndsAt = access?.trialEndsAt || null;
-  const isActive = Boolean(access?.isActive);
-
-  const daysLeft = useMemo(() => {
-    if (!trialEndsAt) return null;
-    const end = new Date(trialEndsAt).getTime();
-    if (!Number.isFinite(end)) return null;
-    const diff = end - Date.now();
-    return Math.ceil(diff / DAY_MS);
-  }, [trialEndsAt]);
-
-  async function load() {
-    setLoading(true);
-    setErrMsg("");
-    setNeedsSub(false);
-    setTrialEndedAt(null);
-    setSubStatus(null);
-
-    try {
-      const res = await fetch(`${API_BASE}/engine/matches/${customerId}`, {
-        credentials: "include",
-        cache: "no-store",
-      });
-
-      const body = (await res.json().catch(() => ({}))) as any;
-
-      if (res.status === 402) {
-        setNeedsSub(true);
-        setErrMsg(body?.message || "Subscription required");
-        setTrialEndedAt(body?.trialEndedAt || null);
-        setSubStatus(body?.subscriptionStatus || null);
-        setData(null);
-        return;
-      }
-
-      if (!res.ok) throw new Error(body?.message || `Request failed (${res.status})`);
-      setData(body as MatchesResponse);
-    } catch (e: any) {
-      setErrMsg(e?.message || "Failed to load matches");
-      setData(null);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  // Load matches
-  useEffect(() => {
-    if (!Number.isFinite(customerId) || customerId <= 0) {
-      setLoading(false);
-      setErrMsg("Invalid customer");
-      return;
-    }
-    load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [customerId]);
-
-  // Load starred from localStorage (per customer)
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) {
-        setStarred(new Set());
-        return;
-      }
-      const arr = JSON.parse(raw);
-      if (Array.isArray(arr)) {
-        const s = new Set<number>();
-        for (const n of arr) {
-          const id = Number(n);
-          if (Number.isFinite(id)) s.add(id);
-        }
-        setStarred(s);
-      } else {
-        setStarred(new Set());
-      }
-    } catch {
-      setStarred(new Set());
-    }
-  }, [storageKey]);
-
-  function persistStarred(next: Set<number>) {
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(Array.from(next)));
-    } catch {}
-  }
-
-  function toggleStar(matchId: number) {
-    setStarred((prev) => {
-      const next = new Set(prev);
-      if (next.has(matchId)) next.delete(matchId);
-      else next.add(matchId);
-      persistStarred(next);
-      return next;
-    });
-  }
-
-  // Fetch customer profile for "Closest location" sorting using SELF-SERVE endpoint
-  useEffect(() => {
-    let cancelled = false;
-
-    async function loadCustomerProfile() {
-      try {
-        const savedEmail = localStorage.getItem("ambit_email");
-        if (!savedEmail) return;
-
-        const url = `${API_BASE}/engine/customers/${customerId}/profile?email=${encodeURIComponent(
-          savedEmail
-        )}`;
-
-        const res = await fetch(url, {
-          credentials: "include",
-          cache: "no-store",
-        });
-
-        const body = (await res.json().catch(() => ({}))) as ProfileResponse;
-        if (!res.ok || !body?.ok || !body.customer) return;
-
-        const loc = (body.customer.location || body.customer.serviceArea || "").trim();
-        if (!loc) return;
-
-        const parsed = parseCityState(loc);
-        if (!cancelled) setCustomerLoc(parsed);
-      } catch {}
-    }
-
-    loadCustomerProfile();
-    return () => {
-      cancelled = true;
-    };
-  }, [customerId]);
-
-  // If Stripe redirects back with common params, auto-refresh once.
-  useEffect(() => {
-    const success =
-      searchParams?.get("success") ||
-      searchParams?.get("checkout") ||
-      searchParams?.get("session_id");
-    if (success) {
-      const t = setTimeout(() => load(), 900);
-      return () => clearTimeout(t);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
-
-  async function startCheckout() {
-    try {
-      setErrMsg("");
-
-      const res = await fetch(`${API_BASE}${CHECKOUT_PATH}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ customerId, plan }),
-      });
-
-      const body = (await res.json().catch(() => ({}))) as any;
-
-      if (!res.ok) throw new Error(body?.message || `Billing failed (${res.status})`);
-      if (!body?.url) throw new Error("No checkout URL returned");
-
-      window.location.href = body.url;
-    } catch (e: any) {
-      setErrMsg(e?.message || "Checkout failed");
-    }
-  }
-
-  const filtered = useMemo(() => {
-    const query = q.trim().toLowerCase();
-    if (!query) return matches;
-
-    return matches.filter((m) => {
-      const haystack = [
-        m.title,
-        m.location || "",
-        m.naics || "",
-        m.agency || "",
-        m.keywords || "",
-        m.summary || "",
-      ]
-        .join(" ")
-        .toLowerCase();
-
-      return haystack.includes(query);
-    });
-  }, [matches, q]);
-
-  const sorted = useMemo(() => {
-    const list = [...filtered];
-
-    if (sortKey === "score") {
-      list.sort((a, b) => clampScore(b.score) - clampScore(a.score));
-      return list;
-    }
-
-    if (sortKey === "newest") {
-      list.sort((a, b) => toTime(b.postedDate) - toTime(a.postedDate));
-      return list;
-    }
-
-    const city = norm(customerLoc?.city);
-    const state = norm(customerLoc?.state);
-
-    list.sort((a, b) => {
-      const ra = locationRank(a.location, city, state);
-      const rb = locationRank(b.location, city, state);
-      if (ra !== rb) return ra - rb;
-      return clampScore(b.score) - clampScore(a.score);
-    });
-
-    return list;
-  }, [filtered, sortKey, customerLoc]);
-
-  const finalList = useMemo(() => {
-    if (!starredOnly) return sorted;
-    return sorted.filter((m) => starred.has(m.id));
-  }, [sorted, starredOnly, starred]);
-
-  useEffect(() => {
-    setVisibleCount(PAGE_SIZE);
-  }, [q, sortKey, starredOnly, data?.matches?.length]);
-
-  const visible = useMemo(() => finalList.slice(0, visibleCount), [finalList, visibleCount]);
-  const canLoadMore = visibleCount < finalList.length;
-
-  const priceLabel = plan === "all" ? `$${PRICE_ALL.toFixed(2)}` : `$${PRICE_SINGLE.toFixed(2)}`;
-  const planTitle = plan === "all" ? "All markets" : "Single market";
-  const planDesc =
-    plan === "all"
-      ? "Track government + commercial + residential."
-      : "Track 1 lead type (choose 1 segment).";
-
-  const showTrialPill = !loading && !needsSub && !isActive && !!trialEndsAt;
-
-  return (
-    <div className="mx-auto w-full max-w-6xl px-6 py-10 overflow-x-hidden">
-      {/* Top: lightweight status + actions */}
-      <div className="flex flex-col gap-4">
-        {/* Trial pill (lighter, less “dashboard”) */}
-        {showTrialPill ? (
-          <div className="flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-wrap items-center gap-2 text-sm text-white/80">
-              <span className="inline-flex items-center gap-2 rounded-full border border-emerald-400/25 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-100">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-300" />
-                Free trial
-              </span>
-
-              {typeof daysLeft === "number" ? (
-                <span>
-                  Ends in{" "}
-                  <span className="font-semibold text-white">{Math.max(daysLeft, 0)}</span>{" "}
-                  {Math.max(daysLeft, 0) === 1 ? "day" : "days"}
-                </span>
-              ) : (
-                <span>Active</span>
-              )}
-
-              <span className="opacity-40">•</span>
-              <span className="text-white/60">After trial, email delivery pauses until you upgrade.</span>
-            </div>
-
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={startCheckout}
-                className="rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black hover:bg-white/90"
-              >
-                Upgrade
-              </button>
-              <button
-                onClick={load}
-                className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-              >
-                Refresh
-              </button>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div className="min-w-0">
-            <div className="text-xs font-semibold tracking-wide text-white/50">AMBIT</div>
-            <h1 className="mt-1 text-3xl font-semibold text-white">Opportunity matches</h1>
-            <div className="mt-1 text-sm text-white/60">
-              Ranked opportunities tailored to your profile.
-            </div>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            <ProfileEditor
-              customerId={customerId}
-              onSaved={() => {
-                window.location.reload();
-              }}
-            />
-
-            <button
-              onClick={load}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-            >
-              Refresh
-            </button>
-
-            <button
-              onClick={() => (window.location.href = "/")}
-              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-            >
-              Back home
-            </button>
-          </div>
-        </div>
-
-        {/* Controls (quieter) */}
-        <div className="mt-2 grid gap-3 md:grid-cols-3 md:items-end">
-          <div className="md:col-span-2">
-            <input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder="Search by title, location, NAICS, agency, keywords…"
-              className="w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-sm text-white placeholder:text-white/35 outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-            />
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-white/45">
-              <span>Filters update instantly.</span>
-              <span className="tabular-nums">
-                Starred: <span className="font-semibold text-white/80">{starred.size}</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="grid gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-white/50">Sort</label>
-              <select
-                value={sortKey}
-                onChange={(e) => setSortKey(e.target.value as SortKey)}
-                className="mt-2 w-full rounded-2xl border border-white/10 bg-slate-950/30 px-4 py-3 text-sm text-white outline-none focus:border-blue-400/60 focus:ring-2 focus:ring-blue-500/20"
-              >
-                <option value="score">Highest score</option>
-                <option value="newest">Newest posted</option>
-                <option value="closest">Closest location</option>
-              </select>
-
-              {sortKey === "closest" && !customerLoc?.state ? (
-                <div className="mt-2 text-xs text-white/40">
-                  Closest is best-effort (needs a saved service area — use Edit profile).
-                </div>
-              ) : null}
-            </div>
-
-            <label className="flex items-center gap-2 text-sm text-white/65">
-              <input
-                type="checkbox"
-                checked={starredOnly}
-                onChange={(e) => setStarredOnly(e.target.checked)}
-                className="h-4 w-4 rounded border-white/20 bg-black/30"
-              />
-              Show starred only
-            </label>
-          </div>
-        </div>
-      </div>
-
-      {/* States */}
-      {loading ? (
-        <InfoPanel>
-          <div className="text-sm text-white/70">Loading matches…</div>
-        </InfoPanel>
-      ) : needsSub ? (
-        <InfoPanel>
-          <div className="text-xs font-semibold text-white/50">TRIAL ENDED / SUBSCRIPTION</div>
-          <div className="mt-2 text-2xl font-semibold text-white">Your matches are waiting</div>
-          <div className="mt-2 max-w-2xl text-sm text-white/70">
-            Your free trial has ended, so daily email delivery is paused. Upgrade to resume daily
-            matches in your inbox and keep access to new ranked opportunities.
-          </div>
-
-          <div className="mt-2 text-xs text-white/45">
-            {trialEndedAt ? (
-              <>
-                Trial ended: <span className="text-white/70">{formatDate(trialEndedAt)}</span>
-              </>
-            ) : null}
-            {subStatus ? (
-              <>
-                <span className="mx-2 opacity-40">•</span>
-                Status: <span className="text-white/70">{subStatus}</span>
-              </>
-            ) : null}
-          </div>
-
-          {/* Plan picker */}
-          <div className="mt-5 grid gap-3 sm:grid-cols-2">
-            <button
-              type="button"
-              onClick={() => setPlan("single")}
-              className={`rounded-2xl border p-4 text-left transition ${
-                plan === "single"
-                  ? "border-blue-400/60 bg-blue-500/10 ring-2 ring-blue-500/20"
-                  : "border-white/10 bg-slate-950/20 hover:bg-white/5"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-white">Single market</div>
-                <div className="text-sm font-bold text-white tabular-nums">$39.99/mo</div>
-              </div>
-              <div className="mt-1 text-sm text-white/70">Track 1 lead type (choose 1 segment).</div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPlan("all")}
-              className={`rounded-2xl border p-4 text-left transition ${
-                plan === "all"
-                  ? "border-blue-400/60 bg-blue-500/10 ring-2 ring-blue-500/20"
-                  : "border-white/10 bg-slate-950/20 hover:bg-white/5"
-              }`}
-            >
-              <div className="flex items-center justify-between gap-3">
-                <div className="text-sm font-semibold text-white">All markets</div>
-                <div className="text-sm font-bold text-white tabular-nums">$59.99/mo</div>
-              </div>
-              <div className="mt-1 text-sm text-white/70">
-                Government + commercial + residential.
-              </div>
-            </button>
-          </div>
-
-          <div className="mt-5 grid gap-3 sm:grid-cols-3">
-            <PaywallPill title="Match score" body="Ranked leads that fit." />
-            <PaywallPill title="Plain-English summary" body="Fast BID/NO-BID." />
-            <PaywallPill title="Daily digest" body="Delivered every morning." />
-          </div>
-
-          <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-sm font-semibold text-white">AMBIT Pro — {planTitle}</div>
-              <div className="mt-1 text-sm text-white/70">
-                <span className="font-semibold text-white tabular-nums">{priceLabel}</span> / month —{" "}
-                {planDesc} Cancel anytime.
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={startCheckout}
-                className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
-              >
-                Upgrade {priceLabel}/mo
-              </button>
-              <button
-                onClick={load}
-                className="rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-              >
-                I already paid — refresh
-              </button>
-            </div>
-          </div>
-
-          {errMsg ? (
-            <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              {errMsg}
-            </div>
-          ) : null}
-        </InfoPanel>
-      ) : !data ? (
-        <InfoPanel>
-          <div className="text-sm font-semibold text-white">Couldn’t load matches</div>
-          <div className="mt-1 text-sm text-white/70">{errMsg || "Unknown error"}</div>
-          <button
-            onClick={load}
-            className="mt-4 rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-          >
-            Refresh
-          </button>
-        </InfoPanel>
-      ) : !finalList.length ? (
-        <InfoPanel>
-          <div className="text-sm font-semibold text-white">
-            {starredOnly ? "No starred matches yet" : "No matches found"}
-          </div>
-          <div className="mt-1 text-sm text-white/70">
-            {starredOnly
-              ? "Star opportunities to save them here."
-              : "Try expanding NAICS/keywords/location (use Edit profile)."}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              onClick={() => setQ("")}
-              className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-            >
-              Clear search
-            </button>
-            {starredOnly ? (
-              <button
-                onClick={() => setStarredOnly(false)}
-                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
-              >
-                Show all matches
-              </button>
-            ) : null}
-          </div>
-        </InfoPanel>
-      ) : (
-        <div className="mt-8">
-          {/* Feed header (lighter) */}
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-sm font-semibold text-white">
-              {starredOnly ? "Starred matches" : "Matches"}
-            </div>
-            <div className="text-xs text-white/50 tabular-nums">
-              Showing <span className="font-semibold text-white/80">{visible.length}</span> of{" "}
-              <span className="font-semibold text-white/80">{finalList.length}</span>
-            </div>
-          </div>
-
-          {/* Cards feed */}
-          <div className="mt-4 grid gap-3">
-            {visible.map((m) => {
-              const isStarred = starred.has(m.id);
-              const prettyLocation = m.location ? abbreviateState(m.location) : "—";
-              const score = clampScore(m.score);
-
-              const scoreTone =
-                score >= 100
-                  ? "border-emerald-400/30 bg-emerald-500/10 text-emerald-100"
-                  : score >= 95
-                  ? "border-blue-400/25 bg-blue-500/10 text-blue-100"
-                  : "border-white/12 bg-white/5 text-white/85";
-
-              const cardGlow =
-                score >= 100
-                  ? "hover:border-emerald-400/35 hover:bg-emerald-500/10"
-                  : "hover:border-white/20 hover:bg-white/7";
-
-              return (
-                <div
-                  key={m.id}
-                  className={`group rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur transition ${cardGlow}`}
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    {/* Left: primary info */}
-                    <div className="min-w-0">
-                      <div
-                        className="text-base font-semibold text-white leading-snug break-words"
-                        title={m.title}
-                      >
-                        {m.title}
-                      </div>
-
-                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/60">
-                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
-                          {prettyLocation}
-                        </span>
-                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
-                          {m.agency || "Unknown agency"}
-                        </span>
-                        <span className="rounded-full border border-white/10 bg-black/10 px-2 py-1">
-                          NAICS {m.naics || "—"}
-                        </span>
-                        <span className="opacity-40">•</span>
-                        <span>Posted {formatDate(m.postedDate)}</span>
-                        {m.dueDate ? (
-                          <>
-                            <span className="opacity-40">•</span>
-                            <span>Due {formatDate(m.dueDate)}</span>
-                          </>
-                        ) : null}
-                      </div>
-
-                      {m.summary ? (
-                        <div className="mt-3 text-sm text-white/70 break-words leading-relaxed">
-                          {m.summary}
-                        </div>
-                      ) : null}
-                    </div>
-
-                    {/* Right: decision + actions */}
-                    <div className="flex shrink-0 items-center gap-2">
-                      <button
-                        onClick={() => toggleStar(m.id)}
-                        className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-                        aria-label={isStarred ? "Unstar" : "Star"}
-                        title={isStarred ? "Unstar" : "Star"}
-                      >
-                        {isStarred ? "★" : "☆"}
-                      </button>
-
-                      <span
-                        className={`rounded-full border px-3 py-1 text-xs font-semibold tabular-nums ${scoreTone}`}
-                        title="Match score"
-                      >
-                        {score}
-                      </span>
-
-                      {m.url ? (
-                        <a
-                          href={m.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="rounded-xl border border-white/12 bg-white/5 px-3 py-2 text-xs font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-                          title="Open source"
-                        >
-                          Source
-                        </a>
-                      ) : (
-                        <span className="cursor-not-allowed rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-semibold text-white/30">
-                          Source
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Footer controls */}
-          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-            <div className="text-xs text-white/50">
-              {canLoadMore ? "Load more to see additional matches." : "You’re all caught up."}
-            </div>
-
-            <div className="flex gap-2">
-              {canLoadMore ? (
-                <button
-                  onClick={() => setVisibleCount((n) => Math.min(finalList.length, n + PAGE_SIZE))}
-                  className="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
-                >
-                  Load more
-                </button>
-              ) : null}
-
-              {visibleCount > PAGE_SIZE ? (
-                <button
-                  onClick={() => setVisibleCount(PAGE_SIZE)}
-                  className="rounded-xl border border-white/15 bg-white/5 px-5 py-3 text-sm font-semibold text-white/85 hover:bg-white/10 hover:text-white"
-                >
-                  Back to top
-                </button>
-              ) : null}
-            </div>
-          </div>
-
-          {errMsg ? (
-            <div className="mt-4 rounded-xl border border-red-400/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
-              {errMsg}
-            </div>
-          ) : null}
-        </div>
-      )}
-    </div>
-  );
+function fmtDate(input?: string | null) {
+  if (!input) return "";
+  const d = new Date(input);
+  if (Number.isNaN(d.getTime())) return "";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "2-digit",
+    year: "numeric",
+  }).format(d);
 }
 
-/* UI helpers */
-function InfoPanel({ children }: { children: React.ReactNode }) {
-  return (
-    <div className="mt-6 rounded-3xl border border-white/10 bg-white/5 p-6 shadow-2xl backdrop-blur overflow-hidden">
-      {children}
-    </div>
-  );
-}
-
-function PaywallPill({ title, body }: { title: string; body: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950/20 p-4 overflow-hidden">
-      <div className="text-sm font-semibold text-white">{title}</div>
-      <div className="mt-1 text-sm text-white/70 break-words">{body}</div>
-    </div>
-  );
-}
-
-/* helpers */
-function clampScore(x: number) {
-  const n = Number(x);
+function clampScore(n: number) {
   if (!Number.isFinite(n)) return 0;
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function formatDate(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
-}
+type SortKey = "score_desc" | "posted_desc" | "due_asc" | "title_asc";
 
-function toTime(iso: string | null | undefined) {
-  if (!iso) return 0;
-  const t = new Date(iso).getTime();
-  return Number.isFinite(t) ? t : 0;
-}
+export default function ScoutingReportClient(props: { customerId?: number }) {
+  const params = useParams<{ customerId?: string }>();
+  const sp = useSearchParams();
 
-function norm(s?: string | null) {
-  return String(s || "").trim().toLowerCase();
-}
+  const customerId =
+    props.customerId ??
+    (params?.customerId ? Number(params.customerId) : NaN);
 
-function parseCityState(input: string) {
-  const raw = String(input || "").trim();
-  if (!raw) return {};
-  const parts = raw.split(",").map((p) => p.trim()).filter(Boolean);
-  if (parts.length >= 2) return { city: parts[0], state: parts[1] };
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
-  const tokens = raw.split(/\s+/).filter(Boolean);
-  if (tokens.length >= 2) {
-    const maybeState = tokens[tokens.length - 1];
-    const city = tokens.slice(0, -1).join(" ");
-    return { city, state: maybeState };
+  const [data, setData] = useState<MatchesResponse | null>(null);
+
+  const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<SortKey>("score_desc");
+  const [starred, setStarred] = useState<Record<number, boolean>>({});
+  const [starOnly, setStarOnly] = useState(false);
+
+  const [showProfile, setShowProfile] = useState(false);
+
+  async function fetchMatches(isRefresh = false) {
+    if (!Number.isFinite(customerId)) {
+      setErr("Missing customerId.");
+      setLoading(false);
+      return;
+    }
+
+    setErr(null);
+    if (isRefresh) setRefreshing(true);
+    else setLoading(true);
+
+    try {
+      const url = `${API_BASE}/engine/matches/${customerId}?limit=200&grouped=0`;
+      const res = await fetch(url, { credentials: "include" });
+      const json = (await res.json().catch(() => null)) as MatchesResponse | null;
+
+      if (!res.ok || !json) {
+        throw new Error(
+          (json as any)?.error || `Failed to load matches (${res.status})`
+        );
+      }
+
+      setData(json);
+    } catch (e: any) {
+      setErr(e?.message || "Failed to load matches.");
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }
-  return { city: raw };
-}
 
-function locationRank(matchLocation: string | null | undefined, cityN: string, stateN: string) {
-  if (!cityN && !stateN) return 2;
-  const loc = norm(matchLocation || "");
-  const hasState = !!stateN && loc.includes(stateN);
-  const hasCity = !!cityN && loc.includes(cityN);
-  if (hasCity && hasState) return 0;
-  if (hasState) return 1;
-  return 2;
+  useEffect(() => {
+    fetchMatches(false);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [customerId]);
+
+  useEffect(() => {
+    // Optional: open editor from a link like /matches/6?edit=1
+    if (sp?.get("edit") === "1") setShowProfile(true);
+  }, [sp]);
+
+  const matches = data?.matches || [];
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    let list = matches;
+
+    if (q) {
+      list = list.filter((m) => {
+        const hay = [
+          m.title,
+          m.location,
+          m.naics,
+          m.agency,
+          m.keywords,
+          m.segment,
+          m.source,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        return hay.includes(q);
+      });
+    }
+
+    if (starOnly) {
+      list = list.filter((m) => starred[m.id]);
+    }
+
+    const withDate = (s?: string | null) => {
+      if (!s) return NaN;
+      const t = new Date(s).getTime();
+      return Number.isNaN(t) ? NaN : t;
+    };
+
+    const sorted = [...list].sort((a, b) => {
+      if (sort === "score_desc") return (b.score || 0) - (a.score || 0);
+
+      if (sort === "posted_desc") {
+        const tb = withDate(b.postedDate);
+        const ta = withDate(a.postedDate);
+        if (Number.isNaN(tb) && Number.isNaN(ta)) return 0;
+        if (Number.isNaN(tb)) return -1;
+        if (Number.isNaN(ta)) return 1;
+        return tb - ta;
+      }
+
+      if (sort === "due_asc") {
+        const ta = withDate(a.dueDate);
+        const tb = withDate(b.dueDate);
+        if (Number.isNaN(ta) && Number.isNaN(tb)) return 0;
+        if (Number.isNaN(ta)) return 1;
+        if (Number.isNaN(tb)) return -1;
+        return ta - tb;
+      }
+
+      // title_asc
+      return (a.title || "").localeCompare(b.title || "");
+    });
+
+    return sorted;
+  }, [matches, query, sort, starOnly, starred]);
+
+  const starCount = useMemo(
+    () => Object.values(starred).filter(Boolean).length,
+    [starred]
+  );
+
+  // --- Light theme styles (high contrast) ---
+  const PAGE = "bg-[#EAF3FF] text-slate-900";
+  const WRAP = "mx-auto max-w-6xl px-4 pb-16 pt-10";
+  const H1 = "text-4xl font-extrabold tracking-tight text-slate-900";
+  const SUB = "mt-2 text-sm text-slate-600";
+
+  const BTN_PRIMARY =
+    "inline-flex items-center justify-center rounded-2xl bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-[#15428B] transition disabled:opacity-60";
+  const BTN_SOFT =
+    "inline-flex items-center justify-center rounded-2xl bg-white px-5 py-3 text-sm font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 transition disabled:opacity-60";
+  const BTN_TINY =
+    "inline-flex items-center justify-center rounded-full bg-white px-3 py-2 text-xs font-semibold text-slate-900 ring-1 ring-slate-200 hover:bg-slate-50 transition";
+
+  const INPUT =
+    "h-11 w-full rounded-2xl bg-white px-4 text-sm text-slate-900 placeholder:text-slate-400 ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A4FA3]/25";
+  const SELECT =
+    "h-11 w-full rounded-2xl bg-white px-4 text-sm text-slate-900 ring-1 ring-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A4FA3]/25";
+
+  const CARD =
+    "rounded-2xl bg-white shadow-sm ring-1 ring-slate-200/80 hover:shadow-md transition";
+  const TITLE = "text-base font-semibold text-slate-900";
+  const MUTED = "text-xs text-slate-600";
+  const CHIP =
+    "inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700 ring-1 ring-slate-200";
+  const SCORE =
+    "inline-flex min-w-[44px] items-center justify-center rounded-full bg-[#1A4FA3]/10 px-3 py-1 text-xs font-extrabold text-[#1A4FA3] ring-1 ring-[#1A4FA3]/20";
+
+  return (
+    <main className={PAGE}>
+      <div className={WRAP}>
+        <div className="flex flex-col gap-6 md:flex-row md:items-start md:justify-between">
+          <div>
+            <div className="text-xs font-semibold tracking-widest text-slate-500">
+              AMBIT
+            </div>
+            <h1 className={H1}>Opportunity matches</h1>
+            <p className={SUB}>
+              Ranked opportunities tailored to your profile.
+            </p>
+
+            {err ? (
+              <div className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+                {err}
+              </div>
+            ) : null}
+
+            {data?.access && !data.access.isActive ? (
+              <div className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-sm text-amber-900 ring-1 ring-amber-200">
+                Your subscription isn’t active. You can still browse, but full
+                details may be limited.
+              </div>
+            ) : null}
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2 md:justify-end">
+            <button
+              className={BTN_SOFT}
+              onClick={() => setShowProfile(true)}
+              type="button"
+            >
+              Edit profile
+            </button>
+
+            <button
+              className={BTN_SOFT}
+              onClick={() => fetchMatches(true)}
+              type="button"
+              disabled={refreshing}
+              aria-busy={refreshing}
+            >
+              {refreshing ? "Refreshing…" : "Refresh"}
+            </button>
+
+            <Link className={BTN_PRIMARY} href="/">
+              Back home
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-8 grid grid-cols-1 gap-3 md:grid-cols-3 md:items-end">
+          <div className="md:col-span-2">
+            <input
+              className={INPUT}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search by title, location, NAICS, agency, keywords…"
+            />
+            <div className="mt-1 text-xs text-slate-500">
+              Filters update instantly.
+            </div>
+          </div>
+
+          <div>
+            <div className="mb-1 text-xs font-semibold text-slate-600">Sort</div>
+            <select
+              className={SELECT}
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortKey)}
+            >
+              <option value="score_desc">Highest score</option>
+              <option value="posted_desc">Newest posted</option>
+              <option value="due_asc">Soonest due date</option>
+              <option value="title_asc">Title (A → Z)</option>
+            </select>
+
+            <div className="mt-2 flex items-center justify-between">
+              <div className="text-xs text-slate-600">Starred: {starCount}</div>
+              <label className="flex items-center gap-2 text-xs text-slate-700">
+                <input
+                  type="checkbox"
+                  checked={starOnly}
+                  onChange={(e) => setStarOnly(e.target.checked)}
+                  className="h-4 w-4 rounded border-slate-300"
+                />
+                Show starred only
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-10 flex items-center justify-between">
+          <div className="text-sm font-semibold text-slate-800">Matches</div>
+          <div className="text-xs text-slate-500">
+            Showing {filtered.length} of {matches.length}
+          </div>
+        </div>
+
+        <div className="mt-3 space-y-3">
+          {loading ? (
+            <div className="rounded-2xl bg-white px-4 py-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              Loading matches…
+            </div>
+          ) : null}
+
+          {!loading && filtered.length === 0 ? (
+            <div className="rounded-2xl bg-white px-4 py-4 text-sm text-slate-600 ring-1 ring-slate-200">
+              No matches found. Try clearing your search or widening your
+              service area.
+            </div>
+          ) : null}
+
+          {filtered.map((m) => {
+            const score = clampScore(m.score || 0);
+            const isStarred = !!starred[m.id];
+
+            return (
+              <div key={m.id} className={cx(CARD, "px-4 py-4")}>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className={TITLE}>{m.title || "Untitled"}</div>
+
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {m.location ? <span className={CHIP}>{m.location}</span> : null}
+                      {m.agency ? <span className={CHIP}>{m.agency}</span> : null}
+                      {m.naics ? <span className={CHIP}>NAICS {m.naics}</span> : null}
+                      {m.segment ? <span className={CHIP}>{m.segment}</span> : null}
+                    </div>
+
+                    <div className="mt-2 flex flex-wrap gap-3">
+                      {m.postedDate ? (
+                        <div className={MUTED}>Posted {fmtDate(m.postedDate)}</div>
+                      ) : null}
+                      {m.dueDate ? (
+                        <div className={MUTED}>Due {fmtDate(m.dueDate)}</div>
+                      ) : null}
+                    </div>
+                  </div>
+
+                  <div className="flex shrink-0 items-center gap-2">
+                    <button
+                      type="button"
+                      className={BTN_TINY}
+                      onClick={() =>
+                        setStarred((s) => ({ ...s, [m.id]: !s[m.id] }))
+                      }
+                      aria-label={isStarred ? "Unstar" : "Star"}
+                      title={isStarred ? "Unstar" : "Star"}
+                    >
+                      {isStarred ? "★" : "☆"}
+                    </button>
+
+                    <span className={SCORE} title="Match score (0–100)">
+                      {score}
+                    </span>
+
+                    {m.url ? (
+                      <a
+                        className={BTN_TINY}
+                        href={m.url}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
+                        Source
+                      </a>
+                    ) : (
+                      <span className={cx(BTN_TINY, "opacity-60")}>Source</span>
+                    )}
+                  </div>
+                </div>
+
+                {m.summary ? (
+                  <p className="mt-3 text-sm text-slate-700 line-clamp-3">
+                    {m.summary}
+                  </p>
+                ) : null}
+
+                {m.reasons?.length ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {m.reasons.slice(0, 4).map((r, idx) => (
+                      <span key={idx} className={cx(CHIP, "bg-[#EAF3FF]")}>
+                        {r}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Profile editor modal */}
+      {showProfile ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-black/30"
+            onClick={() => setShowProfile(false)}
+          />
+          <div className="relative w-full max-w-2xl rounded-3xl bg-white p-5 shadow-xl ring-1 ring-slate-200">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-semibold text-slate-900">
+                Edit profile
+              </div>
+              <button
+                className={BTN_TINY}
+                onClick={() => setShowProfile(false)}
+                type="button"
+              >
+                Close
+              </button>
+            </div>
+
+            {/* If your ProfileEditor props differ, adjust here. */}
+            {/* @ts-ignore */}
+           <ProfileEditorAny
+  customerId={customerId}
+  onClose={() => setShowProfile(false)}
+  onSaved={() => {
+    setShowProfile(false);
+    fetchMatches(true);
+  }}
+/>
+
+          </div>
+        </div>
+      ) : null}
+    </main>
+  );
 }
