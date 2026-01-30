@@ -3,25 +3,44 @@ import prisma from "../lib/prisma.js";
 
 const router = express.Router();
 
-// ✅ SIMPLE TUNING KNOBS
+/** ---------------------------
+ * ✅ SIMPLE TUNING KNOBS
+ * -------------------------- */
 const MIN_SCORE = 60; // government strictness
-const MIN_SCORE_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_NON_GOV || 35); // residential/commercial threshold
-const DEFAULT_LIMIT = 50; // return more so "Load more" is meaningful
-const MAX_LIMIT = 200; // safety cap
+const MIN_SCORE_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_NON_GOV || 35);
+const DEFAULT_LIMIT = 50;
+const MAX_LIMIT = 200;
 
-// ✅ IMPORTANT: cap how many opportunities we score (prevents huge scans / raw JSON blowups)
+// ✅ IMPORTANT: cap how many opportunities we score
 const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
 
 // ✅ Location relevance tuning (simple, no geocoding)
-const OUT_OF_AREA_PENALTY = 25; // subtract if NOT nearby
+const OUT_OF_AREA_PENALTY = 25;
 
-// ✅ Strict nearby-only filter (state + neighboring states)
-// set MATCHES_STRICT_NEARBY=1 to filter out far-away states
+// ✅ Strict nearby-only filter
 const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
 
-// ✅ Craigslist buyer-intent enforcement (block services offered / for-sale / biz / etc.)
-const CRAIGSLIST_WANTED_ONLY =
-  String(process.env.MATCHES_CRAIGSLIST_WANTED_ONLY || "1") === "1";
+/** ---------------------------
+ * ✅ CRAIGSLIST WANTED-ONLY FLAG (FIXED)
+ * - Supports multiple env var names + typo
+ * - Provides back-compat alias so old references won't crash
+ * -------------------------- */
+function envBool(value, defaultValue = false) {
+  if (value === null || value === undefined || value === "") return defaultValue;
+  const v = String(value).trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+// Default ON (matches your current behavior)
+const CRAIGSLIST_WANTED_ONLY = envBool(
+  process.env.MATCHES_CRAIGSLIST_WANTED_ONLY ??
+    process.env.CRAIGSLIST_WANTED_ONLY ??
+    process.env.CRAILSLIST_WANTED_ONLY, // <- supports the typo too
+  true
+);
+
+// Back-compat alias in case code references the misspelled constant name
+const CRAILSLIST_WANTED_ONLY = CRAIGSLIST_WANTED_ONLY;
 
 const STOP = new Set([
   "the",
@@ -45,63 +64,16 @@ const STOP = new Set([
   "service",
   "solutions",
   "group",
-  // ✅ prevents garbage tokenization when location got stringified badly
   "object",
 ]);
 
-// Minimal US state code helpers
+/** ---------------------------
+ * ✅ State helpers
+ * -------------------------- */
 const STATE_CODES = new Set([
-  "AL",
-  "AK",
-  "AZ",
-  "AR",
-  "CA",
-  "CO",
-  "CT",
-  "DE",
-  "FL",
-  "GA",
-  "HI",
-  "ID",
-  "IL",
-  "IN",
-  "IA",
-  "KS",
-  "KY",
-  "LA",
-  "ME",
-  "MD",
-  "MA",
-  "MI",
-  "MN",
-  "MS",
-  "MO",
-  "MT",
-  "NE",
-  "NV",
-  "NH",
-  "NJ",
-  "NM",
-  "NY",
-  "NC",
-  "ND",
-  "OH",
-  "OK",
-  "OR",
-  "PA",
-  "RI",
-  "SC",
-  "SD",
-  "TN",
-  "TX",
-  "UT",
-  "VT",
-  "VA",
-  "WA",
-  "WV",
-  "WI",
-  "WY",
-  "DC",
+  "AL","AK","AZ","AR","CA","CO","CT","DE","FL","GA","HI","ID","IL","IN","IA","KS","KY","LA","ME",
+  "MD","MA","MI","MN","MS","MO","MT","NE","NV","NH","NJ","NM","NY","NC","ND","OH","OK","OR","PA",
+  "RI","SC","SD","TN","TX","UT","VT","VA","WA","WV","WI","WY","DC",
 ]);
 
 const STATE_NAME_TO_CODE = {
@@ -158,16 +130,12 @@ const STATE_NAME_TO_CODE = {
   "district of columbia": "DC",
 };
 
-// Reverse map for token normalization (code -> name)
-const CODE_TO_STATE_NAME = Object.entries(STATE_NAME_TO_CODE).reduce(
-  (acc, [name, code]) => {
-    if (!acc[code]) acc[code] = name;
-    return acc;
-  },
-  {}
-);
+const CODE_TO_STATE_NAME = Object.entries(STATE_NAME_TO_CODE).reduce((acc, [name, code]) => {
+  if (!acc[code]) acc[code] = name;
+  return acc;
+}, {});
 
-// ✅ Neighboring-state map (good enough without geocoding)
+// ✅ Neighboring-state map
 const NEIGHBORS = {
   CA: ["OR", "NV", "AZ"],
   OR: ["WA", "ID", "NV", "CA"],
@@ -194,12 +162,15 @@ const NEIGHBORS = {
 };
 
 function isNearbyState(customerState, oppState) {
-  if (!customerState || !oppState) return null; // unknown
+  if (!customerState || !oppState) return null;
   if (customerState === oppState) return true;
   const neighbors = NEIGHBORS[customerState] || [];
   return neighbors.includes(oppState);
 }
 
+/** ---------------------------
+ * ✅ Tokenization/helpers
+ * -------------------------- */
 function tokenize(s = "") {
   if (s == null) return [];
   return String(s)
@@ -248,7 +219,6 @@ function normUrl(u) {
 
 /**
  * Extract a US state code from a free-form location string.
- * Supports "CA", "CA 920xx", "City, CA", and full state names like "California".
  */
 function extractStateCode(locationStr) {
   const raw = String(locationStr || "").trim();
@@ -256,13 +226,11 @@ function extractStateCode(locationStr) {
 
   const upper = raw.toUpperCase();
 
-  // token-based scan for 2-letter codes
   const tokens = upper.split(/[^A-Z]+/g).filter(Boolean);
   for (const t of tokens) {
     if (t.length === 2 && STATE_CODES.has(t)) return t;
   }
 
-  // full state name
   const lower = raw.toLowerCase();
   for (const name of Object.keys(STATE_NAME_TO_CODE)) {
     if (lower.includes(name)) return STATE_NAME_TO_CODE[name];
@@ -271,10 +239,6 @@ function extractStateCode(locationStr) {
   return null;
 }
 
-/**
- * UI polish: convert full state names to abbreviations.
- * e.g. "Oceanside, California" -> "Oceanside, CA"
- */
 function abbreviateStateInLocation(locationStr) {
   const raw = String(locationStr || "").trim();
   if (!raw) return raw;
@@ -283,42 +247,28 @@ function abbreviateStateInLocation(locationStr) {
   if (!code) return raw;
 
   let out = raw;
-
-  // Replace state names with their codes (case-insensitive).
   for (const [name, c] of Object.entries(STATE_NAME_TO_CODE)) {
     const pattern = name.replace(/\s+/g, "\\s+");
     const re = new RegExp(pattern, "ig");
     out = out.replace(re, c);
   }
-
   return out;
 }
 
-/**
- * Matching polish: add both state name + abbreviation tokens so "CA" and "California"
- * overlap during scoring.
- */
 function locationTokensWithState(locStr) {
   const base = tokenize(locStr);
   const code = extractStateCode(locStr);
   if (!code) return base;
 
   const extra = [code.toLowerCase()];
-
   const stateName = CODE_TO_STATE_NAME[code];
-  if (stateName) {
-    extra.push(...tokenize(stateName));
-  }
+  if (stateName) extra.push(...tokenize(stateName));
 
   return Array.from(new Set([...base, ...extra]));
 }
 
 /**
- * ✅ Dedupe rules:
- * - If URL exists: use URL as primary key.
- * - If no URL: use title+location+naics fallback.
- * - If we already kept a fallback match and later see a URL version of the SAME fallback,
- *   replace the fallback with the URL match (so we keep the best record).
+ * ✅ Dedupe rules
  */
 function dedupeMatches(matches) {
   const seen = new Set();
@@ -336,9 +286,7 @@ function dedupeMatches(matches) {
 
     if (url && seen.has(fallbackSeenKey)) {
       const idx = out.findIndex((x) => {
-        const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(
-          x.naics
-        )}`;
+        const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(x.naics)}`;
         const xUrl = normUrl(x.url);
         return `fallback:${xfb}` === fallbackSeenKey && !xUrl;
       });
@@ -351,7 +299,6 @@ function dedupeMatches(matches) {
     }
 
     if (seen.has(key)) continue;
-
     seen.add(key);
     out.push(m);
   }
@@ -360,26 +307,20 @@ function dedupeMatches(matches) {
 }
 
 /**
- * ✅ NAICS matching:
- * - Exact match wins
- * - Prefix match allowed (customer "2373" matches opp "237310")
+ * ✅ NAICS matching
  */
 function bestNaicsHit(customerNaicsList, oppNaicsList) {
   if (!customerNaicsList.length || !oppNaicsList.length) return null;
 
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
-      if (c.length === o.length && c === o) {
-        return { type: "exact", customer: c, opp: o };
-      }
+      if (c.length === o.length && c === o) return { type: "exact", customer: c, opp: o };
     }
   }
 
   for (const o of oppNaicsList) {
     for (const c of customerNaicsList) {
-      if (c && o && o.startsWith(c)) {
-        return { type: "prefix", customer: c, opp: o };
-      }
+      if (c && o && o.startsWith(c)) return { type: "prefix", customer: c, opp: o };
     }
   }
 
@@ -390,20 +331,13 @@ function scoreMatch(customer, opp) {
   const industryTokens = tokenize(customer.industry);
   const serviceTokens = tokenize(customer.services);
 
-  // Use location OR serviceArea for location relevance
   const customerLocStr = customer.location || customer.serviceArea || "";
-
-  // ✅ Better: normalize tokens with state name + code
   const locationTokens = locationTokensWithState(customerLocStr);
 
   const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
-  const baseTokens = new Set([
-    ...industryTokens,
-    ...serviceTokens,
-    ...customerKeywordTokens,
-  ]);
+  const baseTokens = new Set([...industryTokens, ...serviceTokens, ...customerKeywordTokens]);
 
   const hasAnything =
     baseTokens.size > 0 || locationTokens.length > 0 || customerNaicsList.length > 0;
@@ -476,7 +410,6 @@ function scoreMatch(customer, opp) {
     reasons.push(`Summary overlap: ${summaryHits} hit(s) +${add}`);
   }
 
-  // ✅ Nearby-state logic (no geocoding)
   const custState = extractStateCode(customerLocStr);
   const oppState = extractStateCode(opp.location);
 
@@ -514,29 +447,32 @@ function groupMatchesBySegment(matches) {
   return buckets;
 }
 
-// ✅ NEW: threshold helper (prevents the “red” syntax mess)
+// ✅ threshold helper
 function minScoreForMatch(m) {
   const seg = String(m?.segment || "").toLowerCase();
   return seg === "government" ? MIN_SCORE : MIN_SCORE_NON_GOV;
 }
 
-// ✅ NEW: Craigslist buyer-intent filter (Wanted only)
+// ✅ Craigslist buyer-intent filter (Wanted only)
 function keepMatch(m) {
   if (!m) return false;
 
-  // Craigslist: allow ONLY /wan/ (Wanted) by default
-  if (CRAILSLIST_WANTED_ONLY && String(m.source || "").toLowerCase() === "craigslist") {
+  // Use correct var, but alias exists so old references won't crash
+  if (CRAIGSLIST_WANTED_ONLY && String(m.source || "").toLowerCase() === "craigslist") {
     const u = String(m.url || "").toLowerCase();
+    // allow ONLY wanted posts
     if (!u.includes("/wan/")) return false;
   }
 
   return true;
 }
 
-// ✅ keep path EXACTLY: GET /engine/matches/:customerId?limit=50
+/** ---------------------------
+ * ✅ Route: GET /engine/matches/:customerId?limit=50
+ * -------------------------- */
 router.get("/matches/:customerId", async (req, res) => {
   const debug = String(req.query.debug || "") === "1";
-  const grouped = String(req.query.grouped || "") === "1"; // ✅ opt-in grouping
+  const grouped = String(req.query.grouped || "") === "1";
 
   const fail = (stage, err) => {
     console.error(`matches error @${stage}:`, err?.stack || err);
@@ -572,6 +508,7 @@ router.get("/matches/:customerId", async (req, res) => {
           isActive: true,
           subscriptionStatus: true,
           trialEndsAt: true,
+          segments: true,
         },
       });
     } catch (e) {
@@ -580,11 +517,9 @@ router.get("/matches/:customerId", async (req, res) => {
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    // ✅ TRIAL-AWARE PAYWALL (NO CC trial counts as access)
+    // ✅ TRIAL-AWARE PAYWALL
     const now = Date.now();
-    const trialActive =
-      customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now;
-
+    const trialActive = customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now;
     const accessAllowed = Boolean(customer.isActive) || Boolean(trialActive);
 
     if (!accessAllowed) {
@@ -597,22 +532,13 @@ router.get("/matches/:customerId", async (req, res) => {
       });
     }
 
-    // ✅ Try segments safely
-    let segments = null;
-    try {
-      const segRow = await prisma.customer.findUnique({
-        where: { id: customerId },
-        select: { segments: true },
-      });
-      segments = segRow?.segments ?? null;
-    } catch {
-      segments = null;
-    }
-
-    const allowedSegments =
-      Array.isArray(segments) && segments.length > 0
-        ? segments
-        : ["residential", "commercial", "government"];
+    // ✅ segments normalized (supports array or csv string)
+    const segRaw = customer.segments;
+    const allowedSegments = Array.isArray(segRaw)
+      ? (segRaw.length ? segRaw : ["residential", "commercial", "government"])
+      : (typeof segRaw === "string" && segRaw.trim()
+          ? splitCsv(segRaw.toLowerCase())
+          : ["residential", "commercial", "government"]);
 
     // ✅ Only fetch fields we use
     let opportunities = [];
@@ -637,6 +563,7 @@ router.get("/matches/:customerId", async (req, res) => {
         },
       });
     } catch (e) {
+      // fallback without segment filter (safe)
       try {
         opportunities = await prisma.opportunity.findMany({
           orderBy: { postedDate: "desc" },
@@ -661,7 +588,6 @@ router.get("/matches/:customerId", async (req, res) => {
       }
     }
 
-    // Determine customer's state for strict nearby filtering
     const customerLocStr = customer.location || customer.serviceArea || "";
     const custState = extractStateCode(customerLocStr);
 
@@ -669,7 +595,6 @@ router.get("/matches/:customerId", async (req, res) => {
     try {
       raw = opportunities
         .map((opp) => {
-          // ✅ location cleanup
           const safeLocation =
             typeof opp.location === "string"
               ? opp.location.includes("[object Object]")
@@ -679,15 +604,10 @@ router.get("/matches/:customerId", async (req, res) => {
               ? JSON.stringify(opp.location)
               : null;
 
-          // ✅ UI polish: abbreviate state names in output
-          const prettyLocation = safeLocation
-            ? abbreviateStateInLocation(safeLocation)
-            : null;
+          const prettyLocation = safeLocation ? abbreviateStateInLocation(safeLocation) : null;
 
-          // score using cleaned + prettified location
           const s = scoreMatch(customer, { ...opp, location: prettyLocation });
 
-          // ✅ Strict nearby-only filter:
           if (STRICT_NEARBY_ONLY && custState) {
             const oppState = extractStateCode(prettyLocation);
             const nearby = isNearbyState(custState, oppState);
@@ -699,31 +619,24 @@ router.get("/matches/:customerId", async (req, res) => {
             title: opp.title,
             location: prettyLocation,
             naics: opp.naics,
-
             segment: opp.segment,
             source: opp.source ?? null,
-
             keywords: opp.keywords ?? null,
             agency: opp.agency ?? null,
             url: opp.url ?? null,
             postedDate: opp.postedDate ?? null,
             dueDate: opp.dueDate ?? null,
             summary: opp.summary ?? null,
-
             score: s.score,
             reasons: s.reasons,
             profileIncomplete: s.profileIncomplete,
-
-            // Optional debug/meta
             nearby: s.nearby ?? null,
             customerState: s.custState ?? null,
             oppState: s.oppState ?? null,
           };
         })
         .filter(Boolean)
-        // ✅ NEW: keep gov strict, let residential/commercial through lower
         .filter((m) => m.score >= minScoreForMatch(m))
-        // ✅ NEW: Craigslist buyer-intent enforcement
         .filter(keepMatch)
         .sort((a, b) => b.score - a.score);
     } catch (e) {
@@ -737,7 +650,6 @@ router.get("/matches/:customerId", async (req, res) => {
       return fail("dedupe_slice", e);
     }
 
-    // ✅ Optional grouped buckets for UI headers
     const buckets = grouped ? groupMatchesBySegment(matches) : null;
 
     return res.json({
@@ -749,7 +661,7 @@ router.get("/matches/:customerId", async (req, res) => {
         trialEndsAt: customer.trialEndsAt ?? null,
         trialActive: Boolean(trialActive),
       },
-      matches, // ✅ keep existing shape
+      matches,
       ...(grouped
         ? {
             grouped: true,
