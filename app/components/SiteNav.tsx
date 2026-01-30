@@ -18,9 +18,12 @@ export default function SiteNav() {
           <div className="h-9 w-9 rounded-xl border border-black/10 bg-white flex items-center justify-center">
             <span className="text-sm font-black text-black">A</span>
           </div>
-          <span className="text-sm font-extrabold tracking-wide text-black">
-            AMBIT
-          </span>
+         <span
+  aria-label="AMBIT"
+  className="text-lg sm:text-xl font-black tracking-[0.55em] -mr-[0.55em] text-black"
+>
+  AMBIT
+</span>
         </Link>
 
         {/* Middle intentionally blank (Malakye style) */}
