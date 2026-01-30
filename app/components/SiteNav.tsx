@@ -16,7 +16,7 @@ export default function SiteNav() {
         {/* Left */}
         <Link href="/" className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl border border-black/10 bg-white flex items-center justify-center">
-            <span className="text-sm font-black text-black">A</span>
+            <span className="text-sm font-black text-black"></span>
           </div>
          <span
   aria-label="AMBIT"
