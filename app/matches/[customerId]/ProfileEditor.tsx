@@ -2,199 +2,362 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-const BTN =
-  "inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition";
-const PRIMARY = `${BTN} bg-[#1A4FA3] text-white hover:bg-[#15428B]`;
-const SECONDARY = `${BTN} border border-white/15 bg-white/5 text-white hover:bg-white/10`;
+const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
+const DEV_BACKEND = "http://localhost:5001";
+const FALLBACK = process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
 
-function getBackend() {
-  const b = process.env.NEXT_PUBLIC_BACKEND_URL;
-  if (!b) throw new Error("Missing NEXT_PUBLIC_BACKEND_URL on the frontend.");
-  return b.replace(/\/$/, "");
+const API_BASE = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  FALLBACK
+).replace(/\/$/, "");
+
+const REQUEST_TIMEOUT_MS = 15000;
+const EMAIL_STORAGE_KEY = "ambit_login_email";
+
+type Segment = "residential" | "commercial" | "government";
+
+type CustomerProfile = {
+  id: number;
+  name?: string | null;
+  email?: string | null;
+  location?: string | null;
+  serviceArea?: string | null;
+  keywords?: string | null;
+  naics?: string | null;
+  naicsCodes?: string[] | null;
+  segments?: Segment[] | null;
+  sources?: string[] | null;
+};
+
+function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+
+  return fetch(url, { ...init, signal: ac.signal }).finally(() => clearTimeout(t));
+}
+
+function parseNaicsCodes(input: string) {
+  const parts = input
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .map((s) => s.replace(/[^\d]/g, "").slice(0, 6))
+    .filter((s) => /^\d{2,6}$/.test(s));
+
+  // unique
+  return Array.from(new Set(parts));
+}
+
+function prettyErr(e: any) {
+  if (e?.name === "AbortError") return "Server is waking up — please retry in a few seconds.";
+  return e?.message || "Something went wrong.";
 }
 
 export default function ProfileEditor({
   customerId,
   onSaved,
 }: {
-  customerId: number;
+  customerId: number | string;
   onSaved?: () => void;
 }) {
-  const backend = useMemo(() => getBackend(), []);
-  const [open, setOpen] = useState(false);
+  const id = useMemo(() => Number(customerId), [customerId]);
 
   const [email, setEmail] = useState("");
-  const [location, setLocation] = useState("");
-  const [naics, setNaics] = useState("");
-  const [keywords, setKeywords] = useState("");
+  const [remember, setRemember] = useState(true);
 
+  // profile fields
+  const [companyName, setCompanyName] = useState("");
+  const [serviceArea, setServiceArea] = useState("");
+  const [keywords, setKeywords] = useState("");
+  const [naics, setNaics] = useState("");
+
+  const [segResidential, setSegResidential] = useState(true);
+  const [segCommercial, setSegCommercial] = useState(true);
+  const [segGovernment, setSegGovernment] = useState(true);
+
+  // ui state
   const [loading, setLoading] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [status, setStatus] = useState<"idle" | "loaded" | "saved">("idle");
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem("ambit_email");
-    if (saved) setEmail(saved);
+    try {
+      const stored = localStorage.getItem(EMAIL_STORAGE_KEY) || "";
+      if (stored && !email) setEmail(stored);
+    } catch {
+      // ignore
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  useEffect(() => {
+    if (!remember) return;
+    if (!email?.trim()) return;
+    try {
+      localStorage.setItem(EMAIL_STORAGE_KEY, email.trim().toLowerCase());
+    } catch {
+      // ignore
+    }
+  }, [email, remember]);
+
   async function loadProfile() {
-    setMsg(null);
-    const em = email.trim().toLowerCase();
-    if (!em) {
-      setMsg("Enter your signup email to load your profile.");
+    setErr(null);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      setErr("Invalid customer id.");
+      return;
+    }
+
+    const e = email.trim().toLowerCase();
+    if (!e) {
+      setErr("Enter the same email you used to sign up.");
       return;
     }
 
     setLoading(true);
     try {
-      const resp = await fetch(
-        `${backend}/engine/customers/${customerId}/profile?email=${encodeURIComponent(em)}`,
-        { method: "GET" }
-      );
-      const data = await resp.json();
-      if (!resp.ok || !data?.ok) throw new Error(data?.error || "Failed to load profile.");
+      const url = `${API_BASE}/engine/customers/${id}/profile?email=${encodeURIComponent(e)}`;
+      const res = await abortableFetch(url, { method: "GET", credentials: "include", cache: "no-store" });
+      const json = await res.json().catch(() => ({}));
 
-      setLocation(data.customer.location || "");
-      setNaics(data.customer.naics || "");
-      setKeywords(data.customer.keywords || "");
+      if (!res.ok) {
+        throw new Error(json?.error || json?.message || `Failed to load profile (${res.status})`);
+      }
 
-      localStorage.setItem("ambit_email", em);
-      setMsg("Loaded.");
+      const customer: CustomerProfile | undefined = json?.customer;
+      if (!customer) throw new Error("Profile not found.");
+
+      setCompanyName(String(customer?.name || ""));
+      setServiceArea(String(customer?.serviceArea || customer?.location || ""));
+      setKeywords(String(customer?.keywords || ""));
+      setNaics(String(customer?.naics || (customer?.naicsCodes || []).join(", ") || ""));
+
+      const segs = customer?.segments || [];
+      setSegResidential(segs.includes("residential"));
+      setSegCommercial(segs.includes("commercial"));
+      setSegGovernment(segs.includes("government"));
+
+      setStatus("loaded");
     } catch (e: any) {
-      setMsg(e?.message || "Failed to load profile.");
+      setErr(prettyErr(e));
     } finally {
       setLoading(false);
     }
   }
 
   async function saveProfile() {
-    setMsg(null);
-    const em = email.trim().toLowerCase();
-    if (!em) {
-      setMsg("Enter your signup email to save changes.");
+    setErr(null);
+
+    if (!Number.isFinite(id) || id <= 0) {
+      setErr("Invalid customer id.");
       return;
     }
 
-    setLoading(true);
+    const e = email.trim().toLowerCase();
+    if (!e) {
+      setErr("Enter the same email you used to sign up.");
+      return;
+    }
+
+    const segments: Segment[] = [];
+    if (segResidential) segments.push("residential");
+    if (segCommercial) segments.push("commercial");
+    if (segGovernment) segments.push("government");
+
+    if (segments.length === 0) {
+      setErr("Select at least one market.");
+      return;
+    }
+
+    const naicsInput = naics.trim();
+    const naicsCodes = parseNaicsCodes(naicsInput);
+
+    setSaving(true);
     try {
-      const resp = await fetch(`${backend}/engine/customers/${customerId}/profile`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: em,
-          location,
-          naics,
-          keywords,
-        }),
-      });
+      const url = `${API_BASE}/engine/customers/${id}/profile`;
+      const payload = {
+        email: e, // ✅ REQUIRED BY BACKEND
+        name: companyName.trim() || null,
+        companyName: companyName.trim() || null,
+        serviceArea: serviceArea.trim() || null,
+        location: serviceArea.trim() || null,
+        keywords: keywords.trim() || null,
+        naics: naicsInput || null,
+        naicsCodes, // ✅ sets proper code array too
+        segments,
+      };
 
-      const data = await resp.json().catch(() => ({}));
-      if (!resp.ok || !data?.ok) throw new Error(data?.error || "Failed to save profile.");
+      const res = await abortableFetch(
+        url,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload),
+        },
+        REQUEST_TIMEOUT_MS
+      );
 
-      localStorage.setItem("ambit_email", em);
-      setMsg("Saved! Hit Refresh to re-run matches (or we’ll auto-refresh).");
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(json?.error || json?.message || `Save failed (${res.status})`);
+      }
 
-      onSaved?.();
+      setStatus("saved");
+      if (onSaved) onSaved();
     } catch (e: any) {
-      setMsg(e?.message || "Failed to save profile.");
+      setErr(prettyErr(e));
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   }
 
   return (
-    <>
-      <button className={SECONDARY} onClick={() => setOpen(true)}>
-        Edit profile
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-          <div
-            className="absolute inset-0 bg-black/60"
-            onClick={() => !loading && setOpen(false)}
-          />
-
-          <div className="relative w-full max-w-xl rounded-3xl border border-[#5AA7FF]/40 bg-[#081027] p-6 shadow-2xl">
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h3 className="text-xl font-bold text-white">Update your profile</h3>
-                <p className="mt-1 text-sm text-white/75">
-                  NAICS + service area are the #1 drivers of match quality.
-                </p>
-              </div>
-
-              <button
-                className={SECONDARY}
-                onClick={() => !loading && setOpen(false)}
-              >
-                Close
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <div>
-                <label className="text-sm font-bold text-white">Email (login)</label>
-                <div className="mt-2 flex gap-2">
-                  <input
-                    className="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white placeholder:text-white/40 outline-none focus:border-[#5AA7FF]/60"
-                    placeholder="you@company.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                  <button className={SECONDARY} onClick={loadProfile} disabled={loading}>
-                    Load
-                  </button>
-                </div>
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-white">Service area / locations</label>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white placeholder:text-white/40 outline-none focus:border-[#5AA7FF]/60"
-                  placeholder="e.g., San Diego, CA; Temecula, CA; Nationwide"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-white">NAICS codes</label>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white placeholder:text-white/40 outline-none focus:border-[#5AA7FF]/60"
-                  placeholder="e.g., 238220, 561730, 236220"
-                  value={naics}
-                  onChange={(e) => setNaics(e.target.value)}
-                />
-              </div>
-
-              <div>
-                <label className="text-sm font-bold text-white">Keywords / services</label>
-                <input
-                  className="mt-2 w-full rounded-xl border border-white/15 bg-white/5 px-4 py-3 text-sm font-bold text-white placeholder:text-white/40 outline-none focus:border-[#5AA7FF]/60"
-                  placeholder="e.g., HVAC install, ductwork, commercial maintenance"
-                  value={keywords}
-                  onChange={(e) => setKeywords(e.target.value)}
-                />
-              </div>
-
-              {msg && (
-                <div className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-bold text-white">
-                  {msg}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button className={SECONDARY} onClick={() => setOpen(false)} disabled={loading}>
-                  Cancel
-                </button>
-                <button className={PRIMARY} onClick={saveProfile} disabled={loading}>
-                  {loading ? "Saving..." : "Save changes"}
-                </button>
-              </div>
-            </div>
+    <div className="rounded-3xl border border-black/10 bg-white/75 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.10)]">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="text-xs font-black tracking-[0.16em] text-black/45">PROFILE</div>
+          <div className="mt-1 text-xl font-black tracking-tight text-black">Edit your match settings</div>
+          <div className="mt-1 text-sm text-black/60">
+            This controls your daily matches and scoring.
           </div>
         </div>
-      )}
-    </>
+
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={loadProfile}
+            disabled={loading || saving}
+            className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/70 hover:bg-black/[0.03] disabled:opacity-60"
+          >
+            {loading ? "Loading…" : "Load"}
+          </button>
+          <button
+            type="button"
+            onClick={saveProfile}
+            disabled={saving || loading}
+            className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B] disabled:opacity-60"
+          >
+            {saving ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+
+      <div className="mt-5 grid gap-4">
+        {/* Auth email */}
+        <div>
+          <div className="text-xs font-semibold text-black/55">Email (required to edit)</div>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
+            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          />
+          <label className="mt-2 flex items-center gap-2 text-xs text-black/55">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={(e) => setRemember(e.target.checked)}
+            />
+            Remember email on this device
+          </label>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <div className="text-xs font-semibold text-black/55">Company name</div>
+            <input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Your Company"
+              className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+            />
+          </div>
+
+          <div>
+            <div className="text-xs font-semibold text-black/55">Service area</div>
+            <input
+              value={serviceArea}
+              onChange={(e) => setServiceArea(e.target.value)}
+              placeholder="City, county, or state"
+              className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+            />
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs font-semibold text-black/55">Keywords</div>
+          <input
+            value={keywords}
+            onChange={(e) => setKeywords(e.target.value)}
+            placeholder="plumbing, drain, water heater, commercial…"
+            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          />
+          <div className="mt-2 text-xs text-black/45">Comma-separated is best.</div>
+        </div>
+
+        <div>
+          <div className="text-xs font-semibold text-black/55">NAICS codes</div>
+          <input
+            value={naics}
+            onChange={(e) => setNaics(e.target.value)}
+            placeholder="238220, 221310…"
+            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          />
+          <div className="mt-2 text-xs text-black/45">
+            We’ll extract valid codes automatically on save.
+          </div>
+        </div>
+
+        <div>
+          <div className="text-xs font-semibold text-black/55">Markets</div>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
+              <input
+                type="checkbox"
+                checked={segResidential}
+                onChange={(e) => setSegResidential(e.target.checked)}
+              />
+              Residential
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
+              <input
+                type="checkbox"
+                checked={segCommercial}
+                onChange={(e) => setSegCommercial(e.target.checked)}
+              />
+              Commercial
+            </label>
+            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
+              <input
+                type="checkbox"
+                checked={segGovernment}
+                onChange={(e) => setSegGovernment(e.target.checked)}
+              />
+              Government
+            </label>
+          </div>
+        </div>
+
+        {err ? (
+          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {err}
+          </div>
+        ) : null}
+
+        {status === "saved" ? (
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+            Saved. If your match list doesn’t update immediately, refresh the page.
+          </div>
+        ) : null}
+
+        <div className="text-xs text-black/45">
+          Tip: click <b>Load</b> first to pull your current profile, then edit and hit <b>Save</b>.
+        </div>
+      </div>
+    </div>
   );
 }
