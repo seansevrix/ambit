@@ -15,9 +15,6 @@ export default function SiteNav() {
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-4 lg:px-10">
         {/* Left */}
         <Link href="/" className="flex items-center gap-3">
-          <div className="h-9 w-9 rounded-xl border border-black/10 bg-white flex items-center justify-center">
-            <span className="text-sm font-black text-black"></span>
-          </div>
          <span
   aria-label="AMBIT"
   className="text-lg sm:text-xl font-black tracking-[0.55em] -mr-[0.55em] text-black"
