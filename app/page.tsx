@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import SignupModal from "./components/SignupModal";
 import LandingBackground from "./components/LandingBackground";
 
 type Market = "residential" | "commercial" | "government";
@@ -58,12 +57,7 @@ function SignupSocialProof() {
               title={l.alt}
               aria-label={l.alt}
             >
-              <img
-                src={l.src}
-                alt={l.alt}
-                className="h-full w-full object-cover object-center"
-                loading="lazy"
-              />
+              <img src={l.src} alt={l.alt} className="h-full w-full object-cover object-center" loading="lazy" />
             </div>
           ))}
 
@@ -100,27 +94,26 @@ type PreviewMatch = {
   nextStep: string;
 };
 
-const PROFILE_HINT: Record<Market, { location: string; trade: string; radius: string; trust: string[] }> =
-  {
-    residential: {
-      location: "San Diego, CA",
-      trade: "Landscaping",
-      radius: "25mi radius",
-      trust: ["Verified buyers", "Updated frequently", "Ranked by fit"],
-    },
-    commercial: {
-      location: "Austin, TX",
-      trade: "Facilities Services",
-      radius: "50mi radius",
-      trust: ["Recurring work orders", "Fast response routing", "Ranked by fit"],
-    },
-    government: {
-      location: "San Diego, CA",
-      trade: "Janitorial (561720)",
-      radius: "250mi radius",
-      trust: ["Public sources monitored", "Deadline-aware ranking", "Ranked by fit"],
-    },
-  };
+const PROFILE_HINT: Record<Market, { location: string; trade: string; radius: string; trust: string[] }> = {
+  residential: {
+    location: "San Diego, CA",
+    trade: "Landscaping",
+    radius: "25mi radius",
+    trust: ["Verified buyers", "Updated frequently", "Ranked by fit"],
+  },
+  commercial: {
+    location: "Austin, TX",
+    trade: "Facilities Services",
+    radius: "50mi radius",
+    trust: ["Recurring work orders", "Fast response routing", "Ranked by fit"],
+  },
+  government: {
+    location: "San Diego, CA",
+    trade: "Janitorial (561720)",
+    radius: "250mi radius",
+    trust: ["Public sources monitored", "Deadline-aware ranking", "Ranked by fit"],
+  },
+};
 
 const PREVIEW_DATA: Record<Market, PreviewMatch> = {
   residential: {
@@ -299,9 +292,7 @@ function PreviewMatches({ market }: { market: Market }) {
         </div>
       </div>
 
-      <div className="mt-2 text-[11px] text-black/50">
-        Full details and links are available for active subscribers.
-      </div>
+      <div className="mt-2 text-[11px] text-black/50">Full details and links are available for active subscribers.</div>
     </div>
   );
 }
@@ -335,11 +326,7 @@ function PreviewActivity({ market }: { market: Market }) {
 
   const feed =
     market === "government"
-      ? [
-          "Sources scanned across public portals",
-          "3 high-fit opportunities flagged",
-          "Digest queued for 5:00pm",
-        ]
+      ? ["Sources scanned across public portals", "3 high-fit opportunities flagged", "Digest queued for 5:00pm"]
       : market === "commercial"
       ? ["New work orders detected", "2 buyers replied today", "Top match score: 95"]
       : ["Verified buyer lead added", "2 calls booked", "Top match score: 96"];
@@ -404,12 +391,7 @@ function PreviewActivity({ market }: { market: Market }) {
 }
 
 /* ---------- TESTIMONIALS ---------- */
-/**
- * Testimonial logo images are here:
- *   /public/landing/social/testimonials/tennessee-contractors-equipment.jpeg
- *   /public/landing/social/testimonials/paradise-cleaning-solutions.webp
- *   /public/landing/social/testimonials/euro-plumbing.jpeg
- */
+
 type QuotePart = { t: string; strong?: boolean };
 type Testimonial = {
   segment: "Commercial" | "Residential";
@@ -471,13 +453,7 @@ function StarRow({ count }: { count: number }) {
   return (
     <div className="mt-5 flex items-center gap-1">
       {Array.from({ length: count }).map((_, i) => (
-        <svg
-          key={i}
-          viewBox="0 0 20 20"
-          className="h-4 w-4 text-amber-300"
-          fill="currentColor"
-          aria-hidden="true"
-        >
+        <svg key={i} viewBox="0 0 20 20" className="h-4 w-4 text-amber-300" fill="currentColor" aria-hidden="true">
           <path d="M10 15.27 4.18 18.2l1.11-6.48L.58 7.3l6.5-.94L10 0l2.92 6.36 6.5.94-4.71 4.42 1.11 6.48z" />
         </svg>
       ))}
@@ -485,7 +461,7 @@ function StarRow({ count }: { count: number }) {
   );
 }
 
-function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
+function TestimonialsSection({ market }: { market: Market }) {
   return (
     <section className={`${CONTAINER} pb-24`}>
       <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_30px_120px_rgba(0,0,0,0.28)]">
@@ -496,9 +472,7 @@ function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
               Live customer feedback
             </div>
 
-            <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
-              Trusted proof from real contractors
-            </h2>
+            <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">Trusted proof from real contractors</h2>
 
             <p className="mt-4 text-base text-white/70 sm:text-lg">
               Skimmable reviews from teams using AMBIT to find better-fit opportunities faster.
@@ -543,12 +517,7 @@ function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-white/10">
-                      <img
-                        src={x.avatarSrc}
-                        alt={x.avatarAlt}
-                        className="h-full w-full object-contain p-1"
-                        loading="lazy"
-                      />
+                      <img src={x.avatarSrc} alt={x.avatarAlt} className="h-full w-full object-contain p-1" loading="lazy" />
                     </div>
 
                     <div>
@@ -583,18 +552,17 @@ function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
 
         <div className="mt-10 flex items-center justify-center">
           <div className="relative inline-flex">
-            {/* CTA HALO */}
             <span
               aria-hidden
               className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
             />
-            <button
-              onClick={onOpenSignup}
+            <Link
+              href={`/get-started?intent=${market}`}
               className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
             >
               <ArrowBadge />
               Sign Up
-            </button>
+            </Link>
           </div>
         </div>
       </div>
@@ -606,8 +574,6 @@ function TestimonialsSection({ onOpenSignup }: { onOpenSignup: () => void }) {
 
 export default function HomePage() {
   const [market, setMarket] = useState<Market>("residential");
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalKind, setModalKind] = useState<"company" | "individual">("company");
 
   useEffect(() => {
     const prevHtml = document.documentElement.style.backgroundColor;
@@ -622,37 +588,14 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    function onOpen(e: any) {
-      const kind = e?.detail?.kind === "individual" ? "individual" : "company";
-      setModalKind(kind);
-      setModalOpen(true);
-    }
-    window.addEventListener("ambit:open-signup", onOpen as any);
-    return () => window.removeEventListener("ambit:open-signup", onOpen as any);
-  }, []);
-
   const heroSubtitle = useMemo(() => marketSub(market), [market]);
 
   return (
-  <div className="relative min-h-screen overflow-hidden text-black">
-    {/* Landing background should sit BEHIND the site-wide grid */}
-    <div className="pointer-events-none fixed inset-0 -z-[70]">
-      <LandingBackground />
-    </div>
-
-    <SignupModal
-      open={modalOpen}
-      onClose={() => setModalOpen(false)}
-      kind={modalKind}
-      market={market}
-    />
-
-    {/* HERO */}
-    ...
-
-
-      <SignupModal open={modalOpen} onClose={() => setModalOpen(false)} kind={modalKind} market={market} />
+    <div className="relative min-h-screen overflow-hidden text-black">
+      {/* Landing background should sit BEHIND the site-wide grid */}
+      <div className="pointer-events-none fixed inset-0 -z-[70]">
+        <LandingBackground />
+      </div>
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
@@ -662,27 +605,21 @@ export default function HomePage() {
               Stop hunting. Start receiving.
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-black/65">
-              Matched opportunities, emailed daily.
-            </p>
+            <p className="mx-auto mt-5 max-w-2xl text-lg text-black/65">Matched opportunities, emailed daily.</p>
 
             <div className="mt-10 flex items-center justify-center">
               <div className="relative inline-flex">
-                {/* CTA HALO */}
                 <span
                   aria-hidden
                   className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
                 />
-                <button
-                  onClick={() => {
-                    setModalKind("company");
-                    setModalOpen(true);
-                  }}
+                <Link
+                  href={`/get-started?intent=${market}`}
                   className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
                 >
                   <ArrowBadge />
                   Sign Up
-                </button>
+                </Link>
               </div>
             </div>
 
@@ -791,9 +728,7 @@ export default function HomePage() {
 
           <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black text-black">Move With Purpose.</div>
-            <div className="mt-3 text-black/80">
-              Strategically aligning your business with the jobs in your chosen industry.
-            </div>
+            <div className="mt-3 text-black/80">Strategically aligning your business with the jobs in your chosen industry.</div>
           </div>
 
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_14px_40px_rgba(0,0,0,0.10)]">
@@ -812,12 +747,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <TestimonialsSection
-        onOpenSignup={() => {
-          setModalKind("company");
-          setModalOpen(true);
-        }}
-      />
+      <TestimonialsSection market={market} />
     </div>
   );
 }
