@@ -19,12 +19,14 @@ const router = express.Router();
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.com";
 const ADMIN_NOTIFY_ON_REPEAT = String(process.env.ADMIN_NOTIFY_ON_REPEAT || "") === "1";
 
-const APP_URL =
-  process.env.FRONTEND_URL ||
-  process.env.APP_URL ||
-  "https://www.ambitco.app";
+const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.ambitco.app";
 
-async function sendResendEmail({ to, subject, html, text }) {
+const RESEND_TIMEOUT_MS = Number(process.env.RESEND_TIMEOUT_MS || 2500);
+
+/**
+ * ✅ Resend email with hard timeout (so it can’t hang the server)
+ */
+async function sendResendEmail({ to, subject, html, text, timeoutMs = RESEND_TIMEOUT_MS }) {
   const key = process.env.RESEND_API_KEY;
   const from = process.env.RESEND_FROM;
 
@@ -33,27 +35,37 @@ async function sendResendEmail({ to, subject, html, text }) {
     return null;
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${key}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from,
-      to,
-      subject,
-      html,
-      text,
-    }),
-  });
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), timeoutMs);
 
-  if (!res.ok) {
-    const msg = await res.text().catch(() => "");
-    throw new Error(`Resend error ${res.status}: ${msg}`);
+  try {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ from, to, subject, html, text }),
+      signal: ac.signal,
+    });
+
+    if (!res.ok) {
+      const msg = await res.text().catch(() => "");
+      throw new Error(`Resend error ${res.status}: ${msg}`);
+    }
+
+    return await res.json().catch(() => ({}));
+  } finally {
+    clearTimeout(t);
   }
+}
 
-  return await res.json().catch(() => ({}));
+async function sendResendEmailSafe(args) {
+  try {
+    await sendResendEmail(args);
+  } catch (e) {
+    console.error("[email] send failed:", e?.message || e);
+  }
 }
 
 /**
@@ -462,8 +474,7 @@ router.post("/customers", async (req, res) => {
     const isNewSignup = !existing;
 
     const shouldStartTrial =
-      !existing ||
-      (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
+      !existing || (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
 
     const { now, trialEndsAt } = buildTrialWindow(7);
 
@@ -512,106 +523,133 @@ router.post("/customers", async (req, res) => {
       },
     });
 
-    // ✅ Welcome email to customer (NEW signup only)
-    if (isNewSignup) {
-      const subject = "Welcome to AMBIT — your 7-day free trial starts now";
-      const matchesUrl = `${APP_URL}/matches/${customer.id}`;
-      const profileUrl = `${APP_URL}/customers/${customer.id}/profile`;
+    // ✅ respond immediately (never block signup on email)
+    const safeCustomer = {
+      id: customer.id,
+      name: customer.name,
+      email: customer.email,
+      location: customer.location,
+      serviceArea: customer.serviceArea,
+      services: customer.services,
+      keywords: customer.keywords,
+      naics: customer.naics,
+      naicsCodes: customer.naicsCodes,
+      segments: customer.segments,
+      sources: customer.sources,
+      isActive: customer.isActive,
+      subscriptionStatus: customer.subscriptionStatus,
+      trialStartedAt: customer.trialStartedAt,
+      trialEndsAt: customer.trialEndsAt,
+      createdAt: customer.createdAt,
+      updatedAt: customer.updatedAt,
+    };
 
-      const html = `
-        <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
-          <h2 style="margin:0 0 8px">Welcome to AMBIT 👋</h2>
-          <p style="margin:0 0 12px">
-            Your <b>7-day free trial</b> is active. You’ll receive <b>daily matched opportunities</b>
-            across <b>Residential • Commercial • Government</b>.
-          </p>
+    res.status(200).json({
+      ok: true,
+      customerId: customer.id,
+      customer: safeCustomer,
+      isNewSignup,
+    });
 
-          <p style="margin:0 0 12px">
-            If you don’t see opportunities you like right away, widen your net:
-          </p>
+    // ✅ background work (emails)
+    queueMicrotask(() => {
+      // Welcome email to customer (NEW signup only)
+      if (isNewSignup) {
+        const subject = "Welcome to AMBIT — your 7-day free trial starts now";
+        const matchesUrl = `${APP_URL}/matches/${customer.id}`;
+        const profileUrl = `${APP_URL}/customers/${customer.id}/profile`;
 
-          <ul style="margin:0 0 12px;padding-left:18px;color:#444">
-            <li>Add or expand <b>NAICS codes</b> (even 2–4 helps a lot)</li>
-            <li>Add more <b>keywords</b> (services, materials, equipment, brands)</li>
-            <li>Expand your <b>service area</b> (nearby cities/counties/statewide)</li>
-          </ul>
+        const html = `
+          <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
+            <h2 style="margin:0 0 8px">Welcome to AMBIT 👋</h2>
+            <p style="margin:0 0 12px">
+              Your <b>7-day free trial</b> is active. You’ll receive <b>daily matched opportunities</b>
+              across <b>Residential • Commercial • Government</b>.
+            </p>
 
-          <p style="margin:0 0 12px">
-            Want to see your matches now?
-          </p>
+            <p style="margin:0 0 12px">
+              If you don’t see opportunities you like right away, widen your net:
+            </p>
 
-          <p style="margin:16px 0 0">
-            <a href="${matchesUrl}" target="_blank"
-              style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
-              View my matches
-            </a>
-          </p>
+            <ul style="margin:0 0 12px;padding-left:18px;color:#444">
+              <li>Add or expand <b>NAICS codes</b> (even 2–4 helps a lot)</li>
+              <li>Add more <b>keywords</b> (services, materials, equipment, brands)</li>
+              <li>Expand your <b>service area</b> (nearby cities/counties/statewide)</li>
+            </ul>
 
-          <p style="margin:10px 0 0">
-            <a href="${profileUrl}" target="_blank" style="color:#111;text-decoration:underline">
-              Update my profile
-            </a>
-          </p>
+            <p style="margin:0 0 12px">Want to see your matches now?</p>
 
-          <p style="margin:14px 0 0;color:#444;font-size:13px">
-            Trial ends: <b>${customer.trialEndsAt ? new Date(customer.trialEndsAt).toLocaleString("en-US") : "—"}</b>
-          </p>
+            <p style="margin:16px 0 0">
+              <a href="${matchesUrl}" target="_blank"
+                style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
+                View my matches
+              </a>
+            </p>
 
-          <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
-          <div style="color:#666;font-size:12px;line-height:1.5">
-            You’re receiving this because you signed up at
-            <a href="${APP_URL}" target="_blank" style="color:#111">${APP_URL}</a>.
-            <br/>
-            Questions? Reply to this email.
+            <p style="margin:10px 0 0">
+              <a href="${profileUrl}" target="_blank" style="color:#111;text-decoration:underline">
+                Update my profile
+              </a>
+            </p>
+
+            <p style="margin:14px 0 0;color:#444;font-size:13px">
+              Trial ends: <b>${customer.trialEndsAt ? new Date(customer.trialEndsAt).toLocaleString("en-US") : "—"}</b>
+            </p>
+
+            <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
+            <div style="color:#666;font-size:12px;line-height:1.5">
+              You’re receiving this because you signed up at
+              <a href="${APP_URL}" target="_blank" style="color:#111">${APP_URL}</a>.
+              <br/>
+              Questions? Reply to this email.
+            </div>
           </div>
-        </div>
-      `;
+        `;
 
-      const text =
-        `Welcome to AMBIT!\n\n` +
-        `Your 7-day free trial is active. You'll receive daily matched opportunities.\n\n` +
-        `If you don’t see opportunities you like right away, widen your net:\n` +
-        `- Add or expand NAICS codes (2–4 helps a lot)\n` +
-        `- Add more keywords (services, materials, equipment, brands)\n` +
-        `- Expand your service area (nearby cities/counties/statewide)\n\n` +
-        `View matches: ${matchesUrl}\n` +
-        `Update profile: ${profileUrl}\n`;
+        const text =
+          `Welcome to AMBIT!\n\n` +
+          `Your 7-day free trial is active. You'll receive daily matched opportunities.\n\n` +
+          `If you don’t see opportunities you like right away, widen your net:\n` +
+          `- Add or expand NAICS codes (2–4 helps a lot)\n` +
+          `- Add more keywords (services, materials, equipment, brands)\n` +
+          `- Expand your service area (nearby cities/counties/statewide)\n\n` +
+          `View matches: ${matchesUrl}\n` +
+          `Update profile: ${profileUrl}\n`;
 
-      sendResendEmail({
-        to: customer.email,
-        subject,
-        html,
-        text,
-      }).catch((e) => console.error("[email] welcome send failed:", e?.message || e));
-    }
+        void sendResendEmailSafe({
+          to: customer.email,
+          subject,
+          html,
+          text,
+        });
+      }
 
-    // ✅ Admin notify on new signup (and optionally on repeats)
-    if (isNewSignup || ADMIN_NOTIFY_ON_REPEAT) {
-      const subject = `New AMBIT signup: ${customer.email}`;
-      const html = `
-        <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
-          <h2 style="margin:0 0 8px">New AMBIT signup</h2>
-          <p style="margin:0 0 12px"><b>${customer.email}</b> just created a profile.</p>
-          <ul style="margin:0;padding-left:18px">
-            <li><b>Name:</b> ${customer.name || "—"}</li>
-            <li><b>Location:</b> ${customer.location || customer.serviceArea || "—"}</li>
-            <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
-            <li><b>NAICS:</b> ${customer.naics || "—"}</li>
-            <li><b>Keywords:</b> ${customer.keywords || "—"}</li>
-            <li><b>Trial ends:</b> ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}</li>
-          </ul>
-        </div>
-      `;
+      // Admin notify on new signup (and optionally on repeats)
+      if (isNewSignup || ADMIN_NOTIFY_ON_REPEAT) {
+        const subject = `New AMBIT signup: ${customer.email}`;
+        const html = `
+          <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
+            <h2 style="margin:0 0 8px">New AMBIT signup</h2>
+            <p style="margin:0 0 12px"><b>${customer.email}</b> just created a profile.</p>
+            <ul style="margin:0;padding-left:18px">
+              <li><b>Name:</b> ${customer.name || "—"}</li>
+              <li><b>Location:</b> ${customer.location || customer.serviceArea || "—"}</li>
+              <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
+              <li><b>NAICS:</b> ${customer.naics || "—"}</li>
+              <li><b>Keywords:</b> ${customer.keywords || "—"}</li>
+              <li><b>Trial ends:</b> ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}</li>
+            </ul>
+          </div>
+        `;
 
-      sendResendEmail({
-        to: ADMIN_NOTIFY_EMAIL,
-        subject,
-        html,
-        text: `New AMBIT signup: ${customer.email}`,
-      }).catch((e) => console.error("[email] admin signup notify failed:", e?.message || e));
-    }
-
-    return res.status(200).json(customer);
+        void sendResendEmailSafe({
+          to: ADMIN_NOTIFY_EMAIL,
+          subject,
+          html,
+          text: `New AMBIT signup: ${customer.email}`,
+        });
+      }
+    });
   } catch (err) {
     console.error("POST /engine/customers error:", err);
     return res.status(500).json({
