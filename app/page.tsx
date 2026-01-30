@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import SignupModal from "./components/SignupModal";
+import LandingBackground from "./components/LandingBackground";
 
 type Market = "residential" | "commercial" | "government";
 
