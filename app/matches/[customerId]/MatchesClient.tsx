@@ -1,6 +1,8 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import ProfileEditor from "./ProfileEditor";
 
 type MatchItem = {
   id?: number;
@@ -18,6 +20,25 @@ type MatchItem = {
 
   [key: string]: any;
 };
+
+const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
+const DEV_BACKEND = "http://localhost:5001";
+const FALLBACK = process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
+
+const API_BASE = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  FALLBACK
+).replace(/\/$/, "");
+
+const REQUEST_TIMEOUT_MS = 15000;
+
+function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) {
+  const ac = new AbortController();
+  const t = setTimeout(() => ac.abort(), ms);
+  return fetch(url, { ...init, signal: ac.signal }).finally(() => clearTimeout(t));
+}
 
 function formatDate(iso?: string | null) {
   if (!iso) return null;
@@ -44,11 +65,13 @@ function scoreLabel(score?: number) {
   return "Low";
 }
 
+function prettyErr(e: any) {
+  if (e?.name === "AbortError") return "Server is waking up — please retry in a few seconds.";
+  return e?.message || "Unknown error";
+}
+
 export default function MatchesClient({ customerId }: { customerId: number }) {
-  const baseUrl = useMemo(
-    () => process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:5001",
-    []
-  );
+  const baseUrl = useMemo(() => API_BASE, []);
 
   const [loading, setLoading] = useState(true);
   const [needsSub, setNeedsSub] = useState(false);
@@ -56,6 +79,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
   const [error, setError] = useState<string | null>(null);
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [showProfile, setShowProfile] = useState(false);
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -67,9 +91,15 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     setNeedsSub(false);
 
     try {
-      const res = await fetch(`${baseUrl}/engine/matches/${customerId}`, {
-        cache: "no-store",
-      });
+      const res = await abortableFetch(
+        `${baseUrl}/engine/matches/${customerId}`,
+        {
+          method: "GET",
+          cache: "no-store",
+          credentials: "include",
+        },
+        REQUEST_TIMEOUT_MS
+      );
 
       if (res.status === 402) {
         setNeedsSub(true);
@@ -82,10 +112,10 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
         throw new Error(txt || `Matches failed: ${res.status}`);
       }
 
-      const data = await res.json();
-      setMatches(data?.matches ?? []);
+      const data = await res.json().catch(() => ({}));
+      setMatches(Array.isArray(data?.matches) ? data.matches : []);
     } catch (e: any) {
-      setError(e?.message || "Unknown error");
+      setError(prettyErr(e));
     } finally {
       setLoading(false);
     }
@@ -94,19 +124,24 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
   const startCheckout = useCallback(async () => {
     setError(null);
     try {
-      const res = await fetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId }),
-      });
+      const res = await abortableFetch(
+        "/api/stripe/checkout",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customerId }),
+        },
+        REQUEST_TIMEOUT_MS
+      );
 
-      const txt = await res.text();
+      const txt = await res.text().catch(() => "");
       if (!res.ok) throw new Error(txt || `Checkout failed: ${res.status}`);
 
-      const { url } = JSON.parse(txt);
+      const { url } = JSON.parse(txt || "{}");
+      if (!url) throw new Error("Missing checkout URL.");
       window.location.href = url;
     } catch (e: any) {
-      setError(e?.message || "Checkout error");
+      setError(prettyErr(e));
     }
   }, [customerId]);
 
@@ -114,6 +149,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     load();
   }, [load]);
 
+  // When returning from Stripe, poll a bit for active status -> matches.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("checkout") !== "success") return;
@@ -160,11 +196,31 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
           </div>
 
           <div style={styles.headerActions}>
+            <button onClick={() => setShowProfile((v) => !v)} style={styles.ghostBtn}>
+              {showProfile ? "Close Profile" : "Edit Profile"}
+            </button>
             <button onClick={load} style={styles.ghostBtn}>
               Refresh
             </button>
           </div>
         </div>
+
+        {/* ✅ Profile panel */}
+        {showProfile ? (
+          <div style={{ ...styles.card, marginBottom: 14 }}>
+            {/* ProfileEditor is the client component that calls:
+                GET  /engine/customers/:id/profile?email=...
+                PATCH /engine/customers/:id/profile  (with { email, ...fields })
+             */}
+            <ProfileEditor
+              customerId={customerId}
+              onSaved={() => {
+                // reload matches after profile save
+                void load();
+              }}
+            />
+          </div>
+        ) : null}
 
         {needsSub ? (
           <div style={styles.card}>
@@ -219,15 +275,14 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                   const fullSummary = safeStr(m.summary);
                   const isExpanded = !!expanded[key];
 
-                  // Show a “real” summary length by default; allow collapsing if very long.
                   const summaryToShow =
                     !fullSummary
                       ? null
                       : isExpanded
-                        ? fullSummary
-                        : fullSummary.length > 900
-                          ? fullSummary.slice(0, 900) + "…"
-                          : fullSummary;
+                      ? fullSummary
+                      : fullSummary.length > 900
+                      ? fullSummary.slice(0, 900) + "…"
+                      : fullSummary;
 
                   const hasLongSummary = !!fullSummary && fullSummary.length > 900;
 
@@ -260,18 +315,11 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
                         <div style={styles.scoreBox}>
                           <div style={styles.scoreKicker}>Match</div>
-                          <div style={styles.scoreValue}>
-                            {typeof score === "number" ? score : "?"}
-                          </div>
+                          <div style={styles.scoreValue}>{typeof score === "number" ? score : "?"}</div>
                           <div style={styles.scoreLabel}>{label}</div>
 
                           {m.url ? (
-                            <a
-                              href={m.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={styles.linkBtn}
-                            >
+                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
                               View Source →
                             </a>
                           ) : (
@@ -308,10 +356,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
                               {hasLongSummary ? (
-                                <button
-                                  onClick={() => toggleExpanded(key)}
-                                  style={styles.textBtn}
-                                >
+                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
@@ -335,7 +380,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
   );
 }
 
-const styles: Record<string, React.CSSProperties> = {
+const styles: Record<string, CSSProperties> = {
   shell: {
     minHeight: "100vh",
     padding: "28px 16px",
