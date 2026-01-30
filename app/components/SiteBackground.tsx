@@ -5,28 +5,35 @@ export default function SiteBackground() {
       {/* Base canvas */}
       <div className="absolute inset-0 bg-[#DEDEDE]" />
 
-      {/* Hero depth wash */}
-      <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.16),transparent_62%)]" />
+      {/* Soft hero depth (keeps the top from feeling flat) */}
+      <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_50%_0%,rgba(92,116,255,0.14),transparent_62%)]" />
 
-      {/* Grid everywhere (VISIBLE) */}
+      {/* Blueprint grid: major lines (very subtle) */}
       <div
-        className="absolute inset-0 opacity-[0.12]"
+        className="absolute inset-0 opacity-[0.055]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,0,0,0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.22) 1px, transparent 1px)",
-          backgroundSize: "140px 140px",
+            "linear-gradient(rgba(26,79,163,0.35) 1px, transparent 1px), linear-gradient(90deg, rgba(26,79,163,0.35) 1px, transparent 1px)",
+          backgroundSize: "160px 160px",
         }}
       />
 
-      {/* Hero grid boost at the top (stronger near hero, fades out) */}
+      {/* Blueprint grid: minor lines (even lighter) */}
       <div
-        className="absolute inset-0 opacity-[0.16]"
+        className="absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage:
-            "linear-gradient(rgba(0,0,0,0.28) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.28) 1px, transparent 1px)",
-          backgroundSize: "120px 120px",
-          WebkitMaskImage: "linear-gradient(to bottom, black, transparent 65%)",
-          maskImage: "linear-gradient(to bottom, black, transparent 65%)",
+            "linear-gradient(rgba(26,79,163,0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(26,79,163,0.22) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+        }}
+      />
+
+      {/* Top fade so it anchors hero but doesn't clutter the full page */}
+      <div
+        className="absolute inset-0"
+        style={{
+          WebkitMaskImage: "linear-gradient(to bottom, black, transparent 70%)",
+          maskImage: "linear-gradient(to bottom, black, transparent 70%)",
         }}
       />
     </div>
