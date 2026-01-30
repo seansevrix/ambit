@@ -34,16 +34,25 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
 }
 
 /**
- * Social proof logos (already in your project):
+ * Social proof logos:
  *   /public/landing/social/golden-state-landscapes.jpeg
  *   /public/landing/social/old-dominion-plumbing.jpeg
  *   /public/landing/social/power-mechanical.jpeg
  */
 function SignupSocialProof() {
   const logos = [
-    { src: "/landing/social/golden-state-landscapes.jpeg", alt: "Golden State Landscapes" },
-    { src: "/landing/social/old-dominion-plumbing.jpeg", alt: "Old Dominion Plumbing Co." },
-    { src: "/landing/social/power-mechanical.jpeg", alt: "Power Mechanical" },
+    {
+      src: "/landing/social/golden-state-landscapes.jpeg",
+      alt: "Golden State Landscapes",
+    },
+    {
+      src: "/landing/social/old-dominion-plumbing.jpeg",
+      alt: "Old Dominion Plumbing Co.",
+    },
+    {
+      src: "/landing/social/power-mechanical.jpeg",
+      alt: "Power Mechanical",
+    },
   ];
 
   return (
@@ -141,7 +150,6 @@ const PREVIEW_DATA: Record<Market, PreviewMatch> = {
     buyerNote: "They responded to the last two contractors within 30 minutes.",
     nextStep: "Send a same-day estimate and offer a next-morning slot.",
   },
-
   commercial: {
     title: "Retail plaza: monthly landscaping",
     location: "Austin, TX",
@@ -156,7 +164,6 @@ const PREVIEW_DATA: Record<Market, PreviewMatch> = {
     buyerNote: "They prefer vendors who can start within two weeks.",
     nextStep: "Send a monthly plan with two tier options and a start date.",
   },
-
   government: {
     title: "Janitorial services (base facility)",
     location: "Tampa, FL",
@@ -414,6 +421,222 @@ function PreviewActivity({ market }: { market: Market }) {
   );
 }
 
+/* ---------- TESTIMONIALS ---------- */
+/**
+ * Testimonial logo images are here:
+ *   /public/landing/social/testimonials/tennessee-contractors-equipment.jpeg
+ *   /public/landing/social/testimonials/paradise-cleaning-solutions.webp
+ *   /public/landing/social/testimonials/euro-plumbing.jpeg
+ */
+type QuotePart = { t: string; strong?: boolean };
+type Testimonial = {
+  segment: "Commercial" | "Residential";
+  quote: QuotePart[];
+  stars: 5;
+  name: string;
+  role: string;
+  location: string;
+  avatarSrc: string;
+  avatarAlt: string;
+};
+
+const TESTIMONIALS: Testimonial[] = [
+  {
+    segment: "Commercial",
+    quote: [
+      {
+        t: "I sat on AMBIT for weeks because I thought setup would be complicated. ",
+      },
+      { t: "Fully up and running in under 5 minutes.", strong: true },
+      { t: " Now we get opportunities every morning instead of searching for hours." },
+    ],
+    stars: 5,
+    name: "Sarah K.",
+    role: "Owner, Janitorial Company",
+    location: "Guam, USA",
+    avatarSrc: "/landing/social/testimonials/paradise-cleaning-solutions.webp",
+    avatarAlt: "Paradise Cleaning Solutions",
+  },
+  {
+    segment: "Commercial",
+    quote: [
+      { t: "We’ve tested a lot of tools. " },
+      { t: "Relevant opportunities and clear summaries saved our team hours.", strong: true },
+      { t: " It’s the first one that actually scales with us." },
+    ],
+    stars: 5,
+    name: "David Chen",
+    role: "Operations Director, Equipment Rental",
+    location: "Tennessee, USA",
+    avatarSrc: "/landing/social/testimonials/tennessee-contractors-equipment.jpeg",
+    avatarAlt: "Tennessee Contractors Equipment",
+  },
+  {
+    segment: "Residential",
+    quote: [
+      { t: "What impressed me most was the accuracy. " },
+      { t: "It sends work we can actually bid and win.", strong: true },
+      { t: " It’s become part of our daily routine." },
+    ],
+    stars: 5,
+    name: "Mark T.",
+    role: "Owner, Plumbing Company",
+    location: "California, USA",
+    avatarSrc: "/landing/social/testimonials/euro-plumbing.jpeg",
+    avatarAlt: "Euro Plumbing & Sewer LLC",
+  },
+];
+
+function StarRow({ count }: { count: number }) {
+  return (
+    <div className="mt-5 flex items-center gap-1">
+      {Array.from({ length: count }).map((_, i) => (
+        <svg
+          key={i}
+          viewBox="0 0 20 20"
+          className="h-4 w-4 text-amber-300"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path d="M10 15.27 4.18 18.2l1.11-6.48L.58 7.3l6.5-.94L10 0l2.92 6.36 6.5.94-4.71 4.42 1.11 6.48z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+function TestimonialsSection({
+  onOpenSignup,
+}: {
+  onOpenSignup: () => void;
+}) {
+  return (
+    <section className={`${CONTAINER} pb-24`}>
+      <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_30px_120px_rgba(0,0,0,0.28)]">
+        <div className="px-8 py-12 sm:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+              <span className="h-2 w-2 rounded-full bg-emerald-400" />
+              Live customer feedback
+            </div>
+
+            <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
+              Trusted proof from real contractors
+            </h2>
+
+            <p className="mt-4 text-base text-white/70 sm:text-lg">
+              Skimmable reviews from teams using AMBIT to find better-fit opportunities faster.
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
+                Trusted by 200+ contractors
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
+                U.S. based businesses
+              </span>
+              <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
+                Matches emailed daily
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-3">
+            {TESTIMONIALS.map((x) => (
+              <div
+                key={x.name}
+                className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
+                    {x.segment}
+                  </span>
+                  <span className="text-xs font-semibold text-white/45">“”</span>
+                </div>
+
+                <div className="mt-5 text-base leading-relaxed text-white/85">
+                  {x.quote.map((p, i) => (
+                    <span key={i} className={p.strong ? "font-black text-white" : ""}>
+                      {p.t}
+                    </span>
+                  ))}
+                </div>
+
+                <StarRow count={x.stars} />
+
+                <div className="mt-6 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-8 w-8 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-white/10">
+                      <img
+                        src={x.avatarSrc}
+                        alt={x.avatarAlt}
+                        className="h-full w-full object-contain p-1"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    <div>
+                      <div className="text-sm font-black text-white">{x.name}</div>
+                      <div className="text-xs font-semibold text-white/60">{x.role}</div>
+                    </div>
+                  </div>
+
+                  <div className="text-xs font-semibold text-white/45">{x.location}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-10 flex justify-center">
+            <Link
+              href="/testimonials"
+              className="text-sm font-semibold text-white/70 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/40"
+            >
+              See more →
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-16 rounded-3xl border border-black/10 bg-white/85 backdrop-blur px-10 py-14 text-center shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+        <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
+        <div className="mt-4 text-lg text-black/70">
+          Join the platform where who you are is just as important as what you do.
+        </div>
+
+        <button
+          onClick={onOpenSignup}
+          className="mt-10 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
+        >
+          <ArrowBadge />
+          Sign Up
+        </button>
+
+        <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm font-semibold text-black/55">
+          <Link href="/" className="hover:text-black">
+            Home
+          </Link>
+          <Link href="/about" className="hover:text-black">
+            About Us
+          </Link>
+          <Link href="/testimonials" className="hover:text-black">
+            Testimonials
+          </Link>
+          <Link href="/privacy" className="hover:text-black">
+            Privacy
+          </Link>
+          <Link href="/terms" className="hover:text-black">
+            Terms
+          </Link>
+          <Link href="/login" className="hover:text-black">
+            Log In
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- PAGE ---------- */
 
 export default function HomePage() {
@@ -616,194 +839,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TESTIMONIALS (dark proof cards) */}
-      {/* Put your 3 company images here:
-          /public/landing/testimonials/tennessee-contractors-equipment.jpeg
-          /public/landing/testimonials/paradise-cleaning-solutions.webp
-          /public/landing/testimonials/euro-plumbing.jpeg
-      */}
-      <section className={`${CONTAINER} pb-24`}>
-        <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_30px_120px_rgba(0,0,0,0.28)]">
-          <div className="px-8 py-12 sm:px-12">
-            <div className="mx-auto max-w-3xl text-center">
-              <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                <span className="h-2 w-2 rounded-full bg-emerald-400" />
-                Live customer feedback
-              </div>
-
-              <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
-                Trusted proof from real contractors
-              </h2>
-
-              <p className="mt-4 text-base text-white/70 sm:text-lg">
-                Skimmable reviews from teams using AMBIT to find better-fit opportunities faster.
-              </p>
-
-              <div className="mt-6 flex flex-wrap justify-center gap-2">
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
-                  Trusted by 200+ contractors
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
-                  U.S. based businesses
-                </span>
-                <span className="rounded-full border border-white/10 bg-white/5 px-4 py-2 text-xs font-semibold text-white/80">
-                  Matches emailed daily
-                </span>
-              </div>
-            </div>
-
-            <div className="mt-10 grid gap-6 lg:grid-cols-3">
-              {[
-                {
-                  segment: "Commercial",
-                  quote: [
-                    { t: "I sat on AMBIT for weeks because I thought setup would be complicated. ", strong: false },
-                    { t: "Fully up and running in under 5 minutes.", strong: true },
-                    { t: " Now we get opportunities every morning instead of searching for hours.", strong: false },
-                  ],
-                  stars: 5,
-                  name: "Sarah K.",
-                  role: "Owner, Janitorial Company",
-                  location: "Guam, USA",
-                  avatarSrc: "/public/landing/testimonials/paradise-cleaning-solutions.webp",
-                  avatarAlt: "Paradise Cleaning Solutions",
-                },
-                {
-                  segment: "Commercial",
-                  quote: [
-                    { t: "We’ve tested a lot of tools. ", strong: false },
-                    { t: "Relevant opportunities and clear summaries saved our team hours.", strong: true },
-                    { t: " It’s the first one that actually scales with us.", strong: false },
-                  ],
-                  stars: 5,
-                  name: "David Chen",
-                  role: "Operations Director, Equipment Rental",
-                  location: "Tennessee, USA",
-                  avatarSrc: "/public/landing/testimonials/tennessee-contractors-equipment.jpeg",
-                  avatarAlt: "Tennessee Contractors Equipment",
-                },
-                {
-                  segment: "Residential",
-                  quote: [
-                    { t: "What impressed me most was the accuracy. ", strong: false },
-                    { t: "It sends work we can actually bid and win.", strong: true },
-                    { t: " It’s become part of our daily routine.", strong: false },
-                  ],
-                  stars: 5,
-                  name: "Mark T.",
-                  role: "Owner, Plumbing Company",
-                  location: "California, USA",
-                  avatarSrc: "/public/landing/testimonials/euro-plumbing.jpeg",
-                  avatarAlt: "Euro Plumbing & Sewer LLC",
-                },
-              ].map((x) => (
-                <div
-                  key={x.name}
-                  className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
-                      {x.segment}
-                    </span>
-                    <span className="text-xs font-semibold text-white/45">“”</span>
-                  </div>
-
-                  <div className="mt-5 text-base leading-relaxed text-white/85">
-                    {x.quote.map((p, i) => (
-                      <span key={i} className={p.strong ? "font-black text-white" : ""}>
-                        {p.t}
-                      </span>
-                    ))}
-                  </div>
-
-                  <div className="mt-5 flex items-center gap-1">
-                    {Array.from({ length: x.stars }).map((_, i) => (
-                      <svg
-                        key={i}
-                        viewBox="0 0 20 20"
-                        className="h-4 w-4 text-amber-300"
-                        fill="currentColor"
-                        aria-hidden="true"
-                      >
-                        <path d="M10 15.27 4.18 18.2l1.11-6.48L.58 7.3l6.5-.94L10 0l2.92 6.36 6.5.94-4.71 4.42 1.11 6.48z" />
-                      </svg>
-                    ))}
-                  </div>
-
-                  <div className="mt-6 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-8 w-8 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-white/10">
-                        <img
-                          src={x.avatarSrc}
-                          alt={x.avatarAlt}
-                          className="h-full w-full object-contain p-1"
-                          loading="lazy"
-                        />
-                      </div>
-
-                      <div>
-                        <div className="text-sm font-black text-white">{x.name}</div>
-                        <div className="text-xs font-semibold text-white/60">{x.role}</div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs font-semibold text-white/45">{x.location}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-10 flex justify-center">
-              <Link
-                href="/testimonials"
-                className="text-sm font-semibold text-white/70 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/40"
-              >
-                See more →
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {/* FINAL CTA */}
-        <div className="mt-16 rounded-3xl border border-black/10 bg-white/85 backdrop-blur px-10 py-14 text-center shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
-          <div className="mt-4 text-lg text-black/70">
-            Join the platform where who you are is just as important as what you do.
-          </div>
-
-          <button
-            onClick={() => {
-              setModalKind("company");
-              setModalOpen(true);
-            }}
-            className="mt-10 inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
-          >
-            <ArrowBadge />
-            Sign Up
-          </button>
-
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-10 text-sm font-semibold text-black/55">
-            <Link href="/" className="hover:text-black">
-              Home
-            </Link>
-            <Link href="/about" className="hover:text-black">
-              About Us
-            </Link>
-            <Link href="/testimonials" className="hover:text-black">
-              Testimonials
-            </Link>
-            <Link href="/privacy" className="hover:text-black">
-              Privacy
-            </Link>
-            <Link href="/terms" className="hover:text-black">
-              Terms
-            </Link>
-            <Link href="/login" className="hover:text-black">
-              Log In
-            </Link>
-          </div>
-        </div>
-      </section>
+      <TestimonialsSection
+        onOpenSignup={() => {
+          setModalKind("company");
+          setModalOpen(true);
+        }}
+      />
     </div>
   );
 }
