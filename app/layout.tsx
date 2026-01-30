@@ -5,6 +5,7 @@ import SiteNav from "./components/SiteNav";
 import SiteFooter from "./components/SiteFooter";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
+import SiteBackground from "./components/SiteBackground";
 
 const META_PIXEL_ID = "1433466544843565";
 
