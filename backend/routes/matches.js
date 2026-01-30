@@ -4,7 +4,8 @@ import prisma from "../lib/prisma.js";
 const router = express.Router();
 
 // ✅ SIMPLE TUNING KNOBS
-const MIN_SCORE = 60; // raise/lower to change strictness
+const MIN_SCORE = 60; // government strictness
+const MIN_SCORE_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_NON_GOV || 35); // residential/commercial threshold
 const DEFAULT_LIMIT = 50; // return more so "Load more" is meaningful
 const MAX_LIMIT = 200; // safety cap
 
@@ -17,6 +18,10 @@ const OUT_OF_AREA_PENALTY = 25; // subtract if NOT nearby
 // ✅ Strict nearby-only filter (state + neighboring states)
 // set MATCHES_STRICT_NEARBY=1 to filter out far-away states
 const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
+
+// ✅ Craigslist buyer-intent enforcement (block services offered / for-sale / biz / etc.)
+const CRAIGSLIST_WANTED_ONLY =
+  String(process.env.MATCHES_CRAIGSLIST_WANTED_ONLY || "1") === "1";
 
 const STOP = new Set([
   "the",
@@ -154,10 +159,13 @@ const STATE_NAME_TO_CODE = {
 };
 
 // Reverse map for token normalization (code -> name)
-const CODE_TO_STATE_NAME = Object.entries(STATE_NAME_TO_CODE).reduce((acc, [name, code]) => {
-  if (!acc[code]) acc[code] = name;
-  return acc;
-}, {});
+const CODE_TO_STATE_NAME = Object.entries(STATE_NAME_TO_CODE).reduce(
+  (acc, [name, code]) => {
+    if (!acc[code]) acc[code] = name;
+    return acc;
+  },
+  {}
+);
 
 // ✅ Neighboring-state map (good enough without geocoding)
 const NEIGHBORS = {
@@ -328,7 +336,9 @@ function dedupeMatches(matches) {
 
     if (url && seen.has(fallbackSeenKey)) {
       const idx = out.findIndex((x) => {
-        const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(x.naics)}`;
+        const xfb = `${normalize(x.title)}|${normalize(x.location)}|${normalize(
+          x.naics
+        )}`;
         const xUrl = normUrl(x.url);
         return `fallback:${xfb}` === fallbackSeenKey && !xUrl;
       });
@@ -389,7 +399,11 @@ function scoreMatch(customer, opp) {
   const customerNaicsList = normalizeNaicsList(customer.naics);
   const customerKeywordTokens = new Set(normalizeKeywordsList(customer.keywords));
 
-  const baseTokens = new Set([...industryTokens, ...serviceTokens, ...customerKeywordTokens]);
+  const baseTokens = new Set([
+    ...industryTokens,
+    ...serviceTokens,
+    ...customerKeywordTokens,
+  ]);
 
   const hasAnything =
     baseTokens.size > 0 || locationTokens.length > 0 || customerNaicsList.length > 0;
@@ -489,9 +503,40 @@ function scoreMatch(customer, opp) {
   };
 }
 
+function groupMatchesBySegment(matches) {
+  const buckets = { residential: [], commercial: [], government: [] };
+  for (const m of matches || []) {
+    const seg = String(m.segment || "").toLowerCase();
+    if (seg === "residential") buckets.residential.push(m);
+    else if (seg === "commercial") buckets.commercial.push(m);
+    else buckets.government.push(m);
+  }
+  return buckets;
+}
+
+// ✅ NEW: threshold helper (prevents the “red” syntax mess)
+function minScoreForMatch(m) {
+  const seg = String(m?.segment || "").toLowerCase();
+  return seg === "government" ? MIN_SCORE : MIN_SCORE_NON_GOV;
+}
+
+// ✅ NEW: Craigslist buyer-intent filter (Wanted only)
+function keepMatch(m) {
+  if (!m) return false;
+
+  // Craigslist: allow ONLY /wan/ (Wanted) by default
+  if (CRAILSLIST_WANTED_ONLY && String(m.source || "").toLowerCase() === "craigslist") {
+    const u = String(m.url || "").toLowerCase();
+    if (!u.includes("/wan/")) return false;
+  }
+
+  return true;
+}
+
 // ✅ keep path EXACTLY: GET /engine/matches/:customerId?limit=50
 router.get("/matches/:customerId", async (req, res) => {
   const debug = String(req.query.debug || "") === "1";
+  const grouped = String(req.query.grouped || "") === "1"; // ✅ opt-in grouping
 
   const fail = (stage, err) => {
     console.error(`matches error @${stage}:`, err?.stack || err);
@@ -676,7 +721,10 @@ router.get("/matches/:customerId", async (req, res) => {
           };
         })
         .filter(Boolean)
-        .filter((m) => m.score >= MIN_SCORE)
+        // ✅ NEW: keep gov strict, let residential/commercial through lower
+        .filter((m) => m.score >= minScoreForMatch(m))
+        // ✅ NEW: Craigslist buyer-intent enforcement
+        .filter(keepMatch)
         .sort((a, b) => b.score - a.score);
     } catch (e) {
       return fail("scoring_map_filter_sort", e);
@@ -689,6 +737,9 @@ router.get("/matches/:customerId", async (req, res) => {
       return fail("dedupe_slice", e);
     }
 
+    // ✅ Optional grouped buckets for UI headers
+    const buckets = grouped ? groupMatchesBySegment(matches) : null;
+
     return res.json({
       customerId,
       segments: allowedSegments,
@@ -698,7 +749,17 @@ router.get("/matches/:customerId", async (req, res) => {
         trialEndsAt: customer.trialEndsAt ?? null,
         trialActive: Boolean(trialActive),
       },
-      matches,
+      matches, // ✅ keep existing shape
+      ...(grouped
+        ? {
+            grouped: true,
+            groups: [
+              { title: "Residential lead", key: "residential", items: buckets.residential },
+              { title: "Commercial lead", key: "commercial", items: buckets.commercial },
+              { title: "Government lead", key: "government", items: buckets.government },
+            ],
+          }
+        : {}),
     });
   } catch (err) {
     return fail("outer_try", err);

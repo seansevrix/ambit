@@ -656,7 +656,7 @@ export default function HomePage() {
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] bg-white/60 backdrop-blur px-8 py-14 sm:px-14">
+        <div className="rounded-[44px] bg-white/65 backdrop-blur-md border border-black/10 shadow-[0_30px_90px_rgba(0,0,0,0.10)] px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
