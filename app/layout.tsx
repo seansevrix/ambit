@@ -3,9 +3,9 @@ import Script from "next/script";
 import "./globals.css";
 import SiteNav from "./components/SiteNav";
 import SiteFooter from "./components/SiteFooter";
+import SiteBackground from "./components/SiteBackground";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
-import SiteBackground from "./components/SiteBackground";
 
 const META_PIXEL_ID = "1433466544843565";
 
@@ -61,15 +61,16 @@ export default function RootLayout({
         </Script>
       </head>
 
-      {/* ✅ Removed dark gradient background entirely */}
-      <body className="min-h-screen bg-[#DEDEDE] text-black">
-        <div className="min-h-screen flex flex-col">
+      <body className="relative min-h-screen bg-[#DEDEDE] text-black">
+        {/* ✅ SITE-WIDE BACKGROUND (must be rendered + must be above body paint) */}
+        <SiteBackground />
+
+        {/* ✅ Everything visible goes above the background */}
+        <div className="relative z-10 min-h-screen flex flex-col">
           <SiteNav />
 
-          {/* ✅ Let pages control their own width/padding (Malakye-style) */}
-          <main className="flex-1 w-full">
-            {children}
-          </main>
+          {/* pages control their own width/padding */}
+          <main className="flex-1 w-full">{children}</main>
 
           <SiteFooter />
         </div>
