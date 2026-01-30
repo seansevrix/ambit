@@ -665,7 +665,7 @@ export default function HomePage() {
                   name: "Sarah K.",
                   role: "Owner, Janitorial Company",
                   location: "Guam, USA",
-                  avatarSrc: "/landing/testimonials/paradise-cleaning-solutions.webp",
+                  avatarSrc: "/public/landing/testimonials/paradise-cleaning-solutions.webp",
                   avatarAlt: "Paradise Cleaning Solutions",
                 },
                 {
@@ -679,7 +679,7 @@ export default function HomePage() {
                   name: "David Chen",
                   role: "Operations Director, Equipment Rental",
                   location: "Tennessee, USA",
-                  avatarSrc: "/landing/testimonials/tennessee-contractors-equipment.jpeg",
+                  avatarSrc: "/public/landing/testimonials/tennessee-contractors-equipment.jpeg",
                   avatarAlt: "Tennessee Contractors Equipment",
                 },
                 {
@@ -693,7 +693,7 @@ export default function HomePage() {
                   name: "Mark T.",
                   role: "Owner, Plumbing Company",
                   location: "California, USA",
-                  avatarSrc: "/landing/testimonials/euro-plumbing.jpeg",
+                  avatarSrc: "/public/landing/testimonials/euro-plumbing.jpeg",
                   avatarAlt: "Euro Plumbing & Sewer LLC",
                 },
               ].map((x) => (
