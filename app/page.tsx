@@ -304,10 +304,10 @@ export default function HomePage() {
 
             {/* ✅ PREVIEW STRIP — replaced with LandingEmailPreview */}
             <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10 overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-white/60 shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
-              <div className="p-7 sm:p-10">
-                <LandingEmailPreview />
-                <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
-              </div>
+              <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10">
+  <LandingEmailPreview />
+  <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
+</div>
             </div>
           </div>
         </div>
