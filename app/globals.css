@@ -11,3 +11,8 @@ body {
 html {
   scroll-behavior: smooth;
 }
+/* Performance: disable expensive glass blur site-wide */
+* {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
