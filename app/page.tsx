@@ -7,12 +7,6 @@ import LandingEmailPreview from "./components/LandingEmailPreview";
 
 type Market = "residential" | "commercial" | "government";
 
-const MARKETS: Array<{ key: Market; label: string }> = [
-  { key: "residential", label: "Residential" },
-  { key: "commercial", label: "Commercial" },
-  { key: "government", label: "Government" },
-];
-
 function marketSub(m: Market) {
   if (m === "commercial") return "Work orders + service contracts ranked for your team.";
   if (m === "government") return "Public bid opportunities matched to your scope.";
@@ -58,7 +52,12 @@ function SignupSocialProof() {
               title={l.alt}
               aria-label={l.alt}
             >
-              <img src={l.src} alt={l.alt} className="h-full w-full object-cover object-center" loading="lazy" />
+              <img
+                src={l.src}
+                alt={l.alt}
+                className="h-full w-full object-cover object-center"
+                loading="lazy"
+              />
             </div>
           ))}
 
@@ -142,7 +141,13 @@ function StarRow({ count }: { count: number }) {
   return (
     <div className="mt-5 flex items-center gap-1">
       {Array.from({ length: count }).map((_, i) => (
-        <svg key={i} viewBox="0 0 20 20" className="h-4 w-4 text-amber-300" fill="currentColor" aria-hidden="true">
+        <svg
+          key={i}
+          viewBox="0 0 20 20"
+          className="h-4 w-4 text-amber-300"
+          fill="currentColor"
+          aria-hidden="true"
+        >
           <path d="M10 15.27 4.18 18.2l1.11-6.48L.58 7.3l6.5-.94L10 0l2.92 6.36 6.5.94-4.71 4.42 1.11 6.48z" />
         </svg>
       ))}
@@ -161,7 +166,9 @@ function TestimonialsSection({ market }: { market: Market }) {
               Live customer feedback
             </div>
 
-            <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">Trusted proof from real contractors</h2>
+            <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
+              Trusted proof from real contractors
+            </h2>
 
             <p className="mt-4 text-base text-white/70 sm:text-lg">
               Skimmable reviews from teams using AMBIT to find better-fit opportunities faster.
@@ -206,7 +213,12 @@ function TestimonialsSection({ market }: { market: Market }) {
                 <div className="mt-6 flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className="h-8 w-8 overflow-hidden rounded-full bg-white shadow-sm ring-2 ring-white/10">
-                      <img src={x.avatarSrc} alt={x.avatarAlt} className="h-full w-full object-contain p-1" loading="lazy" />
+                      <img
+                        src={x.avatarSrc}
+                        alt={x.avatarAlt}
+                        className="h-full w-full object-contain p-1"
+                        loading="lazy"
+                      />
                     </div>
 
                     <div>
@@ -262,12 +274,11 @@ function TestimonialsSection({ market }: { market: Market }) {
 /* ---------- PAGE ---------- */
 
 export default function HomePage() {
-  const [market, setMarket] = useState<Market>("residential");
+  const [market] = useState<Market>("residential");
   const heroSubtitle = useMemo(() => marketSub(market), [market]);
 
   return (
     <div className="relative min-h-screen overflow-hidden text-black">
-      {/* Landing background should sit BEHIND the site-wide grid */}
       <div className="pointer-events-none fixed inset-0 -z-[70]">
         <LandingBackground />
       </div>
@@ -302,12 +313,13 @@ export default function HomePage() {
 
             <SignupSocialProof />
 
-            {/* ✅ PREVIEW STRIP — replaced with LandingEmailPreview */}
-            <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10 overflow-hidden rounded-3xl bg-white/60 backdrop-blur-xl ring-1 ring-white/60 shadow-[0_24px_80px_rgba(0,0,0,0.14)]">
-              <div className="mt-12 -mx-2 sm:-mx-6 lg:-mx-10">
-  <LandingEmailPreview />
-  <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
-</div>
+            {/* ✅ FLOATING WIDE PREVIEW (no boxed border) */}
+            <div className="mt-12 -mx-6 lg:-mx-10">
+              <div className="rounded-[40px] bg-white/30 backdrop-blur-sm px-6 py-8 shadow-[0_30px_90px_rgba(0,0,0,0.10)] sm:px-10">
+                <LandingEmailPreview />
+              </div>
+
+              <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
             </div>
           </div>
         </div>
@@ -332,8 +344,8 @@ export default function HomePage() {
             </div>
 
             <div className="text-black/70">
-              AMBIT is built for speed, clarity, and momentum—so you’re not guessing where to focus. See what’s
-              relevant, understand it fast, and act with confidence.
+              AMBIT is built for speed, clarity, and momentum—so you’re not guessing where to focus. See what’s relevant,
+              understand it fast, and act with confidence.
             </div>
           </div>
         </div>
@@ -351,8 +363,8 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated positions that align your specific background with
-              the sectors you actually care about.
+              Stop searching and start selecting. Access curated positions that align your specific background with the
+              sectors you actually care about.
             </div>
           </div>
 
