@@ -10,7 +10,7 @@ type Market = "residential" | "commercial" | "government";
 function marketSub(m: Market) {
   if (m === "commercial") return "Ranked commercial opportunities delivered daily.";
   if (m === "government") return "Ranked bid opportunities delivered daily.";
-  return "Ranked homeowner requests delivered daily.";
+  return "Ranked jobs delivered daily.";
 }
 
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
