@@ -45,65 +45,6 @@ function scoreTone(score: number) {
 
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
 
-function IconTarget() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" opacity="0.9" />
-      <circle cx="12" cy="12" r="5" stroke="currentColor" strokeWidth="2" opacity="0.9" />
-      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-    </svg>
-  );
-}
-
-function IconFilter() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M4 6h16M7 12h10M10 18h4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-      <path
-        d="M6 6l4 6v6h4v-6l4-6"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        opacity="0.35"
-      />
-    </svg>
-  );
-}
-
-function IconWin() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
-      <path
-        d="M8 21h8M10 17h4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-      <path
-        d="M7 4h10v5a5 5 0 0 1-10 0V4Z"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinejoin="round"
-        opacity="0.9"
-      />
-      <path
-        d="M17 6h2a2 2 0 0 1 0 4h-2M7 6H5a2 2 0 0 0 0 4h2"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        opacity="0.55"
-      />
-    </svg>
-  );
-}
-
 function CheckRow({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex items-start gap-3">
@@ -118,14 +59,12 @@ function CheckRow({ children }: { children: React.ReactNode }) {
           />
         </svg>
       </span>
-      <div className="text-sm font-semibold text-black/80">{children}</div>
+      <div className="text-sm font-semibold text-black/80 leading-relaxed">{children}</div>
     </div>
   );
 }
 
 export default function LandingEmailPreview({ market = "government" }: { market?: Market }) {
-  // For now, the sample digest is the Government example you specified.
-  // (If you want the market toggle later, we can add separate summaries per segment.)
   const item = GOVERNMENT_SAMPLE;
 
   // Blueprint grid (visible but subtle)
@@ -149,8 +88,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
           <div
             className="absolute inset-0"
             style={{
-              background:
-                "radial-gradient(circle at top, rgba(26,79,163,0.14), transparent 58%)",
+              background: "radial-gradient(circle at top, rgba(26,79,163,0.14), transparent 58%)",
             }}
           />
         </div>
@@ -186,9 +124,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
               </div>
               <div className="leading-tight">
                 <div className="text-sm font-semibold text-black">AMBIT Daily Digest</div>
-                <div className="text-xs font-medium text-black/60">
-                  Delivered 7:00 AM • Ranked by fit
-                </div>
+                <div className="text-xs font-medium text-black/60">Delivered 7:00 AM • Ranked by fit</div>
               </div>
             </div>
 
@@ -203,12 +139,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
           <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4 lg:p-5">
             <div className="flex items-start gap-4">
               {/* Score */}
-              <div
-                className={[
-                  "shrink-0 rounded-2xl border px-3 py-2 text-center",
-                  scoreTone(item.score),
-                ].join(" ")}
-              >
+              <div className={["shrink-0 rounded-2xl border px-3 py-2 text-center", scoreTone(item.score)].join(" ")}>
                 <div className="text-[10px] font-extrabold tracking-[0.18em] opacity-80">SCORE</div>
                 <div className="mt-1 text-2xl font-black leading-none">{item.score}</div>
                 <div className="mt-1 text-[11px] font-semibold opacity-80">Excellent</div>
@@ -226,14 +157,10 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                     {segLabel(item.segment)}
                   </span>
 
-                  <span className="text-xs font-semibold text-black/55">
-                    NAICS {item.naics}
-                  </span>
+                  <span className="text-xs font-semibold text-black/55">NAICS {item.naics}</span>
                 </div>
 
-                <div className="mt-2 text-base font-semibold tracking-tight text-black">
-                  {item.title}
-                </div>
+                <div className="mt-2 text-base font-semibold tracking-tight text-black">{item.title}</div>
 
                 <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/70">
                   <span className="font-semibold">{item.location}</span>
@@ -243,83 +170,19 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                   </span>
                 </div>
 
-                {/* Clean summary (your exact copy) */}
+                {/* Clean summary */}
                 <div className="mt-4 rounded-2xl border border-black/10 bg-white/80 p-4">
-                  <div className="text-[11px] font-black tracking-[0.18em] text-black/60">
-                    SUMMARY
-                  </div>
-                  <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80">
-                    {item.summary}
-                  </div>
+                  <div className="text-[11px] font-black tracking-[0.18em] text-black/60">SUMMARY</div>
+                  <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80">{item.summary}</div>
                 </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Support Team block (green) */}
-          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4">
-            <div className="text-sm font-extrabold text-emerald-900">Your Support Team :</div>
-            <div className="mt-2 text-sm font-semibold leading-relaxed text-emerald-900/90">
-              You’ve been matched with a dedicated Ambit Associate. We are ready to help you win this.
-              Email{" "}
-              <span className="underline underline-offset-2">ambit@sevrixgov.com</span>{" "}
-              now to receive your proposal framework and start building a winning submission.
-            </div>
-          </div>
-        </div>
-
-        {/* What You Get (icons, not numbers) */}
-        <div className="mt-8">
-          <div className="mb-4 text-lg font-semibold tracking-tight text-black">What You Get</div>
-
-          <div className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-3xl border border-black/10 bg-white/55 p-5 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-emerald-200 bg-emerald-50 text-emerald-800">
-                  <IconTarget />
-                </span>
-                <div className="text-sm font-semibold text-black">
-                  Only see the leads you can actually win.
-                </div>
-              </div>
-              <div className="mt-3 text-sm font-medium text-black/70 leading-relaxed">
-                We match your service area and keywords to the highest-ranking daily opportunities. No fluff, just fit.
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white/55 p-5 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-indigo-200 bg-indigo-50 text-indigo-800">
-                  <IconFilter />
-                </span>
-                <div className="text-sm font-semibold text-black">
-                  Focus 100% on high-value contracts.
-                </div>
-              </div>
-              <div className="mt-3 text-sm font-medium text-black/70 leading-relaxed">
-                Quickly identify "best shot" contracts and request support on the ones that move the needle for your business.
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-black/10 bg-white/55 p-5 backdrop-blur-sm">
-              <div className="flex items-center gap-3">
-                <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl border border-sky-200 bg-sky-50 text-sky-900">
-                  <IconWin />
-                </span>
-                <div className="text-sm font-semibold text-black">
-                  Ambit Associate to close the deal.
-                </div>
-              </div>
-              <div className="mt-3 text-sm font-medium text-black/70 leading-relaxed">
-                Partner with an AMBIT associate to build a clean, competitive roadmap that simplifies the path to a "Yes."
               </div>
             </div>
           </div>
         </div>
 
-        {/* Included (Checklist of Power) */}
+        {/* INCLUDED (replaces Support Team + What You Get) */}
         <div className="mt-8 rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_14px_34px_rgba(2,6,23,0.10)] backdrop-blur-sm">
-          <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-lg font-semibold tracking-tight text-black">Included</div>
               <div className="mt-1 text-sm font-medium text-black/65">
@@ -328,14 +191,14 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             </div>
 
             <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-900">
-              VALUE PACK
+              THE CONTRACTOR’S EDGE
             </span>
           </div>
 
           <div className="mt-5 grid gap-3">
             <CheckRow>
               <span className="text-black">Priority Ranking</span>{" "}
-              <span className="text-black/60 font-semibold">(Saves 5+ hours/week)</span>
+              <span className="text-black/60 font-semibold">(Saves on average 11+ hours/week)</span>
             </CheckRow>
 
             <CheckRow>
@@ -345,6 +208,11 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             <CheckRow>
               <span className="text-black">The "Roadmap to Win"</span>{" "}
               <span className="text-black/60 font-semibold">for every lead</span>
+            </CheckRow>
+
+            <CheckRow>
+              <span className="text-black">Dedicated Ambit Associate</span>{" "}
+              <span className="text-black/60 font-semibold">to draft & develop your winning proposal 24/7</span>
             </CheckRow>
           </div>
         </div>
