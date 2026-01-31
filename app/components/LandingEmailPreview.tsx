@@ -15,38 +15,16 @@ type DigestItem = {
   reasons: string[];
 };
 
-const DIGEST: DigestItem[] = [
-  {
-    score: 99,
-    title: "Emergency hazardous tree removal — Rincon Station",
-    location: "Carpinteria, CA",
-    agency: "U.S. Forest Service",
-    naics: "561730",
-    segment: "government",
-    posted: "Posted Jan 27",
-    reasons: ["NAICS exact match", "Location overlap", "Title overlap"],
-  },
-  {
-    score: 89,
-    title: "Cemetery grounds maintenance — Benicia Arsenal (S208)",
-    location: "Benicia, CA",
-    agency: "Dept. of Veterans Affairs",
-    naics: "561730",
-    segment: "government",
-    posted: "Posted Jan 28",
-    reasons: ["NAICS match", "Nearby fit", "Scope keywords"],
-  },
-  {
-    score: 89,
-    title: "Landscape maintenance — Healing Center",
-    location: "Davis, CA",
-    agency: "Indian Health Service",
-    naics: "561730",
-    segment: "government",
-    posted: "Posted Jan 28",
-    reasons: ["NAICS match", "Nearby fit", "Scope keywords"],
-  },
-];
+const DIGEST_ONE: DigestItem = {
+  score: 99,
+  title: "Emergency hazardous tree removal — Rincon Station",
+  location: "Carpinteria, CA",
+  agency: "U.S. Forest Service",
+  naics: "561730",
+  segment: "government",
+  posted: "Posted Jan 27",
+  reasons: ["NAICS exact match", "Location overlap", "Title overlap"],
+};
 
 function SegPill({ s }: { s: Segment }) {
   const cls =
@@ -187,28 +165,27 @@ export default function LandingEmailPreview() {
         </div>
       </div>
 
-      {/* Digest (full width) */}
+      {/* Digest (single card) */}
       <div className="mt-6">
         <div className="mb-3 flex items-center justify-between">
           <div className="text-sm font-semibold text-black/80">Sample digest</div>
           <div className="text-xs text-black/45">Preview</div>
         </div>
 
-        <div className="grid gap-6">
-          {DIGEST.map((item) => (
-            <DigestRow key={item.title} item={item} />
-          ))}
-        </div>
+        <DigestRow item={DIGEST_ONE} />
 
-        <div className="mt-5 flex items-center justify-between text-xs text-black/45">
-          <div>Full details and links are available for active subscribers.</div>
-          <Link href="/live-opportunities" className="font-semibold text-[#1A4FA3] hover:underline">
+        {/* ✅ New digest summary line */}
+        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-black/60">
+          <div>
+            Daily emails include the top matches first — with fit score, key details, and “why it matched.”
+          </div>
+          <Link href="/live-opportunities" className="shrink-0 font-semibold text-[#1A4FA3] hover:underline">
             View live leads →
           </Link>
         </div>
       </div>
 
-      {/* What you get (below, clean + centered) */}
+      {/* What you get (below) */}
       <div className="mt-10">
         <div className="rounded-[34px] bg-white/90 backdrop-blur-md p-9 shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
           <div className="mx-auto max-w-[920px] text-center">
