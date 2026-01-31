@@ -314,13 +314,11 @@ export default function HomePage() {
             <SignupSocialProof />
 
             {/* ✅ FLOATING WIDE PREVIEW (no boxed border) */}
-            <div className="mt-12 -mx-6 lg:-mx-10">
-              <div className="rounded-[40px] bg-white/30 backdrop-blur-sm px-6 py-8 shadow-[0_30px_90px_rgba(0,0,0,0.10)] sm:px-10">
-                <LandingEmailPreview />
-              </div>
+            <div className="mt-12 -mx-6 lg:-mx-10 px-6 lg:px-10">
+  <LandingEmailPreview />
+  <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
+</div>
 
-              <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
-            </div>
           </div>
         </div>
       </section>
