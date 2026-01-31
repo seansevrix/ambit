@@ -34,7 +34,11 @@ function SegPill({ s }: { s: Segment }) {
       ? "bg-indigo-50 text-indigo-800"
       : "bg-sky-50 text-sky-800";
 
-  return <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${cls}`}>{s}</span>;
+  return (
+    <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${cls}`}>
+      {s}
+    </span>
+  );
 }
 
 function Chip({ children }: { children: React.ReactNode }) {
@@ -174,14 +178,25 @@ export default function LandingEmailPreview() {
 
         <DigestRow item={DIGEST_ONE} />
 
-        {/* ✅ New digest summary line */}
-        <div className="mt-5 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-black/60">
+        {/* ✅ Match preview summary + digest note + link */}
+        <div className="mt-5 flex flex-col gap-2 text-sm text-black/60">
           <div>
-            Daily emails include the top matches first — with fit score, key details, and “why it matched.”
+            We clarify requirements and submission steps, surface deadlines + key details, and give
+            you clear next steps with support — fast.
           </div>
-          <Link href="/live-opportunities" className="shrink-0 font-semibold text-[#1A4FA3] hover:underline">
-            View live leads →
-          </Link>
+
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <div className="text-black/55">
+              Daily emails include the top matches first — with fit score, key details, and “why it
+              matched.”
+            </div>
+            <Link
+              href="/live-opportunities"
+              className="shrink-0 font-semibold text-[#1A4FA3] hover:underline"
+            >
+              View live leads →
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -196,8 +211,8 @@ export default function LandingEmailPreview() {
             </h3>
 
             <p className="mx-auto mt-4 max-w-2xl text-sm text-black/60">
-              AMBIT emails ranked opportunities daily. When one is worth pursuing, you connect with an AMBIT associate
-              to build the strongest approach to win.
+              AMBIT emails ranked opportunities daily. When one is worth pursuing, you connect with
+              an AMBIT associate to build the strongest approach to win.
             </p>
           </div>
 
