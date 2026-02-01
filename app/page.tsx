@@ -1,6 +1,5 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import LandingBackground from "./components/LandingBackground";
 import LandingEmailPreview from "./components/LandingEmailPreview";
@@ -57,6 +56,7 @@ function SignupSocialProof() {
                 alt={l.alt}
                 className="h-full w-full object-cover object-center"
                 loading="lazy"
+                decoding="async"
               />
             </div>
           ))}
@@ -158,7 +158,7 @@ function StarRow({ count }: { count: number }) {
 function TestimonialsSection({ market }: { market: Market }) {
   return (
     <section className={`${CONTAINER} pb-24`}>
-      <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_30px_120px_rgba(0,0,0,0.28)]">
+      <div className="overflow-hidden rounded-[36px] border border-black/10 bg-[#0A0F1E] text-white shadow-[0_20px_70px_rgba(0,0,0,0.22)]">
         <div className="px-8 py-12 sm:px-12">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
@@ -191,7 +191,7 @@ function TestimonialsSection({ market }: { market: Market }) {
             {TESTIMONIALS.map((x) => (
               <div
                 key={x.name}
-                className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_18px_60px_rgba(0,0,0,0.25)] backdrop-blur"
+                className="rounded-3xl border border-white/10 bg-white/5 p-8 shadow-[0_12px_40px_rgba(0,0,0,0.18)]"
               >
                 <div className="flex items-center justify-between">
                   <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-white/80">
@@ -218,6 +218,7 @@ function TestimonialsSection({ market }: { market: Market }) {
                         alt={x.avatarAlt}
                         className="h-full w-full object-contain p-1"
                         loading="lazy"
+                        decoding="async"
                       />
                     </div>
 
@@ -244,8 +245,8 @@ function TestimonialsSection({ market }: { market: Market }) {
         </div>
       </div>
 
-      {/* FINAL CTA (no extra links) */}
-      <div className="mt-16 rounded-3xl border border-black/10 bg-white/85 backdrop-blur px-10 py-14 text-center shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      {/* FINAL CTA (no blur, paint-friendly glow) */}
+      <div className="mt-16 rounded-3xl border border-black/10 bg-white/90 px-10 py-14 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
         <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
         <div className="mt-4 text-lg text-black/70">
           Join the platform where who you are is just as important as what you do.
@@ -255,11 +256,11 @@ function TestimonialsSection({ market }: { market: Market }) {
           <div className="relative inline-flex">
             <span
               aria-hidden
-              className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
+              className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.22),transparent_70%)]"
             />
             <Link
               href={`/get-started?intent=${market}`}
-              className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
+              className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
             >
               <ArrowBadge />
               Sign Up
@@ -274,18 +275,19 @@ function TestimonialsSection({ market }: { market: Market }) {
 /* ---------- PAGE ---------- */
 
 export default function HomePage() {
-  const [market] = useState<Market>("residential");
-  const heroSubtitle = useMemo(() => marketSub(market), [market]);
+  const market: Market = "residential";
+  const heroSubtitle = marketSub(market);
 
   return (
     <div className="relative min-h-screen overflow-hidden text-black">
-      <div className="pointer-events-none fixed inset-0 -z-[70]">
+      {/* Background: make it absolute (not fixed) to reduce scroll/compositing work */}
+      <div className="pointer-events-none absolute inset-0 -z-[70]">
         <LandingBackground />
       </div>
 
       {/* HERO */}
       <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] bg-white/65 backdrop-blur-md border border-black/10 shadow-[0_30px_90px_rgba(0,0,0,0.10)] px-8 py-14 sm:px-14">
+        <div className="rounded-[44px] bg-white/90 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-14 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
@@ -299,11 +301,11 @@ export default function HomePage() {
               <div className="relative inline-flex">
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -inset-8 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(79,70,229,0.35),transparent_70%)] blur-2xl"
+                  className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.22),transparent_70%)]"
                 />
                 <Link
                   href={`/get-started?intent=${market}`}
-                  className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.25)] transition hover:bg-[#465DFF]"
+                  className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
                 >
                   <ArrowBadge />
                   Sign Up
@@ -313,19 +315,18 @@ export default function HomePage() {
 
             <SignupSocialProof />
 
-            {/* ✅ FLOATING WIDE PREVIEW (no boxed border) */}
+            {/* Floating wide preview */}
             <div className="mt-12 -mx-6 lg:-mx-10 px-6 lg:px-10">
-  <LandingEmailPreview />
-  <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
-</div>
-
+              <LandingEmailPreview />
+              <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* TRUST */}
       <section className={`${CONTAINER} pb-20`}>
-        <div className="rounded-3xl border border-black/10 bg-white/75 backdrop-blur px-10 py-12 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+        <div className="rounded-3xl border border-black/10 bg-white/90 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-black">Trusted by the most ambitious operators.</h2>
@@ -358,7 +359,7 @@ export default function HomePage() {
         </h2>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
-          <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
+          <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
               Stop searching and start selecting. Access curated positions that align your specific background with the
@@ -366,21 +367,21 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
+          <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black text-black">Move With Purpose.</div>
             <div className="mt-3 text-black/80">
               Strategically aligning your business with the jobs in your chosen industry.
             </div>
           </div>
 
-          <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_14px_40px_rgba(0,0,0,0.10)]">
+          <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
             <div className="text-2xl font-black">A Command Center for Your Company.</div>
             <div className="mt-3 text-white/90">
               Use precision matching to find the right jobs and simple summaries to decide fast.
             </div>
           </div>
 
-          <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_14px_40px_rgba(0,0,0,0.06)]">
+          <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Visibility Without Guesswork.</div>
             <div className="mt-3 text-black/70">
               Built to prioritize transparency—so your status is clear at every stage.

@@ -67,33 +67,25 @@ function CheckRow({ children }: { children: React.ReactNode }) {
 export default function LandingEmailPreview({ market = "government" }: { market?: Market }) {
   const item = GOVERNMENT_SAMPLE;
 
-  // Blueprint grid (visible but subtle)
-  const gridStyle: React.CSSProperties = {
-    backgroundImage:
-      "linear-gradient(to right, rgba(2,6,23,0.18) 1px, transparent 1px), linear-gradient(to bottom, rgba(2,6,23,0.18) 1px, transparent 1px)",
-    backgroundSize: "56px 56px",
-  };
-
-  const maskStyle: React.CSSProperties = {
-    WebkitMaskImage: "radial-gradient(ellipse at center, black 42%, transparent 78%)",
-    maskImage: "radial-gradient(ellipse at center, black 42%, transparent 78%)",
+  /**
+   * Performance-first background:
+   * - No mask-image
+   * - No layered absolute div stack
+   * - Just a single background paint with 3 background images (cheap to scroll)
+   */
+  const sectionBg: React.CSSProperties = {
+    backgroundImage: [
+      "radial-gradient(circle at top, rgba(26,79,163,0.14), transparent 58%)",
+      "linear-gradient(to right, rgba(2,6,23,0.14) 1px, transparent 1px)",
+      "linear-gradient(to bottom, rgba(2,6,23,0.14) 1px, transparent 1px)",
+    ].join(", "),
+    backgroundSize: ["auto", "56px 56px", "56px 56px"].join(", "),
+    backgroundPosition: ["center", "0 0", "0 0"].join(", "),
+    backgroundRepeat: ["no-repeat", "repeat", "repeat"].join(", "),
   };
 
   return (
-    <section className="relative py-10 lg:py-14">
-      {/* Background layers */}
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute inset-0 opacity-[0.12]" style={gridStyle} />
-        <div className="absolute inset-0" style={maskStyle}>
-          <div
-            className="absolute inset-0"
-            style={{
-              background: "radial-gradient(circle at top, rgba(26,79,163,0.14), transparent 58%)",
-            }}
-          />
-        </div>
-      </div>
-
+    <section className="relative py-10 lg:py-14" style={sectionBg}>
       <div className={CONTAINER}>
         {/* Header */}
         <div className="mb-4 flex items-end justify-between gap-4">
@@ -105,21 +97,21 @@ export default function LandingEmailPreview({ market = "government" }: { market?
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            <span className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70">
+            <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
               Example
             </span>
-            <span className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70">
+            <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
               {segLabel(market)}
             </span>
           </div>
         </div>
 
-        {/* Digest Card */}
-        <div className="rounded-[28px] border border-black/10 bg-white/55 p-5 shadow-[0_18px_45px_rgba(2,6,23,0.12)] backdrop-blur-sm lg:p-6">
+        {/* Digest Card (no blur) */}
+        <div className="rounded-[28px] border border-black/10 bg-white/90 p-5 shadow-[0_14px_40px_rgba(2,6,23,0.10)] lg:p-6">
           {/* Digest header */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/70 grid place-items-center">
+              <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/80 grid place-items-center">
                 <span className="text-[11px] font-black tracking-[0.18em] text-[#1A4FA3]">A</span>
               </div>
               <div className="leading-tight">
@@ -129,14 +121,14 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70">
+              <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
                 Today
               </span>
             </div>
           </div>
 
           {/* Match */}
-          <div className="mt-4 rounded-2xl border border-black/10 bg-white/70 p-4 lg:p-5">
+          <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4 lg:p-5">
             <div className="flex items-start gap-4">
               {/* Score */}
               <div className={["shrink-0 rounded-2xl border px-3 py-2 text-center", scoreTone(item.score)].join(" ")}>
@@ -171,7 +163,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                 </div>
 
                 {/* Clean summary */}
-                <div className="mt-4 rounded-2xl border border-black/10 bg-white/80 p-4">
+                <div className="mt-4 rounded-2xl border border-black/10 bg-white/90 p-4">
                   <div className="text-[11px] font-black tracking-[0.18em] text-black/60">SUMMARY</div>
                   <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80">{item.summary}</div>
                 </div>
@@ -180,8 +172,8 @@ export default function LandingEmailPreview({ market = "government" }: { market?
           </div>
         </div>
 
-        {/* INCLUDED (replaces Support Team + What You Get) */}
-        <div className="mt-8 rounded-[28px] border border-black/10 bg-white/55 p-6 shadow-[0_14px_34px_rgba(2,6,23,0.10)] backdrop-blur-sm">
+        {/* INCLUDED (no blur) */}
+        <div className="mt-8 rounded-[28px] border border-black/10 bg-white/90 p-6 shadow-[0_12px_34px_rgba(2,6,23,0.08)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-lg font-semibold tracking-tight text-black">Included</div>
