@@ -43,11 +43,15 @@ function scoreTone(score: number) {
   return "bg-sky-50 border-sky-200 text-sky-900";
 }
 
-const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
-
-function CheckRow({ children }: { children: React.ReactNode }) {
+function CheckRow({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
   return (
-    <div className="flex items-start gap-3">
+    <div className={["flex items-start gap-3", className].join(" ")}>
       <span className="mt-[2px] inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-emerald-600/15 text-emerald-700">
         <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
           <path
@@ -67,142 +71,177 @@ function CheckRow({ children }: { children: React.ReactNode }) {
 export default function LandingEmailPreview({ market = "government" }: { market?: Market }) {
   const item = GOVERNMENT_SAMPLE;
 
-  // Softer grid + gentle top glow (no masks, no blur)
-  const sectionBg: React.CSSProperties = {
+  // Clean contained panel background (grid + soft glows) — no masks, no blur
+  const panelBg: React.CSSProperties = {
     backgroundImage: [
-      "radial-gradient(circle at top, rgba(26,79,163,0.10), transparent 58%)",
-      "linear-gradient(to right, rgba(2,6,23,0.10) 1px, transparent 1px)",
-      "linear-gradient(to bottom, rgba(2,6,23,0.10) 1px, transparent 1px)",
+      "radial-gradient(circle at 22% 0%, rgba(92,116,255,0.12), transparent 55%)",
+      "radial-gradient(circle at 78% 18%, rgba(52,211,153,0.09), transparent 55%)",
+      "linear-gradient(to right, rgba(2,6,23,0.085) 1px, transparent 1px)",
+      "linear-gradient(to bottom, rgba(2,6,23,0.085) 1px, transparent 1px)",
     ].join(", "),
-    backgroundSize: ["auto", "56px 56px", "56px 56px"].join(", "),
-    backgroundPosition: ["center", "0 0", "0 0"].join(", "),
-    backgroundRepeat: ["no-repeat", "repeat", "repeat"].join(", "),
+    backgroundSize: ["auto", "auto", "56px 56px", "56px 56px"].join(", "),
+    backgroundRepeat: ["no-repeat", "no-repeat", "repeat", "repeat"].join(", "),
+    backgroundPosition: ["center", "center", "0 0", "0 0"].join(", "),
   };
 
+  const SHELL = "mx-auto max-w-[1040px]";
+
   return (
-    <section className="relative py-9 lg:py-12" style={sectionBg}>
-      <div className={CONTAINER}>
-        {/* Header */}
-        <div className="mb-4 flex items-end justify-between gap-4">
-          <div>
-            <div className="text-sm font-semibold tracking-tight text-black/75">Sample digest</div>
-            <div className="mt-1 text-2xl font-semibold tracking-tight text-black">
-              Your top match, explained clearly.
-            </div>
-          </div>
-
-          <div className="hidden sm:flex items-center gap-2">
-            <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
-              Example
-            </span>
-            <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
-              {segLabel(market)}
-            </span>
-          </div>
-        </div>
-
-        {/* Digest Card */}
-        <div className="rounded-[28px] border border-black/10 bg-white/92 p-5 shadow-[0_14px_40px_rgba(2,6,23,0.10)] lg:p-6">
-          {/* Digest header */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/85 grid place-items-center">
-                <span className="text-[11px] font-black tracking-[0.18em] text-[#1A4FA3]">A</span>
+    <section className="relative">
+      {/* ONE contained panel = looks “finished” */}
+      <div
+        className="rounded-[36px] border border-black/10 bg-white/80 shadow-[0_16px_55px_rgba(2,6,23,0.09)]"
+        style={panelBg}
+      >
+        <div className="px-6 py-8 sm:px-10 sm:py-10">
+          {/* Header */}
+          <div className={`${SHELL} flex items-end justify-between gap-4`}>
+            <div>
+              <div className="text-xs font-black tracking-[0.18em] text-black/55 uppercase">
+                Sample digest
               </div>
-              <div className="leading-tight">
-                <div className="text-sm font-semibold text-black">AMBIT Daily Digest</div>
-                <div className="text-xs font-medium text-black/60">Delivered 7:00 AM • Ranked by fit</div>
+              <div className="mt-2 text-2xl font-semibold tracking-tight text-black">
+                Your top match, explained clearly.
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
-                Today
+            <div className="hidden sm:flex items-center gap-2">
+              <span className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/70">
+                Example
+              </span>
+              <span className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/70">
+                {segLabel(market)}
               </span>
             </div>
           </div>
 
-          {/* Match */}
-          <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4 lg:p-5">
-            <div className="flex items-start gap-4">
-              {/* Score */}
-              <div className={["shrink-0 rounded-2xl border px-3 py-2 text-center", scoreTone(item.score)].join(" ")}>
-                <div className="text-[10px] font-extrabold tracking-[0.18em] opacity-80">SCORE</div>
-                <div className="mt-1 text-2xl font-black leading-none">{item.score}</div>
-                <div className="mt-1 text-[11px] font-semibold opacity-80">Excellent</div>
+          {/* Digest card */}
+          <div
+            className={[
+              SHELL,
+              "mt-5 rounded-[28px] border border-black/10 bg-white/92 p-5 shadow-[0_14px_40px_rgba(2,6,23,0.10)] lg:p-6",
+            ].join(" ")}
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/90 grid place-items-center">
+                  <span className="text-[11px] font-black tracking-[0.18em] text-[#1A4FA3]">A</span>
+                </div>
+                <div className="leading-tight">
+                  <div className="text-sm font-semibold text-black">AMBIT Daily Digest</div>
+                  <div className="text-xs font-medium text-black/60">
+                    Delivered 7:00 AM • Ranked by fit
+                  </div>
+                </div>
               </div>
 
-              {/* Content */}
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span
-                    className={[
-                      "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
-                      segPillClass(item.segment),
-                    ].join(" ")}
-                  >
-                    {segLabel(item.segment)}
-                  </span>
+              <span className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/70">
+                Today
+              </span>
+            </div>
 
-                  <span className="text-xs font-semibold text-black/55">NAICS {item.naics}</span>
+            {/* Match */}
+            <div className="mt-4 rounded-2xl border border-black/10 bg-white p-4 lg:p-5">
+              <div className="flex items-start gap-4">
+                <div
+                  className={[
+                    "shrink-0 rounded-2xl border px-3 py-2 text-center",
+                    scoreTone(item.score),
+                  ].join(" ")}
+                >
+                  <div className="text-[10px] font-extrabold tracking-[0.18em] opacity-80">
+                    SCORE
+                  </div>
+                  <div className="mt-1 text-2xl font-black leading-none">{item.score}</div>
+                  <div className="mt-1 text-[11px] font-semibold opacity-80">Excellent</div>
                 </div>
 
-                <div className="mt-2 text-base font-semibold tracking-tight text-black">{item.title}</div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={[
+                        "inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold",
+                        segPillClass(item.segment),
+                      ].join(" ")}
+                    >
+                      {segLabel(item.segment)}
+                    </span>
+                    <span className="text-xs font-semibold text-black/55">
+                      NAICS {item.naics}
+                    </span>
+                  </div>
 
-                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/70">
-                  <span className="font-semibold">{item.location}</span>
-                  <span className="text-black/35">•</span>
-                  <span>
-                    <span className="font-semibold">Agency:</span> {item.agency}
-                  </span>
-                </div>
+                  <div className="mt-2 text-base font-semibold tracking-tight text-black">
+                    {item.title}
+                  </div>
 
-                {/* Summary (reads faster: left aligned + better line length) */}
-                <div className="mt-4 rounded-2xl border border-black/10 bg-white/90 p-4">
-                  <div className="text-[11px] font-black tracking-[0.18em] text-black/60">SUMMARY</div>
-                  <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80 text-left max-w-[720px]">
-                    {item.summary}
+                  <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/70">
+                    <span className="font-semibold">{item.location}</span>
+                    <span className="text-black/35">•</span>
+                    <span>
+                      <span className="font-semibold">Agency:</span> {item.agency}
+                    </span>
+                  </div>
+
+                  {/* Summary: left aligned + consistent width */}
+                  <div className="mt-4 rounded-2xl border border-black/10 bg-white/92 p-4">
+                    <div className="text-[11px] font-black tracking-[0.18em] text-black/55">
+                      SUMMARY
+                    </div>
+                    <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80 max-w-[760px]">
+                      {item.summary}
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* INCLUDED (fills the width better on desktop) */}
-        <div className="mt-7 rounded-[28px] border border-black/10 bg-white/92 p-6 shadow-[0_12px_34px_rgba(2,6,23,0.08)]">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div>
-              <div className="text-lg font-semibold tracking-tight text-black">Included</div>
-              <div className="mt-1 text-sm font-medium text-black/65">
-                A checklist of everything you get — built to help you move fast.
+          {/* Included (tight + balanced) */}
+          <div
+            className={[
+              SHELL,
+              "mt-7 rounded-[28px] border border-black/10 bg-white/92 p-6 shadow-[0_12px_34px_rgba(2,6,23,0.08)]",
+            ].join(" ")}
+          >
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <div className="text-lg font-semibold tracking-tight text-black">Included</div>
+                <div className="mt-1 text-sm font-medium text-black/65">
+                  A checklist of everything you get — built to help you move fast.
+                </div>
               </div>
+
+              <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-900">
+                THE CONTRACTOR’S EDGE
+              </span>
             </div>
 
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-extrabold text-emerald-900">
-              THE CONTRACTOR’S EDGE
-            </span>
-          </div>
+            {/* 2-col grid, long line spans full width = cleaner */}
+            <div className="mt-5 grid gap-y-3 gap-x-10 lg:grid-cols-2">
+              <CheckRow>
+                <span className="text-black">Priority Ranking</span>{" "}
+                <span className="text-black/60 font-semibold">
+                  (Saves on average 11+ hours/week)
+                </span>
+              </CheckRow>
 
-          <div className="mt-5 grid gap-3 lg:grid-cols-2 lg:gap-x-10">
-            <CheckRow>
-              <span className="text-black">Priority Ranking</span>{" "}
-              <span className="text-black/60 font-semibold">(Saves on average 11+ hours/week)</span>
-            </CheckRow>
+              <CheckRow>
+                <span className="text-black">Complete Bid Intelligence</span>
+              </CheckRow>
 
-            <CheckRow>
-              <span className="text-black">Complete Bid Intelligence</span>
-            </CheckRow>
+              <CheckRow>
+                <span className="text-black">The "Roadmap to Win"</span>{" "}
+                <span className="text-black/60 font-semibold">for every lead</span>
+              </CheckRow>
 
-            <CheckRow>
-              <span className="text-black">The "Roadmap to Win"</span>{" "}
-              <span className="text-black/60 font-semibold">for every lead</span>
-            </CheckRow>
-
-            <CheckRow>
-              <span className="text-black">Dedicated Ambit Associate</span>{" "}
-              <span className="text-black/60 font-semibold">to draft & develop your winning proposal 24/7</span>
-            </CheckRow>
+              <CheckRow className="lg:col-span-2">
+                <span className="text-black">Dedicated Ambit Associate</span>{" "}
+                <span className="text-black/60 font-semibold">
+                  to draft & develop your winning proposal 24/7
+                </span>
+              </CheckRow>
+            </div>
           </div>
         </div>
       </div>
