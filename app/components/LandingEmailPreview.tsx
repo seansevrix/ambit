@@ -67,17 +67,12 @@ function CheckRow({ children }: { children: React.ReactNode }) {
 export default function LandingEmailPreview({ market = "government" }: { market?: Market }) {
   const item = GOVERNMENT_SAMPLE;
 
-  /**
-   * Performance-first background:
-   * - No mask-image
-   * - No layered absolute div stack
-   * - Just a single background paint with 3 background images (cheap to scroll)
-   */
+  // Softer grid + gentle top glow (no masks, no blur)
   const sectionBg: React.CSSProperties = {
     backgroundImage: [
-      "radial-gradient(circle at top, rgba(26,79,163,0.14), transparent 58%)",
-      "linear-gradient(to right, rgba(2,6,23,0.14) 1px, transparent 1px)",
-      "linear-gradient(to bottom, rgba(2,6,23,0.14) 1px, transparent 1px)",
+      "radial-gradient(circle at top, rgba(26,79,163,0.10), transparent 58%)",
+      "linear-gradient(to right, rgba(2,6,23,0.10) 1px, transparent 1px)",
+      "linear-gradient(to bottom, rgba(2,6,23,0.10) 1px, transparent 1px)",
     ].join(", "),
     backgroundSize: ["auto", "56px 56px", "56px 56px"].join(", "),
     backgroundPosition: ["center", "0 0", "0 0"].join(", "),
@@ -85,33 +80,33 @@ export default function LandingEmailPreview({ market = "government" }: { market?
   };
 
   return (
-    <section className="relative py-10 lg:py-14" style={sectionBg}>
+    <section className="relative py-9 lg:py-12" style={sectionBg}>
       <div className={CONTAINER}>
         {/* Header */}
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
-            <div className="text-sm font-semibold tracking-tight text-black/80">Sample digest</div>
+            <div className="text-sm font-semibold tracking-tight text-black/75">Sample digest</div>
             <div className="mt-1 text-2xl font-semibold tracking-tight text-black">
               Your top match, explained clearly.
             </div>
           </div>
 
           <div className="hidden sm:flex items-center gap-2">
-            <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
+            <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
               Example
             </span>
-            <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
+            <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
               {segLabel(market)}
             </span>
           </div>
         </div>
 
-        {/* Digest Card (no blur) */}
-        <div className="rounded-[28px] border border-black/10 bg-white/90 p-5 shadow-[0_14px_40px_rgba(2,6,23,0.10)] lg:p-6">
+        {/* Digest Card */}
+        <div className="rounded-[28px] border border-black/10 bg-white/92 p-5 shadow-[0_14px_40px_rgba(2,6,23,0.10)] lg:p-6">
           {/* Digest header */}
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-2">
-              <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/80 grid place-items-center">
+              <div className="h-9 w-9 rounded-2xl border border-black/10 bg-white/85 grid place-items-center">
                 <span className="text-[11px] font-black tracking-[0.18em] text-[#1A4FA3]">A</span>
               </div>
               <div className="leading-tight">
@@ -121,7 +116,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             </div>
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70">
+              <span className="rounded-full border border-black/10 bg-white/75 px-3 py-1 text-xs font-semibold text-black/70">
                 Today
               </span>
             </div>
@@ -162,18 +157,20 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                   </span>
                 </div>
 
-                {/* Clean summary */}
+                {/* Summary (reads faster: left aligned + better line length) */}
                 <div className="mt-4 rounded-2xl border border-black/10 bg-white/90 p-4">
                   <div className="text-[11px] font-black tracking-[0.18em] text-black/60">SUMMARY</div>
-                  <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80">{item.summary}</div>
+                  <div className="mt-2 text-sm font-semibold leading-relaxed text-black/80 text-left max-w-[720px]">
+                    {item.summary}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* INCLUDED (no blur) */}
-        <div className="mt-8 rounded-[28px] border border-black/10 bg-white/90 p-6 shadow-[0_12px_34px_rgba(2,6,23,0.08)]">
+        {/* INCLUDED (fills the width better on desktop) */}
+        <div className="mt-7 rounded-[28px] border border-black/10 bg-white/92 p-6 shadow-[0_12px_34px_rgba(2,6,23,0.08)]">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
               <div className="text-lg font-semibold tracking-tight text-black">Included</div>
@@ -187,7 +184,7 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             </span>
           </div>
 
-          <div className="mt-5 grid gap-3">
+          <div className="mt-5 grid gap-3 lg:grid-cols-2 lg:gap-x-10">
             <CheckRow>
               <span className="text-black">Priority Ranking</span>{" "}
               <span className="text-black/60 font-semibold">(Saves on average 11+ hours/week)</span>

@@ -41,7 +41,7 @@ function SignupSocialProof() {
   ];
 
   return (
-    <div className="mt-5 flex flex-col items-center gap-2">
+    <div className="mt-4 flex flex-col items-center gap-2">
       <div className="flex items-center justify-center">
         <div className="flex -space-x-4">
           {logos.map((l) => (
@@ -245,8 +245,8 @@ function TestimonialsSection({ market }: { market: Market }) {
         </div>
       </div>
 
-      {/* FINAL CTA (no blur, paint-friendly glow) */}
-      <div className="mt-16 rounded-3xl border border-black/10 bg-white/90 px-10 py-14 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
+      {/* FINAL CTA */}
+      <div className="mt-16 rounded-3xl border border-black/10 bg-white/92 px-10 py-14 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
         <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
         <div className="mt-4 text-lg text-black/70">
           Join the platform where who you are is just as important as what you do.
@@ -256,7 +256,7 @@ function TestimonialsSection({ market }: { market: Market }) {
           <div className="relative inline-flex">
             <span
               aria-hidden
-              className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.22),transparent_70%)]"
+              className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
             />
             <Link
               href={`/get-started?intent=${market}`}
@@ -280,28 +280,27 @@ export default function HomePage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden text-black">
-      {/* Background: make it absolute (not fixed) to reduce scroll/compositing work */}
       <div className="pointer-events-none absolute inset-0 -z-[70]">
         <LandingBackground />
       </div>
 
-      {/* HERO */}
-      <section className={`${CONTAINER} pt-16 pb-16`}>
-        <div className="rounded-[44px] bg-white/90 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-14 sm:px-14">
+      {/* HERO (tightened) */}
+      <section className={`${CONTAINER} pt-14 pb-12`}>
+        <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-12 sm:px-14">
           <div className="text-center">
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
             </h1>
 
-            <p className="mx-auto mt-5 max-w-2xl text-lg text-black/65">
+            <p className="mx-auto mt-4 max-w-2xl text-lg text-black/65">
               Matched opportunities, emailed daily.
             </p>
 
-            <div className="mt-10 flex items-center justify-center">
+            <div className="mt-9 flex items-center justify-center">
               <div className="relative inline-flex">
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.22),transparent_70%)]"
+                  className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
                 />
                 <Link
                   href={`/get-started?intent=${market}`}
@@ -315,10 +314,10 @@ export default function HomePage() {
 
             <SignupSocialProof />
 
-            {/* Floating wide preview */}
-            <div className="mt-12 -mx-6 lg:-mx-10 px-6 lg:px-10">
+            {/* Preview pulled up + cleaner spacing */}
+            <div className="mt-9 -mx-6 lg:-mx-10 px-6 lg:px-10">
               <LandingEmailPreview />
-              <div className="mt-6 text-sm text-black/60">{heroSubtitle}</div>
+              <div className="mt-5 text-sm text-black/60">{heroSubtitle}</div>
             </div>
           </div>
         </div>
@@ -326,7 +325,7 @@ export default function HomePage() {
 
       {/* TRUST */}
       <section className={`${CONTAINER} pb-20`}>
-        <div className="rounded-3xl border border-black/10 bg-white/90 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
+        <div className="rounded-3xl border border-black/10 bg-white/92 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-black">Trusted by the most ambitious operators.</h2>
