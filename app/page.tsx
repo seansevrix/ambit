@@ -7,12 +7,6 @@ import CallRequestWidget from "./components/CallRequestWidget";
 
 type Market = "residential" | "commercial" | "government";
 
-function marketSub(m: Market) {
-  if (m === "commercial") return "Ranked commercial opportunities delivered daily.";
-  if (m === "government") return "Ranked bid opportunities delivered daily.";
-  return "Ranked jobs delivered daily.";
-}
-
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
 
 function ArrowBadge({ dark = false }: { dark?: boolean }) {
@@ -36,13 +30,19 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
  */
 function SignupSocialProof() {
   const logos = [
-    { src: "/landing/social/golden-state-landscapes.jpeg", alt: "Golden State Landscapes" },
-    { src: "/landing/social/old-dominion-plumbing.jpeg", alt: "Old Dominion Plumbing Co." },
+    {
+      src: "/landing/social/golden-state-landscapes.jpeg",
+      alt: "Golden State Landscapes",
+    },
+    {
+      src: "/landing/social/old-dominion-plumbing.jpeg",
+      alt: "Old Dominion Plumbing Co.",
+    },
     { src: "/landing/social/power-mechanical.jpeg", alt: "Power Mechanical" },
   ];
 
   return (
-    <div className="mt-4 flex flex-col items-center gap-2">
+    <div className="mt-5 flex flex-col items-center gap-2">
       <div className="flex items-center justify-center">
         <div className="flex -space-x-4">
           {logos.map((l) => (
@@ -73,7 +73,8 @@ function SignupSocialProof() {
       </div>
 
       <div className="text-xs text-black/55">
-        Trusted by <span className="font-semibold text-black/70">200+</span> local businesses
+        Trusted by <span className="font-semibold text-black/70">200+</span>{" "}
+        local businesses
       </div>
     </div>
   );
@@ -172,7 +173,8 @@ function TestimonialsSection({ market }: { market: Market }) {
             </h2>
 
             <p className="mt-4 text-base text-white/70 sm:text-lg">
-              Skimmable reviews from teams using AMBIT to find better-fit opportunities faster.
+              Skimmable reviews from teams using AMBIT to find better-fit
+              opportunities faster.
             </p>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -247,8 +249,10 @@ function TestimonialsSection({ market }: { market: Market }) {
       </div>
 
       {/* FINAL CTA */}
-      <div className="mt-16 rounded-3xl border border-black/10 bg-white/92 px-10 py-14 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
-        <div className="text-4xl font-black">Plug into AMBIT to keep growing your business</div>
+      <div className="mt-16 rounded-3xl border border-black/10 bg-white/92 px-10 py-12 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
+        <div className="text-4xl font-black">
+          Plug into AMBIT to keep growing your business
+        </div>
         <div className="mt-4 text-lg text-black/70">
           Join the platform where who you are is just as important as what you do.
         </div>
@@ -276,8 +280,7 @@ function TestimonialsSection({ market }: { market: Market }) {
 /* ---------- PAGE ---------- */
 
 export default function HomePage() {
-  const market: Market = "residential";
-  const heroSubtitle = marketSub(market);
+  const market: Market = "government";
 
   return (
     <div className="relative min-h-screen overflow-hidden text-black">
@@ -285,26 +288,26 @@ export default function HomePage() {
         <LandingBackground />
       </div>
 
-      {/* HERO (tightened) */}
-      <section className={`${CONTAINER} pt-14 pb-12`}>
-        <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-12 sm:px-14">
+      {/* Fixed widget (renders once, not inside the hero) */}
+      <CallRequestWidget />
+
+      {/* HERO */}
+      <section className={`${CONTAINER} pt-14 pb-10`}>
+        <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
           <div className="text-center">
-            <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
+            <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
               Stop hunting. Start receiving.
             </h1>
-<CallRequestWidget />
 
-            {/* Subheading */}
-<p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
-  Matched opportunities, emailed daily.
-</p>
+            <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
+              Matched opportunities, emailed daily.
+            </p>
 
-{/* Smaller line under it */}
-<p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
-  For tradespeople. Built by tradespeople.
-</p>
+            <p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
+              For tradespeople. Built by tradespeople.
+            </p>
 
-            <div className="mt-9 flex items-center justify-center">
+            <div className="mt-8 flex items-center justify-center">
               <div className="relative inline-flex">
                 <span
                   aria-hidden
@@ -321,14 +324,13 @@ export default function HomePage() {
             </div>
 
             <SignupSocialProof />
-
-            {/* Preview pulled up + cleaner spacing */}
-            <div className="mt-9 -mx-6 lg:-mx-10 px-6 lg:px-10">
-              <LandingEmailPreview />
-              <div className="mt-5 text-sm text-black/60">{heroSubtitle}</div>
-            </div>
           </div>
         </div>
+      </section>
+
+      {/* TOP MATCH PREVIEW (separate section — no more nested mega panels) */}
+      <section className={`${CONTAINER} pb-16`}>
+        <LandingEmailPreview market={market} />
       </section>
 
       {/* TRUST */}
@@ -336,7 +338,9 @@ export default function HomePage() {
         <div className="rounded-3xl border border-black/10 bg-white/92 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-black">Trusted by the most ambitious operators.</h2>
+              <h2 className="text-3xl font-black">
+                Trusted by the most ambitious operators.
+              </h2>
               <div className="mt-7 grid gap-6 sm:grid-cols-2">
                 <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
                   <div className="text-4xl font-black text-[#34D399]">3</div>
@@ -350,8 +354,9 @@ export default function HomePage() {
             </div>
 
             <div className="text-black/70">
-              AMBIT is built for speed, clarity, and momentum—so you’re not guessing where to focus. See what’s relevant,
-              understand it fast, and act with confidence.
+              AMBIT is built for speed, clarity, and momentum—so you’re not guessing
+              where to focus. See what’s relevant, understand it fast, and act with
+              confidence.
             </div>
           </div>
         </div>
@@ -369,8 +374,8 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated positions that align your specific background with the
-              sectors you actually care about.
+              Stop searching and start selecting. Access curated positions that align
+              your specific background with the sectors you actually care about.
             </div>
           </div>
 
