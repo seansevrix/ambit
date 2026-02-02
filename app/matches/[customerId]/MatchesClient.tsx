@@ -23,7 +23,8 @@ type MatchItem = {
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
 const DEV_BACKEND = "http://localhost:5001";
-const FALLBACK = process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
+const FALLBACK =
+  process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
 
 const API_BASE = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -34,7 +35,11 @@ const API_BASE = (
 
 const REQUEST_TIMEOUT_MS = 15000;
 
-function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) {
+function abortableFetch(
+  url: string,
+  init: RequestInit = {},
+  ms = REQUEST_TIMEOUT_MS
+) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
   return fetch(url, { ...init, signal: ac.signal }).finally(() => clearTimeout(t));
@@ -66,7 +71,8 @@ function scoreLabel(score?: number) {
 }
 
 function prettyErr(e: any) {
-  if (e?.name === "AbortError") return "Server is waking up — please retry in a few seconds.";
+  if (e?.name === "AbortError")
+    return "Server is waking up — please retry in a few seconds.";
   return e?.message || "Unknown error";
 }
 
@@ -166,6 +172,26 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     return () => clearInterval(timer);
   }, [load]);
 
+  // ✅ Lock scroll while the profile modal is open (prevents weird overlap behavior)
+  useEffect(() => {
+    if (!showProfile) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [showProfile]);
+
+  // ✅ ESC closes the profile modal
+  useEffect(() => {
+    if (!showProfile) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowProfile(false);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showProfile]);
+
   if (loading) {
     return (
       <div style={styles.shell}>
@@ -196,8 +222,8 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
           </div>
 
           <div style={styles.headerActions}>
-            <button onClick={() => setShowProfile((v) => !v)} style={styles.ghostBtn}>
-              {showProfile ? "Close Profile" : "Edit Profile"}
+            <button onClick={() => setShowProfile(true)} style={styles.ghostBtn}>
+              Edit Profile
             </button>
             <button onClick={load} style={styles.ghostBtn}>
               Refresh
@@ -205,20 +231,32 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
           </div>
         </div>
 
-        {/* ✅ Profile panel */}
+        {/* ✅ Profile modal overlay (always above your sticky SiteNav) */}
         {showProfile ? (
-          <div style={{ ...styles.card, marginBottom: 14 }}>
-            {/* ProfileEditor is the client component that calls:
-                GET  /engine/customers/:id/profile?email=...
-                PATCH /engine/customers/:id/profile  (with { email, ...fields })
-             */}
-            <ProfileEditor
-              customerId={customerId}
-              onSaved={() => {
-                // reload matches after profile save
-                void load();
-              }}
+          <div style={styles.modalRoot} role="dialog" aria-modal="true">
+            <div
+              style={styles.modalBackdrop}
+              onClick={() => setShowProfile(false)}
             />
+            <div style={styles.modalWrap}>
+              <div style={styles.modalTopRow}>
+                <button
+                  onClick={() => setShowProfile(false)}
+                  style={styles.modalCloseBtn}
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* This is your existing ProfileEditor card. No changes needed inside it. */}
+              <ProfileEditor
+                customerId={customerId}
+                onSaved={() => {
+                  // reload matches after profile save
+                  void load();
+                }}
+              />
+            </div>
           </div>
         ) : null}
 
@@ -315,11 +353,18 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
                         <div style={styles.scoreBox}>
                           <div style={styles.scoreKicker}>Match</div>
-                          <div style={styles.scoreValue}>{typeof score === "number" ? score : "?"}</div>
+                          <div style={styles.scoreValue}>
+                            {typeof score === "number" ? score : "?"}
+                          </div>
                           <div style={styles.scoreLabel}>{label}</div>
 
                           {m.url ? (
-                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
+                            <a
+                              href={m.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={styles.linkBtn}
+                            >
                               View Source →
                             </a>
                           ) : (
@@ -345,7 +390,8 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
                           {m.profileIncomplete ? (
                             <div style={styles.callout}>
-                              Profile incomplete — add services/keywords/NAICS for better matches.
+                              Profile incomplete — add services/keywords/NAICS for
+                              better matches.
                             </div>
                           ) : null}
                         </div>
@@ -356,14 +402,18 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
                               {hasLongSummary ? (
-                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
+                                <button
+                                  onClick={() => toggleExpanded(key)}
+                                  style={styles.textBtn}
+                                >
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
                             </>
                           ) : (
                             <div style={styles.body}>
-                              No summary yet. (Next step: auto-generate this from the posting.)
+                              No summary yet. (Next step: auto-generate this from
+                              the posting.)
                             </div>
                           )}
                         </div>
@@ -434,6 +484,40 @@ const styles: Record<string, CSSProperties> = {
     fontWeight: 700,
     opacity: 0.9,
   },
+
+  // ✅ MODAL STYLES
+  modalRoot: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 9999, // higher than any sticky header
+  },
+  modalBackdrop: {
+    position: "fixed",
+    inset: 0,
+    background: "rgba(0,0,0,0.45)",
+  },
+  modalWrap: {
+    position: "relative",
+    maxWidth: 980,
+    margin: "0 auto",
+    padding: "18px 16px 28px",
+    marginTop: 18,
+  },
+  modalTopRow: {
+    display: "flex",
+    justifyContent: "flex-end",
+    marginBottom: 10,
+  },
+  modalCloseBtn: {
+    padding: "10px 14px",
+    borderRadius: 999,
+    border: "1px solid rgba(255,255,255,0.18)",
+    background: "rgba(255,255,255,0.10)",
+    fontWeight: 900,
+    cursor: "pointer",
+    color: "rgba(255,255,255,0.92)",
+  },
+
   reportTopRow: {
     display: "grid",
     gridTemplateColumns: "1fr 220px",
