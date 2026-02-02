@@ -1,25 +1,45 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
-type NavMode = "sticky" | "static";
-
-function openSignup() {
-  if (typeof window === "undefined") return;
-  window.dispatchEvent(
-    new CustomEvent("ambit:open-signup", { detail: { kind: "company" } })
-  );
+function cx(...parts: Array<string | false | null | undefined>) {
+  return parts.filter(Boolean).join(" ");
 }
 
-export default function SiteNav({ mode = "sticky" }: { mode?: NavMode }) {
-  const sticky = mode === "sticky";
+export default function SiteNav() {
+  const [hideNav, setHideNav] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      try {
+        setHideNav(document.body.classList.contains("ambit-hide-nav"));
+      } catch {
+        setHideNav(false);
+      }
+    };
+
+    sync();
+
+    // Watch for body class changes
+    const obs = new MutationObserver(sync);
+    try {
+      obs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+    } catch {
+      // ignore
+    }
+
+    return () => obs.disconnect();
+  }, []);
 
   return (
     <header
-      className={[
-        "w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur",
-        sticky ? "sticky top-0 z-30" : "relative z-10",
-      ].join(" ")}
+      data-ambit-nav="1"
+      className={cx(
+        "sticky top-0 z-[150] w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur",
+        "transition-opacity duration-150",
+        hideNav && "opacity-0 pointer-events-none"
+      )}
     >
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-4 lg:px-10">
         {/* Left */}

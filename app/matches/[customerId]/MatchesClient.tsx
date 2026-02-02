@@ -14,7 +14,7 @@ type MatchItem = {
 
   agency?: string | null;
   url?: string | null;
-  postedDate?: string | null; // ISO string
+  postedDate?: string | null;
   summary?: string | null;
   reasons?: string[];
   profileIncomplete?: boolean;
@@ -187,6 +187,24 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     };
   }, [showProfile]);
 
+  // ✅ HARD FIX: Hide SiteNav while modal is open (beats any z-index problem)
+  useEffect(() => {
+    const cls = "ambit-hide-nav";
+    try {
+      if (showProfile) document.body.classList.add(cls);
+      else document.body.classList.remove(cls);
+    } catch {
+      // ignore
+    }
+    return () => {
+      try {
+        document.body.classList.remove(cls);
+      } catch {
+        // ignore
+      }
+    };
+  }, [showProfile]);
+
   // ESC closes modal
   useEffect(() => {
     if (!showProfile) return;
@@ -197,31 +215,20 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [showProfile]);
 
-  // ✅ Portal modal (now pushed down + internally scrollable)
   const ProfileModal =
     mounted && showProfile
       ? createPortal(
           <div style={styles.profileOverlay} role="dialog" aria-modal="true">
-            <div
-              style={styles.profileBackdrop}
-              onClick={() => setShowProfile(false)}
-            />
+            <div style={styles.profileBackdrop} onClick={() => setShowProfile(false)} />
 
-            <div
-              style={styles.profilePanelWrap}
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div style={styles.profilePanelWrap} onClick={(e) => e.stopPropagation()}>
               <div style={styles.profileTopRow}>
                 <div style={styles.profileTitle}>Edit profile</div>
-                <button
-                  onClick={() => setShowProfile(false)}
-                  style={styles.profileCloseBtn}
-                >
+                <button onClick={() => setShowProfile(false)} style={styles.profileCloseBtn}>
                   Close
                 </button>
               </div>
 
-              {/* ✅ The key: internal scroll, so nothing is covered by the top header */}
               <div style={styles.profileScroll}>
                 <ProfileEditor
                   customerId={customerId}
@@ -376,12 +383,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                           <div style={styles.scoreLabel}>{label}</div>
 
                           {m.url ? (
-                            <a
-                              href={m.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={styles.linkBtn}
-                            >
+                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
                               View Source →
                             </a>
                           ) : (
@@ -418,10 +420,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
                               {hasLongSummary ? (
-                                <button
-                                  onClick={() => toggleExpanded(key)}
-                                  style={styles.textBtn}
-                                >
+                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
@@ -500,7 +499,7 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.9,
   },
 
-  // ✅ NEW PROFILE OVERLAY (pushed down + shorter + internal scroll)
+  // ✅ Overlay (nav hidden via body class, but we still keep this clean + scrollable)
   profileOverlay: {
     position: "fixed",
     inset: 0,
@@ -508,7 +507,7 @@ const styles: Record<string, CSSProperties> = {
     display: "flex",
     justifyContent: "center",
     alignItems: "flex-start",
-    padding: "92px 14px 18px", // ✅ push below sticky nav
+    padding: "92px 14px 18px",
   },
   profileBackdrop: {
     position: "fixed",
@@ -548,7 +547,7 @@ const styles: Record<string, CSSProperties> = {
   },
   profileScroll: {
     padding: 14,
-    maxHeight: "calc(100vh - 140px)", // ✅ keeps it below header + within viewport
+    maxHeight: "calc(100vh - 140px)",
     overflowY: "auto",
   },
 
