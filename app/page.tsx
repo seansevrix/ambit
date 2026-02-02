@@ -3,6 +3,7 @@
 import Link from "next/link";
 import LandingBackground from "./components/LandingBackground";
 import LandingEmailPreview from "./components/LandingEmailPreview";
+import CallRequestWidget from "./components/CallRequestWidget";
 
 type Market = "residential" | "commercial" | "government";
 
@@ -291,6 +292,7 @@ export default function HomePage() {
             <h1 className="text-5xl font-black tracking-tight sm:text-6xl sm:whitespace-nowrap">
               Stop hunting. Start receiving.
             </h1>
+<CallRequestWidget />
 
             {/* Subheading */}
 <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">

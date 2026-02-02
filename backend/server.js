@@ -37,6 +37,9 @@ app.use(
 );
 app.use(express.urlencoded({ extended: false }));
 
+import leadsRouter from "./routes/leads.js";
+app.use("/engine/leads", leadsRouter);
+
 /**
  * ✅ CORS
  */
