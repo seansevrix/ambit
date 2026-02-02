@@ -18,7 +18,7 @@ export default function SiteNav({ mode = "sticky" }: { mode?: NavMode }) {
     <header
       className={[
         "w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur",
-        sticky ? "sticky top-0 z-40" : "relative z-10",
+        sticky ? "sticky top-0 z-30" : "relative z-10",
       ].join(" ")}
     >
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-4 lg:px-10">
