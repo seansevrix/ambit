@@ -1,4 +1,6 @@
 // app/components/LandingEmailPreview.tsx
+import React from "react";
+
 type Market = "residential" | "commercial" | "government";
 
 const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-10";
@@ -48,6 +50,64 @@ function Pill({ children }: { children: React.ReactNode }) {
   );
 }
 
+function CheckIcon() {
+  return (
+    <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-emerald-50 ring-1 ring-emerald-200">
+      <svg width="14" height="14" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+        <path
+          d="M16.6 6.2 8.7 14.1 3.4 8.8"
+          stroke="currentColor"
+          strokeWidth="2.4"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="text-emerald-700"
+        />
+      </svg>
+    </span>
+  );
+}
+
+function StarIcon() {
+  return (
+    <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/70 ring-1 ring-[#1A4FA3]/20">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 17.3 6.8 20l1-5.7-4.2-4.1 5.8-.8L12 4l2.6 5.4 5.8.8-4.2 4.1 1 5.7L12 17.3Z"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinejoin="round"
+          className="text-[#1A4FA3]"
+        />
+      </svg>
+    </span>
+  );
+}
+
+function Feature({
+  title,
+  desc,
+  highlight,
+}: {
+  title: string;
+  desc: string;
+  highlight?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "flex gap-3 rounded-2xl border p-4",
+        highlight ? "border-[#1A4FA3]/20 bg-[#EAF3FF]" : "border-black/10 bg-white/70",
+      ].join(" ")}
+    >
+      {highlight ? <StarIcon /> : <CheckIcon />}
+      <div>
+        <div className="text-sm font-semibold text-black">{title}</div>
+        <div className="mt-1 text-sm text-black/65">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function LandingEmailPreview({ market = "government" }: { market?: Market }) {
   const meta = sampleMeta(market);
 
@@ -78,8 +138,8 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             }}
           />
 
+          {/* TOP BLOCK */}
           <div className="relative mx-auto max-w-[980px] px-6 py-10 sm:px-10 sm:py-12">
-            {/* TOP: Headline + explanation (no “Sample digest”) */}
             <h2 className="text-2xl font-semibold tracking-tight text-black sm:text-3xl">
               Your top match, explained clearly.
             </h2>
@@ -91,9 +151,8 @@ export default function LandingEmailPreview({ market = "government" }: { market?
               </span>
             </p>
 
-            {/* BELOW: The digest (clean + readable) */}
+            {/* DIGEST CARD */}
             <div className="mt-7 rounded-2xl border border-black/10 bg-white/85 p-6 shadow-[0_10px_30px_rgba(6,16,23,0.10)]">
-              {/* Digest header */}
               <div className="flex items-start justify-between gap-4">
                 <div>
                   <div className="text-xs font-semibold tracking-wide text-black/55">
@@ -106,7 +165,6 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                 <div className="text-xs font-semibold text-black/45">{meta.posted}</div>
               </div>
 
-              {/* Pills row */}
               <div className="mt-4 flex flex-wrap gap-2">
                 <span className="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
                   Score {meta.score}
@@ -115,12 +173,10 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                 <Pill>NAICS {meta.naics}</Pill>
               </div>
 
-              {/* Opportunity title */}
               <div className="mt-4 text-base font-semibold leading-snug text-black sm:text-[17px]">
                 {meta.title}
               </div>
 
-              {/* Key details (exactly what you listed) */}
               <div className="mt-4 rounded-xl border border-black/10 bg-white/70 p-4 text-sm">
                 <div className="grid grid-cols-[140px_1fr] gap-y-2">
                   <div className="text-black/45">Location</div>
@@ -134,17 +190,43 @@ export default function LandingEmailPreview({ market = "government" }: { market?
                 </div>
               </div>
 
-              {/* Associate section (below digest, no “Why it matched”) */}
               <div className="mt-5 rounded-xl border border-[#1A4FA3]/20 bg-[#EAF3FF] p-4">
-                <div className="text-xs font-semibold text-[#1A4FA3]">Ambit Associate included</div>
-
+                <div className="text-xs font-semibold text-[#1A4FA3]">
+                  Ambit Associate included
+                </div>
                 <div className="mt-2 text-sm font-semibold text-black">
                   Get matches daily — plus 1:1 help to build your win plan.
                 </div>
-
                 <div className="mt-1 text-sm text-black/65">
                   An associate can walk you through next steps, outreach, and what to prioritize.
                 </div>
+              </div>
+            </div>
+          </div>
+
+          {/* INCLUDED SECTION (this was outside the component before — now it’s inside) */}
+          <div className="relative border-t border-black/10 bg-white/45 px-7 py-7 sm:px-10 sm:py-8">
+            <div className="mx-auto max-w-[980px]">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <div className="text-sm font-semibold text-black">Included</div>
+                  <div className="mt-1 text-sm text-black/65">
+                    Everything you get — built to help you move fast and win.
+                  </div>
+                </div>
+                <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-800">
+                  THE CONTRACTOR’S EDGE
+                </span>
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-3">
+                <Feature title="Priority ranking" desc="Top matches first — so you don’t waste time." />
+                <Feature title="Clear deal details" desc="Location, buyer, and estimated value at a glance." />
+                <Feature
+                  title="Ambit associate support"
+                  desc="1:1 help to build the plan and walk you through next steps."
+                  highlight
+                />
               </div>
             </div>
           </div>
