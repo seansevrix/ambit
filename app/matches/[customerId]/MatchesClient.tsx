@@ -197,29 +197,32 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [showProfile]);
 
+  // ✅ Portal modal (now pushed down + internally scrollable)
   const ProfileModal =
     mounted && showProfile
       ? createPortal(
-          <div style={styles.modalRoot} role="dialog" aria-modal="true">
+          <div style={styles.profileOverlay} role="dialog" aria-modal="true">
             <div
-              style={styles.modalBackdrop}
+              style={styles.profileBackdrop}
               onClick={() => setShowProfile(false)}
             />
-            <div style={styles.modalOuter}>
-              <div
-                style={styles.modalPanel}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div style={styles.modalTopRow}>
-                  <div style={styles.modalTitle}>Edit profile</div>
-                  <button
-                    onClick={() => setShowProfile(false)}
-                    style={styles.modalCloseBtn}
-                  >
-                    Close
-                  </button>
-                </div>
 
+            <div
+              style={styles.profilePanelWrap}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div style={styles.profileTopRow}>
+                <div style={styles.profileTitle}>Edit profile</div>
+                <button
+                  onClick={() => setShowProfile(false)}
+                  style={styles.profileCloseBtn}
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* ✅ The key: internal scroll, so nothing is covered by the top header */}
+              <div style={styles.profileScroll}>
                 <ProfileEditor
                   customerId={customerId}
                   onSaved={() => {
@@ -373,7 +376,12 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                           <div style={styles.scoreLabel}>{label}</div>
 
                           {m.url ? (
-                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
+                            <a
+                              href={m.url}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={styles.linkBtn}
+                            >
                               View Source →
                             </a>
                           ) : (
@@ -410,7 +418,10 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
                               {hasLongSummary ? (
-                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
+                                <button
+                                  onClick={() => toggleExpanded(key)}
+                                  style={styles.textBtn}
+                                >
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
@@ -489,54 +500,56 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.9,
   },
 
-  // ✅ PORTALED MODAL — will ALWAYS sit above sticky nav
-  modalRoot: {
+  // ✅ NEW PROFILE OVERLAY (pushed down + shorter + internal scroll)
+  profileOverlay: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    zIndex: 2147483647, // max-ish (beats everything)
+    inset: 0,
+    zIndex: 2147483647,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "flex-start",
+    padding: "92px 14px 18px", // ✅ push below sticky nav
   },
-  modalBackdrop: {
+  profileBackdrop: {
     position: "fixed",
-    top: 0,
-    left: 0,
-    width: "100vw",
-    height: "100vh",
-    background: "rgba(0,0,0,0.45)",
+    inset: 0,
+    background: "rgba(0,0,0,0.35)",
   },
-  modalOuter: {
+  profilePanelWrap: {
     position: "relative",
     width: "100%",
-    height: "100%",
-    overflowY: "auto",
-    padding: "18px 14px 28px",
-  },
-  modalPanel: {
     maxWidth: 980,
-    margin: "0 auto",
+    borderRadius: 18,
+    overflow: "hidden",
+    boxShadow: "0 30px 90px rgba(0,0,0,0.45)",
+    background: "rgba(255,255,255,0.92)",
   },
-  modalTopRow: {
+  profileTopRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 10,
-    color: "rgba(255,255,255,0.9)",
+    gap: 12,
+    padding: "12px 14px",
+    background: "rgba(255,255,255,0.92)",
+    borderBottom: "1px solid rgba(0,0,0,0.08)",
   },
-  modalTitle: {
+  profileTitle: {
     fontWeight: 900,
-    letterSpacing: 0.2,
-    opacity: 0.85,
+    color: "rgba(0,0,0,0.70)",
   },
-  modalCloseBtn: {
-    padding: "10px 14px",
+  profileCloseBtn: {
+    padding: "8px 12px",
     borderRadius: 999,
-    border: "1px solid rgba(255,255,255,0.18)",
-    background: "rgba(255,255,255,0.10)",
+    border: "1px solid rgba(0,0,0,0.10)",
+    background: "white",
     fontWeight: 900,
     cursor: "pointer",
-    color: "rgba(255,255,255,0.92)",
+    color: "rgba(0,0,0,0.70)",
+  },
+  profileScroll: {
+    padding: 14,
+    maxHeight: "calc(100vh - 140px)", // ✅ keeps it below header + within viewport
+    overflowY: "auto",
   },
 
   reportTopRow: {
