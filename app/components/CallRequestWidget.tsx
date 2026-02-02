@@ -95,10 +95,10 @@ export default function CallRequestWidget() {
 
     setSending(true);
     try {
+      // ✅ FIX #1: remove credentials: "include"
       const res = await fetch(`${API_BASE}/engine/leads/call-request`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        credentials: "include",
         body: JSON.stringify({
           firstName: firstName.trim(),
           phone: phone.trim(),
@@ -106,7 +106,9 @@ export default function CallRequestWidget() {
         }),
       });
 
+      // safer parsing (won’t throw if non-JSON)
       const json = await res.json().catch(() => ({}));
+
       if (!res.ok) {
         throw new Error(
           json?.error || json?.message || `Request failed (${res.status})`
