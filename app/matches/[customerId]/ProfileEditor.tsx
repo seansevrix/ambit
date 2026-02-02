@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
 const DEV_BACKEND = "http://localhost:5001";
@@ -20,6 +21,7 @@ const REQUEST_TIMEOUT_MS = 15000;
 const EMAIL_STORAGE_KEY = "ambit_login_email";
 
 type Segment = "residential" | "commercial" | "government";
+const DEFAULT_SEGMENTS: Segment[] = ["residential", "commercial", "government"];
 
 function abortableFetch(
   url: string,
@@ -58,11 +60,14 @@ function prettyErr(e: any) {
 export default function ProfileEditor(props: any) {
   const customerId = props?.customerId;
   const onSaved = props?.onSaved as undefined | (() => void);
+  const onClose = props?.onClose as undefined | (() => void);
 
   const id = useMemo(() => {
     const raw = Array.isArray(customerId) ? customerId[0] : customerId;
     return Number(raw);
   }, [customerId]);
+
+  const [mounted, setMounted] = useState(false);
 
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(true);
@@ -72,14 +77,17 @@ export default function ProfileEditor(props: any) {
   const [keywords, setKeywords] = useState("");
   const [naics, setNaics] = useState("");
 
-  const [segResidential, setSegResidential] = useState(true);
-  const [segCommercial, setSegCommercial] = useState(true);
-  const [segGovernment, setSegGovernment] = useState(true);
+  // Segments are preserved silently (no UI). Defaults to all.
+  const [segments, setSegments] = useState<Segment[]>(DEFAULT_SEGMENTS);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "loaded" | "saved">("idle");
   const [err, setErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     try {
@@ -100,6 +108,23 @@ export default function ProfileEditor(props: any) {
       // ignore
     }
   }, [email, remember]);
+
+  // Escape to close (if onClose provided)
+  // Escape to close (if onClose provided)
+useEffect(() => {
+  if (!mounted) return;
+  if (typeof onClose !== "function") return;
+
+  const handleClose = onClose;
+
+  function onKey(e: KeyboardEvent) {
+    if (e.key === "Escape") handleClose();
+  }
+
+  window.addEventListener("keydown", onKey);
+  return () => window.removeEventListener("keydown", onKey);
+}, [mounted, onClose]);
+
 
   async function loadProfile() {
     setErr(null);
@@ -149,9 +174,8 @@ export default function ProfileEditor(props: any) {
         ? customer.segments
         : [];
 
-      setSegResidential(segs.includes("residential"));
-      setSegCommercial(segs.includes("commercial"));
-      setSegGovernment(segs.includes("government"));
+      // Preserve existing segments if present; otherwise default to all.
+      setSegments(segs.length ? segs : DEFAULT_SEGMENTS);
 
       setStatus("loaded");
     } catch (e: any) {
@@ -175,15 +199,9 @@ export default function ProfileEditor(props: any) {
       return;
     }
 
-    const segments: Segment[] = [];
-    if (segResidential) segments.push("residential");
-    if (segCommercial) segments.push("commercial");
-    if (segGovernment) segments.push("government");
-
-    if (segments.length === 0) {
-      setErr("Select at least one market.");
-      return;
-    }
+    const segsToSend = Array.isArray(segments) && segments.length
+      ? segments
+      : DEFAULT_SEGMENTS;
 
     const naicsInput = naics.trim();
     const naicsCodes = parseNaicsCodes(naicsInput);
@@ -200,7 +218,7 @@ export default function ProfileEditor(props: any) {
         keywords: keywords.trim() || null,
         naics: naicsInput || null,
         naicsCodes,
-        segments,
+        segments: segsToSend,
       };
 
       const res = await abortableFetch(
@@ -230,155 +248,166 @@ export default function ProfileEditor(props: any) {
     }
   }
 
-  return (
-    <div className="rounded-3xl border border-black/10 bg-white/90 p-6 shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <div className="text-xs font-black tracking-[0.16em] text-black/45">
-            PROFILE
+  // Avoid SSR / hydration weirdness with portals
+  if (!mounted) return null;
+
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[9999] flex items-start justify-center p-4 pt-16 sm:pt-20 pb-6"
+      role="dialog"
+      aria-modal="true"
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close modal"
+        onClick={() => onClose?.()}
+        className="absolute inset-0 cursor-default bg-black/25"
+      />
+
+      {/* Panel */}
+      <div className="relative w-full max-w-[720px] overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl max-h-[calc(100dvh-6rem)] flex flex-col">
+        {/* Header (stays fixed) */}
+        <div className="flex items-start justify-between gap-4 px-6 py-5 border-b border-black/10">
+          <div>
+            <div className="text-xs font-black tracking-[0.16em] text-black/45">
+              PROFILE
+            </div>
+            <div className="mt-1 text-xl font-black tracking-tight text-black">
+              Edit your match settings
+            </div>
+            <div className="mt-1 text-sm text-black/60">
+              This controls your daily matches and scoring.
+            </div>
           </div>
-          <div className="mt-1 text-xl font-black tracking-tight text-black">
-            Edit your match settings
-          </div>
-          <div className="mt-1 text-sm text-black/60">
-            This controls your daily matches and scoring.
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={loadProfile}
+              disabled={loading || saving}
+              className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/70 hover:bg-black/[0.03] disabled:opacity-60"
+            >
+              {loading ? "Loading…" : "Load"}
+            </button>
+
+            <button
+              type="button"
+              onClick={saveProfile}
+              disabled={saving || loading}
+              className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B] disabled:opacity-60"
+            >
+              {saving ? "Saving…" : "Save"}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => onClose?.()}
+              className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/60 hover:bg-black/[0.03]"
+            >
+              Close
+            </button>
           </div>
         </div>
 
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={loadProfile}
-            disabled={loading || saving}
-            className="rounded-xl border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/70 hover:bg-black/[0.03] disabled:opacity-60"
-          >
-            {loading ? "Loading…" : "Load"}
-          </button>
-          <button
-            type="button"
-            onClick={saveProfile}
-            disabled={saving || loading}
-            className="rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B] disabled:opacity-60"
-          >
-            {saving ? "Saving…" : "Save"}
-          </button>
+        {/* Body (scrolls) */}
+        <div className="flex-1 overflow-y-auto px-6 py-5">
+          <div className="grid gap-4">
+            <div>
+              <div className="text-xs font-semibold text-black/55">
+                Email (required to edit)
+              </div>
+              <input
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@company.com"
+                className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+              />
+              <label className="mt-2 flex items-center gap-2 text-xs text-black/55">
+                <input
+                  type="checkbox"
+                  checked={remember}
+                  onChange={(e) => setRemember(e.target.checked)}
+                />
+                Remember email on this device
+              </label>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="text-xs font-semibold text-black/55">
+                  Company name
+                </div>
+                <input
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
+                  placeholder="Your Company"
+                  className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+                />
+              </div>
+
+              <div>
+                <div className="text-xs font-semibold text-black/55">
+                  Service area
+                </div>
+                <input
+                  value={serviceArea}
+                  onChange={(e) => setServiceArea(e.target.value)}
+                  placeholder="City, county, or state"
+                  className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+                />
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold text-black/55">Keywords</div>
+              <input
+                value={keywords}
+                onChange={(e) => setKeywords(e.target.value)}
+                placeholder="plumbing, drain, water heater, commercial…"
+                className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+              />
+              <div className="mt-2 text-xs text-black/45">
+                Comma-separated is best.
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-semibold text-black/55">
+                NAICS codes
+              </div>
+              <input
+                value={naics}
+                onChange={(e) => setNaics(e.target.value)}
+                placeholder="238220, 221310…"
+                className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+              />
+              <div className="mt-2 text-xs text-black/45">
+                We’ll extract valid codes automatically on save.
+              </div>
+            </div>
+
+            {err ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {err}
+              </div>
+            ) : null}
+
+            {status === "saved" ? (
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+                Saved. If your match list doesn’t update immediately, refresh the
+                page.
+              </div>
+            ) : null}
+
+            <div className="text-xs text-black/45">
+              Tip: click <b>Load</b> first to pull your current profile, then
+              edit and hit <b>Save</b>.
+            </div>
+          </div>
         </div>
       </div>
-
-      <div className="mt-5 grid gap-4">
-        <div>
-          <div className="text-xs font-semibold text-black/55">
-            Email (required to edit)
-          </div>
-          <input
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@company.com"
-            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-          />
-          <label className="mt-2 flex items-center gap-2 text-xs text-black/55">
-            <input
-              type="checkbox"
-              checked={remember}
-              onChange={(e) => setRemember(e.target.checked)}
-            />
-            Remember email on this device
-          </label>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <div className="text-xs font-semibold text-black/55">Company name</div>
-            <input
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              placeholder="Your Company"
-              className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-            />
-          </div>
-
-          <div>
-            <div className="text-xs font-semibold text-black/55">Service area</div>
-            <input
-              value={serviceArea}
-              onChange={(e) => setServiceArea(e.target.value)}
-              placeholder="City, county, or state"
-              className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-            />
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs font-semibold text-black/55">Keywords</div>
-          <input
-            value={keywords}
-            onChange={(e) => setKeywords(e.target.value)}
-            placeholder="plumbing, drain, water heater, commercial…"
-            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-          />
-          <div className="mt-2 text-xs text-black/45">Comma-separated is best.</div>
-        </div>
-
-        <div>
-          <div className="text-xs font-semibold text-black/55">NAICS codes</div>
-          <input
-            value={naics}
-            onChange={(e) => setNaics(e.target.value)}
-            placeholder="238220, 221310…"
-            className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-          />
-          <div className="mt-2 text-xs text-black/45">
-            We’ll extract valid codes automatically on save.
-          </div>
-        </div>
-
-        <div>
-          <div className="text-xs font-semibold text-black/55">Markets</div>
-          <div className="mt-2 flex flex-wrap gap-2">
-            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
-              <input
-                type="checkbox"
-                checked={segResidential}
-                onChange={(e) => setSegResidential(e.target.checked)}
-              />
-              Residential
-            </label>
-            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
-              <input
-                type="checkbox"
-                checked={segCommercial}
-                onChange={(e) => setSegCommercial(e.target.checked)}
-              />
-              Commercial
-            </label>
-            <label className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-2 text-sm text-black/70">
-              <input
-                type="checkbox"
-                checked={segGovernment}
-                onChange={(e) => setSegGovernment(e.target.checked)}
-              />
-              Government
-            </label>
-          </div>
-        </div>
-
-        {err ? (
-          <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-            {err}
-          </div>
-        ) : null}
-
-        {status === "saved" ? (
-          <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
-            Saved. If your match list doesn’t update immediately, refresh the page.
-          </div>
-        ) : null}
-
-        <div className="text-xs text-black/45">
-          Tip: click <b>Load</b> first to pull your current profile, then edit and hit{" "}
-          <b>Save</b>.
-        </div>
-      </div>
-    </div>
+    </div>,
+    document.body
   );
 }
