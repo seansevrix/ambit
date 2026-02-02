@@ -292,9 +292,15 @@ export default function HomePage() {
               Stop hunting. Start receiving.
             </h1>
 
-            <p className="mx-auto mt-4 max-w-2xl text-lg text-black/65">
-              Matched opportunities, emailed daily.
-            </p>
+            {/* Subheading */}
+<p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
+  Matched opportunities, emailed daily.
+</p>
+
+{/* Smaller line under it */}
+<p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
+  For tradespeople. Built by tradespeople.
+</p>
 
             <div className="mt-9 flex items-center justify-center">
               <div className="relative inline-flex">
