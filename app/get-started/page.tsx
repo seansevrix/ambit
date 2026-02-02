@@ -39,8 +39,12 @@ function LoadingFallback() {
           </div>
 
           <div className="min-w-0">
-            <div className="text-black text-base font-semibold">Getting your setup ready…</div>
-            <div className="text-black/60 text-sm mt-0.5">Loading your profile builder.</div>
+            <div className="text-black text-base font-semibold">
+              Getting your setup ready…
+            </div>
+            <div className="text-black/60 text-sm mt-0.5">
+              Loading your profile builder.
+            </div>
           </div>
         </div>
 
@@ -48,7 +52,9 @@ function LoadingFallback() {
           <div className="h-full w-[55%] bg-black/30" />
         </div>
 
-        <div className="mt-4 text-xs text-black/50">One moment — this usually takes a second.</div>
+        <div className="mt-4 text-xs text-black/50">
+          One moment — this usually takes a second.
+        </div>
       </div>
     </div>
   );
@@ -76,6 +82,32 @@ function Step({
   );
 }
 
+function MicroTrustRow() {
+  const items = [
+    { k: "No credit card", v: "required" },
+    { k: "Setup time", v: "~60 seconds" },
+    { k: "Edit anytime", v: "keywords + NAICS" },
+  ];
+
+  return (
+    <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {items.map((x) => (
+          <div key={x.k} className="flex items-center gap-3">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
+              <span className="h-2 w-2 rounded-full bg-[#1A4FA3]" />
+            </span>
+            <div className="leading-tight">
+              <div className="text-xs font-semibold text-black/55">{x.k}</div>
+              <div className="text-sm font-black text-black/80">{x.v}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <main className="min-h-screen text-black">
@@ -98,7 +130,10 @@ export default function Page() {
       <div className="mx-auto max-w-[980px] px-6 py-12 lg:px-10">
         {/* Top row */}
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-black/60 hover:text-black">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-black/60 hover:text-black"
+          >
             ← Back
           </Link>
 
@@ -117,8 +152,12 @@ export default function Page() {
           </h1>
 
           <p className="mt-3 max-w-2xl text-black/65">
-            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
-            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>.
+            Create your profile in about 60 seconds. We’ll deliver ranked matches
+            daily across{" "}
+            <span className="font-semibold text-black/80">
+              Residential • Commercial • Government
+            </span>
+            .
           </p>
 
           {/* Trust bar */}
@@ -134,7 +173,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* SIGNUP CARD (keep this as the main centerpiece) */}
+        {/* SIGNUP CARD */}
         <div className="mt-10 rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
@@ -162,7 +201,7 @@ export default function Page() {
           </div>
         </div>
 
-        {/* BELOW THE SIGNUP CARD: add the “other shit” in stacked sections */}
+        {/* BELOW */}
         <div className="mt-8 space-y-4">
           {/* What happens next */}
           <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
@@ -187,8 +226,8 @@ export default function Page() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and
-              deliver opportunities. No spam.
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT
+              uses your profile only to match and deliver opportunities. No spam.
             </div>
           </div>
 
@@ -197,25 +236,33 @@ export default function Page() {
             <div className="text-lg font-black">Perfect for</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70"
-                >
-                  {t}
-                </span>
-              ))}
+              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map(
+                (t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
+                  >
+                    {t}
+                  </span>
+                )
+              )}
             </div>
 
             <div className="mt-4 text-sm text-black/55">
               You can update keywords/NAICS anytime to refine matches.
             </div>
+
+            <div className="mt-3 text-xs text-black/50">
+              Popular keywords:{" "}
+              <span className="font-semibold text-black/60">
+                emergency, preventive maintenance, install, repair, demo, cleanup
+              </span>
+            </div>
           </div>
         </div>
 
-        <div className="mt-8 text-center text-xs text-black/45">
-          Tip: Keywords + NAICS makes matching dramatically more accurate.
-        </div>
+        {/* Replace the lonely tip with a clean micro-trust row */}
+        <MicroTrustRow />
       </div>
     </main>
   );
