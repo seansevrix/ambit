@@ -2,6 +2,7 @@
 
 import type { CSSProperties } from "react";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import ProfileEditor from "./ProfileEditor";
 
 type MatchItem = {
@@ -79,6 +80,8 @@ function prettyErr(e: any) {
 export default function MatchesClient({ customerId }: { customerId: number }) {
   const baseUrl = useMemo(() => API_BASE, []);
 
+  const [mounted, setMounted] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [needsSub, setNeedsSub] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
@@ -86,6 +89,8 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showProfile, setShowProfile] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   const toggleExpanded = (key: string) => {
     setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -172,7 +177,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     return () => clearInterval(timer);
   }, [load]);
 
-  // ✅ Lock scroll while the profile modal is open (prevents weird overlap behavior)
+  // Lock scroll while modal is open
   useEffect(() => {
     if (!showProfile) return;
     const prev = document.body.style.overflow;
@@ -182,7 +187,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     };
   }, [showProfile]);
 
-  // ✅ ESC closes the profile modal
+  // ESC closes modal
   useEffect(() => {
     if (!showProfile) return;
     function onKey(e: KeyboardEvent) {
@@ -191,6 +196,42 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showProfile]);
+
+  const ProfileModal =
+    mounted && showProfile
+      ? createPortal(
+          <div style={styles.modalRoot} role="dialog" aria-modal="true">
+            <div
+              style={styles.modalBackdrop}
+              onClick={() => setShowProfile(false)}
+            />
+            <div style={styles.modalOuter}>
+              <div
+                style={styles.modalPanel}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div style={styles.modalTopRow}>
+                  <div style={styles.modalTitle}>Edit profile</div>
+                  <button
+                    onClick={() => setShowProfile(false)}
+                    style={styles.modalCloseBtn}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <ProfileEditor
+                  customerId={customerId}
+                  onSaved={() => {
+                    void load();
+                  }}
+                />
+              </div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
 
   if (loading) {
     return (
@@ -213,6 +254,8 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
   return (
     <div style={styles.shell}>
+      {ProfileModal}
+
       <div style={styles.container}>
         <div style={styles.pageHeader}>
           <div>
@@ -230,35 +273,6 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
             </button>
           </div>
         </div>
-
-        {/* ✅ Profile modal overlay (always above your sticky SiteNav) */}
-        {showProfile ? (
-          <div style={styles.modalRoot} role="dialog" aria-modal="true">
-            <div
-              style={styles.modalBackdrop}
-              onClick={() => setShowProfile(false)}
-            />
-            <div style={styles.modalWrap}>
-              <div style={styles.modalTopRow}>
-                <button
-                  onClick={() => setShowProfile(false)}
-                  style={styles.modalCloseBtn}
-                >
-                  Close
-                </button>
-              </div>
-
-              {/* This is your existing ProfileEditor card. No changes needed inside it. */}
-              <ProfileEditor
-                customerId={customerId}
-                onSaved={() => {
-                  // reload matches after profile save
-                  void load();
-                }}
-              />
-            </div>
-          </div>
-        ) : null}
 
         {needsSub ? (
           <div style={styles.card}>
@@ -359,12 +373,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                           <div style={styles.scoreLabel}>{label}</div>
 
                           {m.url ? (
-                            <a
-                              href={m.url}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={styles.linkBtn}
-                            >
+                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
                               View Source →
                             </a>
                           ) : (
@@ -390,8 +399,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
                           {m.profileIncomplete ? (
                             <div style={styles.callout}>
-                              Profile incomplete — add services/keywords/NAICS for
-                              better matches.
+                              Profile incomplete — add services/keywords/NAICS for better matches.
                             </div>
                           ) : null}
                         </div>
@@ -402,18 +410,14 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
                               {hasLongSummary ? (
-                                <button
-                                  onClick={() => toggleExpanded(key)}
-                                  style={styles.textBtn}
-                                >
+                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
                             </>
                           ) : (
                             <div style={styles.body}>
-                              No summary yet. (Next step: auto-generate this from
-                              the posting.)
+                              No summary yet. (Next step: auto-generate this from the posting.)
                             </div>
                           )}
                         </div>
@@ -485,28 +489,45 @@ const styles: Record<string, CSSProperties> = {
     opacity: 0.9,
   },
 
-  // ✅ MODAL STYLES
+  // ✅ PORTALED MODAL — will ALWAYS sit above sticky nav
   modalRoot: {
     position: "fixed",
-    inset: 0,
-    zIndex: 9999, // higher than any sticky header
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
+    zIndex: 2147483647, // max-ish (beats everything)
   },
   modalBackdrop: {
     position: "fixed",
-    inset: 0,
+    top: 0,
+    left: 0,
+    width: "100vw",
+    height: "100vh",
     background: "rgba(0,0,0,0.45)",
   },
-  modalWrap: {
+  modalOuter: {
     position: "relative",
+    width: "100%",
+    height: "100%",
+    overflowY: "auto",
+    padding: "18px 14px 28px",
+  },
+  modalPanel: {
     maxWidth: 980,
     margin: "0 auto",
-    padding: "18px 16px 28px",
-    marginTop: 18,
   },
   modalTopRow: {
     display: "flex",
-    justifyContent: "flex-end",
+    alignItems: "center",
+    justifyContent: "space-between",
     marginBottom: 10,
+    color: "rgba(255,255,255,0.9)",
+  },
+  modalTitle: {
+    fontWeight: 900,
+    letterSpacing: 0.2,
+    opacity: 0.85,
   },
   modalCloseBtn: {
     padding: "10px 14px",
