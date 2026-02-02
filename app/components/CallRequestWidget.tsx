@@ -15,8 +15,10 @@ const RAW_BASE =
 
 const API_BASE = String(RAW_BASE).replace(/\/$/, "");
 
-const DISMISS_KEY = "ambit_call_widget_dismissed_v1";
+const MODE_KEY = "ambit_call_widget_mode_v1"; // "docked" | "hidden"
 const SUBMITTED_KEY = "ambit_call_widget_submitted_v1";
+
+type Mode = "modal" | "docked" | "hidden";
 
 function digitsOnly(s: string) {
   return String(s || "").replace(/[^\d]/g, "");
@@ -24,12 +26,11 @@ function digitsOnly(s: string) {
 
 function isValidPhone(s: string) {
   const d = digitsOnly(s);
-  // allow US 10-digit, or 11-digit starting with 1
   return d.length === 10 || (d.length === 11 && d.startsWith("1"));
 }
 
 export default function CallRequestWidget() {
-  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>("hidden");
   const [firstName, setFirstName] = useState("");
   const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
@@ -40,27 +41,44 @@ export default function CallRequestWidget() {
     return !!firstName.trim() && isValidPhone(phone) && !sending && !sent;
   }, [firstName, phone, sending, sent]);
 
-  // Auto-open after a short delay, but only if not dismissed/submitted before
+  // Boot: show modal after delay unless previously submitted, or user already minimized it.
   useEffect(() => {
     try {
-      const dismissed = localStorage.getItem(DISMISS_KEY) === "1";
       const submitted = localStorage.getItem(SUBMITTED_KEY) === "1";
-      if (dismissed || submitted) return;
+      if (submitted) return;
+
+      const saved = (localStorage.getItem(MODE_KEY) || "") as Mode;
+      if (saved === "docked") {
+        setMode("docked");
+        return;
+      }
+      if (saved === "hidden") {
+        setMode("hidden");
+        return;
+      }
     } catch {
       // ignore
     }
 
-    const t = setTimeout(() => setOpen(true), 9000);
+    const t = setTimeout(() => setMode("modal"), 7000);
     return () => clearTimeout(t);
   }, []);
 
-  function dismiss() {
-    setOpen(false);
+  function persistMode(next: Mode) {
+    setMode(next);
     try {
-      localStorage.setItem(DISMISS_KEY, "1");
+      if (next === "modal") {
+        // don’t persist modal
+        return;
+      }
+      localStorage.setItem(MODE_KEY, next);
     } catch {
       // ignore
     }
+  }
+
+  function minimize() {
+    persistMode("docked");
   }
 
   async function submit() {
@@ -70,7 +88,6 @@ export default function CallRequestWidget() {
       setErr("Please enter your first name.");
       return;
     }
-
     if (!isValidPhone(phone)) {
       setErr("Please enter a valid phone number.");
       return;
@@ -91,7 +108,9 @@ export default function CallRequestWidget() {
 
       const json = await res.json().catch(() => ({}));
       if (!res.ok) {
-        throw new Error(json?.error || json?.message || `Request failed (${res.status})`);
+        throw new Error(
+          json?.error || json?.message || `Request failed (${res.status})`
+        );
       }
 
       setSent(true);
@@ -107,12 +126,15 @@ export default function CallRequestWidget() {
     }
   }
 
-  // Collapsed button (when closed)
-  if (!open) {
+  // Nothing to show
+  if (mode === "hidden") return null;
+
+  // Docked pill
+  if (mode === "docked") {
     return (
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={() => setMode("modal")}
         className="fixed bottom-6 right-6 z-50 hidden sm:inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/80 shadow-lg hover:bg-black/[0.03]"
       >
         <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -121,9 +143,18 @@ export default function CallRequestWidget() {
     );
   }
 
+  // Modal mode (forced pop-up; user must minimize)
   return (
-    <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:bottom-6 z-50 w-auto sm:w-[360px]">
-      <div className="rounded-3xl border border-black/10 bg-white shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Minimize"
+        onClick={minimize}
+        className="absolute inset-0 bg-black/25"
+      />
+
+      <div className="relative w-full max-w-[440px] rounded-3xl border border-black/10 bg-white shadow-2xl overflow-hidden">
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-black/10">
           <div className="min-w-0">
             <div className="text-xs font-black tracking-[0.16em] text-black/45">
@@ -133,18 +164,17 @@ export default function CallRequestWidget() {
               Still haven’t signed up?
             </div>
             <div className="mt-1 text-sm text-black/65 leading-relaxed">
-              AMBIT would love a quick 5-minute phone call to learn your needs and
-              show you how matches work.
+              AMBIT would love a quick 5-minute phone call to learn your needs
+              and show you how matches work.
             </div>
           </div>
 
           <button
             type="button"
-            onClick={dismiss}
+            onClick={minimize}
             className="rounded-xl border border-black/10 bg-white px-3 py-2 text-xs font-semibold text-black/60 hover:bg-black/[0.03]"
-            aria-label="Close"
           >
-            Close
+            Minimize
           </button>
         </div>
 
@@ -153,13 +183,14 @@ export default function CallRequestWidget() {
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
               <div className="font-semibold">Thank you.</div>
               <div className="mt-1 text-emerald-900/80">
-                An AMBIT associate will reach out via call within the next business day.
+                An AMBIT associate will reach out via call within the next
+                business day.
               </div>
 
               <button
                 type="button"
-                onClick={dismiss}
-                className="mt-4 inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-4 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
+                onClick={minimize}
+                className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B]"
               >
                 Done
               </button>
@@ -168,7 +199,9 @@ export default function CallRequestWidget() {
             <>
               <div className="grid gap-3">
                 <div>
-                  <div className="text-xs font-semibold text-black/55">First name</div>
+                  <div className="text-xs font-semibold text-black/55">
+                    First name
+                  </div>
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
@@ -178,7 +211,9 @@ export default function CallRequestWidget() {
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-black/55">Phone number</div>
+                  <div className="text-xs font-semibold text-black/55">
+                    Phone number
+                  </div>
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
@@ -187,7 +222,8 @@ export default function CallRequestWidget() {
                     className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                   />
                   <div className="mt-2 text-[11px] text-black/45 leading-relaxed">
-                    By submitting, you agree AMBIT may contact you about your account.
+                    By submitting, you agree AMBIT may contact you about your
+                    account.
                   </div>
                 </div>
 
@@ -210,7 +246,7 @@ export default function CallRequestWidget() {
 
                 <button
                   type="button"
-                  onClick={dismiss}
+                  onClick={minimize}
                   className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/60 hover:bg-black/[0.03]"
                 >
                   Not now
