@@ -436,9 +436,6 @@ export default function TestimonialsPage() {
             <Link href="/get-started" className={PRIMARY}>
               Start Free Trial — No Credit Card
             </Link>
-            <Link href="/pricing" className={SECONDARY}>
-              View Pricing
-            </Link>
           </div>
         </div>
 
