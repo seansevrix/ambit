@@ -145,11 +145,14 @@ export default function LandingEmailPreview({ market = "government" }: { market?
             </h2>
 
             <p className="mt-3 max-w-[72ch] text-sm leading-relaxed text-black/70 sm:text-base">
-              Bid opportunities matched to your NAICS + scope — ranked by fit. The goal is simple:{" "}
-              <span className="font-semibold text-black/80">
-                you see what to pursue, why it fits, and what to do next.
-              </span>
-            </p>
+  Bid opportunities matched to your NAICS + scope — ranked by fit.
+</p>
+
+<p className="mt-2 max-w-[72ch] text-sm leading-relaxed text-black/70 sm:text-base">
+  <span className="font-semibold text-black/80">
+    The goal is simple: you see what to pursue, why it fits, and what to do next.
+  </span>
+</p>
 
             {/* DIGEST CARD */}
             <div className="mt-7 rounded-2xl border border-black/10 bg-white/85 p-6 shadow-[0_10px_30px_rgba(6,16,23,0.10)]">
