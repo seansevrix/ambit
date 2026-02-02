@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
-import SiteNav from "./components/SiteNav";
+import NavGate from "./components/NavGate";
 import SiteFooter from "./components/SiteFooter";
 import SiteBackground from "./components/SiteBackground";
 import { Analytics } from "@vercel/analytics/react";
@@ -72,7 +72,7 @@ export default function RootLayout({
         <div className="relative z-10 min-h-screen flex flex-col">
           {/* ✅ Fixed nav that never scrolls away */}
           <div className="fixed inset-x-0 top-0 z-[150]">
-            <SiteNav />
+            <NavGate />
           </div>
 
           {/* ✅ Push page content below fixed nav */}
