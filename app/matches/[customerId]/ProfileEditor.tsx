@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
@@ -80,6 +80,8 @@ export default function ProfileEditor(props: any) {
   // Segments are preserved silently (no UI). Defaults to all.
   const [segments, setSegments] = useState<Segment[]>(DEFAULT_SEGMENTS);
 
+  const [autoLoadedOnce, setAutoLoadedOnce] = useState(false);
+
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<"idle" | "loaded" | "saved">("idle");
@@ -109,24 +111,7 @@ export default function ProfileEditor(props: any) {
     }
   }, [email, remember]);
 
-  // Escape to close (if onClose provided)
-  // Escape to close (if onClose provided)
-useEffect(() => {
-  if (!mounted) return;
-  if (typeof onClose !== "function") return;
-
-  const handleClose = onClose;
-
-  function onKey(e: KeyboardEvent) {
-    if (e.key === "Escape") handleClose();
-  }
-
-  window.addEventListener("keydown", onKey);
-  return () => window.removeEventListener("keydown", onKey);
-}, [mounted, onClose]);
-
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     setErr(null);
 
     if (!Number.isFinite(id) || id <= 0) {
@@ -183,9 +168,40 @@ useEffect(() => {
     } finally {
       setLoading(false);
     }
-  }
+  }, [id, email]);
 
-  async function saveProfile() {
+  // ✅ Auto-load once when we have both: (a) valid customerId and (b) an email
+  useEffect(() => {
+    if (!mounted) return;
+    if (autoLoadedOnce) return;
+    if (!Number.isFinite(id) || id <= 0) return;
+
+    const e = email.trim().toLowerCase();
+    if (!e) return;
+
+    // Don't spam the server if user is editing / saving
+    if (loading || saving) return;
+
+    setAutoLoadedOnce(true);
+    loadProfile();
+  }, [mounted, autoLoadedOnce, id, email, loading, saving, loadProfile]);
+
+  // Escape to close (if onClose provided)
+  useEffect(() => {
+    if (!mounted) return;
+    if (typeof onClose !== "function") return;
+
+    const handleClose = onClose;
+
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") handleClose();
+    }
+
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [mounted, onClose]);
+
+  const saveProfile = useCallback(async () => {
     setErr(null);
 
     if (!Number.isFinite(id) || id <= 0) {
@@ -199,9 +215,8 @@ useEffect(() => {
       return;
     }
 
-    const segsToSend = Array.isArray(segments) && segments.length
-      ? segments
-      : DEFAULT_SEGMENTS;
+    const segsToSend =
+      Array.isArray(segments) && segments.length ? segments : DEFAULT_SEGMENTS;
 
     const naicsInput = naics.trim();
     const naicsCodes = parseNaicsCodes(naicsInput);
@@ -246,7 +261,7 @@ useEffect(() => {
     } finally {
       setSaving(false);
     }
-  }
+  }, [id, email, companyName, serviceArea, keywords, naics, segments, onSaved]);
 
   // Avoid SSR / hydration weirdness with portals
   if (!mounted) return null;
@@ -276,8 +291,12 @@ useEffect(() => {
             <div className="mt-1 text-xl font-black tracking-tight text-black">
               Edit your match settings
             </div>
-            <div className="mt-1 text-sm text-black/60">
-              This controls your daily matches and scoring.
+
+            {/* ✅ New highlighted helper copy */}
+            <div className="mt-3 inline-flex rounded-xl border border-[#63A7FF]/30 bg-[#EAF3FF] px-3 py-2 text-sm font-semibold leading-relaxed text-[#0B2A55]">
+              To help us find your most compatible matches, please provide as
+              much detail as possible. Comprehensive profiles lead to more
+              meaningful connections
             </div>
           </div>
 
@@ -319,7 +338,11 @@ useEffect(() => {
               </div>
               <input
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  // allow auto-load again if they change email intentionally
+                  setAutoLoadedOnce(false);
+                }}
                 placeholder="you@company.com"
                 className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
               />
@@ -401,8 +424,8 @@ useEffect(() => {
             ) : null}
 
             <div className="text-xs text-black/45">
-              Tip: click <b>Load</b> first to pull your current profile, then
-              edit and hit <b>Save</b>.
+              Tip: we auto-load your profile when possible. If it doesn’t fill
+              in, click <b>Load</b>.
             </div>
           </div>
         </div>
