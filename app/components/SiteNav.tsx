@@ -11,7 +11,7 @@ function openSignup() {
 
 export default function SiteNav() {
   return (
-    <header className="sticky top-0 z-[150] w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur">
+    <header className="w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur">
       <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-4 lg:px-10">
         {/* Left */}
         <Link href="/" className="flex items-center gap-3">

@@ -9,6 +9,9 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const META_PIXEL_ID = "1433466544843565";
 
+// Adjust if your nav overlaps content (72–84px usually)
+const NAV_HEIGHT = 72;
+
 export const metadata: Metadata = {
   metadataBase: new URL("https://www.ambitco.app"),
   title: "AMBIT",
@@ -62,15 +65,20 @@ export default function RootLayout({
       </head>
 
       <body className="relative min-h-screen bg-[#DEDEDE] text-black">
-        {/* ✅ SITE-WIDE BACKGROUND (must be rendered + must be above body paint) */}
+        {/* ✅ SITE-WIDE BACKGROUND */}
         <SiteBackground />
 
         {/* ✅ Everything visible goes above the background */}
         <div className="relative z-10 min-h-screen flex flex-col">
-          <SiteNav />
+          {/* ✅ Fixed nav that never scrolls away */}
+          <div className="fixed inset-x-0 top-0 z-[150]">
+            <SiteNav />
+          </div>
 
-          {/* pages control their own width/padding */}
-          <main className="flex-1 w-full">{children}</main>
+          {/* ✅ Push page content below fixed nav */}
+          <main className="flex-1 w-full" style={{ paddingTop: NAV_HEIGHT }}>
+            {children}
+          </main>
 
           <SiteFooter />
         </div>
