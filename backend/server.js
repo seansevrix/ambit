@@ -13,40 +13,29 @@ import billingRoutes from "./routes/billing.js";
 import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 import authRoutes from "./routes/auth.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
+import leadsRouter from "./routes/leads.js";
 
 const app = express();
 app.disable("x-powered-by");
 app.set("trust proxy", 1);
 
-// ✅ Stripe webhook must be mounted BEFORE express.json()
+/**
+ * ✅ Stripe webhook must be mounted BEFORE express.json()
+ * (Stripe needs the raw body in that route handler)
+ */
 app.use("/webhooks/stripe", stripeWebhookRoutes);
 
 // Logging
 app.use(morgan("dev"));
 
 /**
- * ✅ BODY PARSING
- * - JSON (including accidental text/plain JSON)
- * - URL-encoded (needed for List-Unsubscribe one-click POST)
- */
-app.use(
-  express.json({
-    limit: "2mb",
-    type: ["application/json", "text/plain", "application/*+json"],
-  })
-);
-app.use(express.urlencoded({ extended: false }));
-
-import leadsRouter from "./routes/leads.js";
-app.use("/engine/leads", leadsRouter);
-
-/**
  * ✅ CORS
+ * NOTE: Must run BEFORE routes so OPTIONS preflights succeed.
  */
 const allowedOrigins = [
   process.env.FRONTEND_URL, // e.g. https://ambitco.app
-  "https://www.ambitco.app",
   "https://ambitco.app",
+  "https://www.ambitco.app",
   "http://localhost:3000",
   "http://127.0.0.1:3000",
 ].filter(Boolean);
@@ -62,15 +51,28 @@ const corsOptions = {
   origin: (origin, callback) => {
     if (isAllowedOrigin(origin)) return callback(null, true);
     console.log("❌ CORS blocked origin:", origin);
-    return callback(null, false);
+    return callback(new Error("CORS blocked"), false);
   },
-  credentials: true,
+  credentials: true, // keep true for your authenticated routes
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization", "x-admin-key"],
 };
 
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+/**
+ * ✅ BODY PARSING
+ * - JSON (including accidental text/plain JSON)
+ * - URL-encoded (needed for List-Unsubscribe one-click POST)
+ */
+app.use(
+  express.json({
+    limit: "2mb",
+    type: ["application/json", "text/plain", "application/*+json"],
+  })
+);
+app.use(express.urlencoded({ extended: false }));
 
 /**
  * ✅ ROOT (Render sometimes probes / during deploy)
@@ -84,23 +86,35 @@ app.get("/", (req, res) => {
 app.get("/engine/health", (req, res) => res.status(200).json({ status: "ok" }));
 
 /**
- * ✅ Public routes (no auth) — unsubscribe links
+ * ✅ Public routes (no auth)
  */
 app.use("/public", unsubscribeRoutes);
 
-// Engine routes
+/**
+ * ✅ Lead capture (call requests)
+ * (CORS is already applied globally above)
+ */
+app.use("/engine/leads", leadsRouter);
+
+/**
+ * ✅ Engine routes
+ */
 app.use("/engine/auth", authRoutes);
 app.use("/engine", customersRoutes);
 app.use("/engine", opportunitiesRoutes);
 app.use("/engine", matchesRoutes);
 app.use("/engine/billing", billingRoutes);
 
-// 404 (for everything else)
+/**
+ * ✅ 404 (for everything else)
+ */
 app.use((req, res) => {
   res.status(404).json({ ok: false, error: "Route not found." });
 });
 
-// Error handler
+/**
+ * ✅ Error handler
+ */
 app.use((err, req, res, next) => {
   console.error("SERVER ERROR:", err);
   res.status(500).json({ ok: false, error: err?.message || "Server error." });

@@ -1,9 +1,31 @@
 import express from "express";
+import cors from "cors";
 
 const router = express.Router();
 
-const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.com";
-const RESEND_FROM = process.env.RESEND_FROM || "AMBIT <ambit@sevrixgov.com>";
+const ADMIN_NOTIFY_EMAIL =
+  process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.com";
+const RESEND_FROM =
+  process.env.RESEND_FROM || "AMBIT <ambit@sevrixgov.com>";
+
+const ALLOWED_ORIGINS = [
+  "https://ambitco.app",
+  "https://www.ambitco.app",
+  "http://localhost:3000",
+];
+
+const corsOptions = {
+  origin: (origin, cb) => {
+    // allow server-to-server / curl (no origin)
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    return cb(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  methods: ["POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type"],
+  credentials: false,
+  optionsSuccessStatus: 204,
+};
 
 async function sendResendEmail({ to, subject, html, text }) {
   const key = process.env.RESEND_API_KEY;
@@ -26,7 +48,9 @@ async function sendResendEmail({ to, subject, html, text }) {
 
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data?.message || data?.error || `Resend failed (${res.status})`);
+    throw new Error(
+      data?.message || data?.error || `Resend failed (${res.status})`
+    );
   }
   return data;
 }
@@ -35,7 +59,11 @@ function digitsOnly(s = "") {
   return String(s).replace(/[^\d]/g, "");
 }
 
-router.post("/call-request", async (req, res) => {
+// ✅ Preflight handler
+router.options("/call-request", cors(corsOptions));
+
+// ✅ Actual handler (with CORS)
+router.post("/call-request", cors(corsOptions), async (req, res) => {
   try {
     const firstName = String(req.body?.firstName || "").trim();
     const phone = String(req.body?.phone || "").trim();
@@ -48,7 +76,6 @@ router.post("/call-request", async (req, res) => {
     if (!phoneOk) return res.status(400).json({ error: "Valid phone is required." });
 
     const when = new Date().toISOString();
-
     const subject = `AMBIT call request: ${firstName} (${phone})`;
 
     const text =
