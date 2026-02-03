@@ -277,62 +277,6 @@ function PartnerStrip() {
   );
 }
 
-function ProgressBar({ label, percent }: { label: string; percent: number }) {
-  const clamped = Math.max(0, Math.min(100, Math.round(percent)));
-  return (
-    <div className="space-y-2">
-      <div className="flex items-center justify-between text-sm text-white/75">
-        <span>{label}</span>
-        <span className="text-white/55">Mentioned in {clamped}%</span>
-      </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/10">
-        <div className="h-full rounded-full bg-[#1A4FA3]" style={{ width: `${clamped}%` }} />
-      </div>
-    </div>
-  );
-}
-
-function SpotlightBox() {
-  const metrics: Array<{ label: string; percent: number | null }> = [
-    { label: "Less searching time", percent: 86 },
-    { label: "Clear summaries", percent: 81 },
-    { label: "Better-fit leads", percent: 78 },
-  ];
-
-  const hasNumeric = metrics.some((m) => typeof m.percent === "number");
-
-  return (
-    <div className={`${CARD} p-6`}>
-      <div className="flex items-center justify-between">
-        <div className="text-sm font-semibold">Spotlight Reviews</div>
-        <span className="text-xs text-white/50">
-          {hasNumeric ? "Signals from reviews" : "Frequently mentioned"}
-        </span>
-      </div>
-
-      <p className="mt-2 text-sm text-white/70">
-        What contractors consistently mention when using AMBIT.
-      </p>
-
-      <div className="mt-5 space-y-4">
-        {metrics.map((m) =>
-          typeof m.percent === "number" ? (
-            <ProgressBar key={m.label} label={m.label} percent={m.percent} />
-          ) : (
-            <div
-              key={m.label}
-              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-4 py-3"
-            >
-              <span className="text-sm text-white/80">{m.label}</span>
-              <span className="text-xs text-white/55">Frequently mentioned</span>
-            </div>
-          )
-        )}
-      </div>
-    </div>
-  );
-}
-
 function Carousel({ items }: { items: Testimonial[] }) {
   return (
     <div>
@@ -371,16 +315,18 @@ export default function TestimonialsPage() {
   const visibleCarousel = showMore ? rest : rest.slice(0, 6);
 
   return (
-    <main className="min-h-[100dvh] bg-[#070B18] text-white">
-      {/* Background glow + subtle grid (matches the site) */}
+    // Key iPhone fix: "break out" of any parent max-width wrapper
+    <main className="relative left-1/2 w-screen -translate-x-1/2 overflow-x-hidden min-h-[100dvh] text-white">
+      {/* Background glow + subtle grid (full-screen, even if parent is constrained) */}
       <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-[#070B18]" />
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(800px_520px_at_80%_25%,rgba(52,211,153,0.16),transparent_55%)]" />
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(255,255,255,0.25)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.25)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 md:py-20">
+      <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         {/* Hero */}
         <div className="mx-auto max-w-5xl text-center">
           <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
@@ -440,28 +386,22 @@ export default function TestimonialsPage() {
           </div>
         </div>
 
-        {/* Spotlight + Carousel */}
-        <div className="mt-10 grid gap-6 lg:grid-cols-12">
-          <div className="lg:col-span-4">
-            <SpotlightBox />
+        {/* Carousel only (Spotlight removed) */}
+        <div className="mt-10">
+          <Carousel items={visibleCarousel} />
+
+          <div className="mt-4 flex items-center justify-center">
+            <button
+              type="button"
+              onClick={() => setShowMore((s) => !s)}
+              className="rounded-xl border border-white/12 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 transition w-full sm:w-auto"
+            >
+              {showMore ? "Show Less" : "Show More"}
+            </button>
           </div>
 
-          <div className="lg:col-span-8">
-            <Carousel items={visibleCarousel} />
-
-            <div className="mt-4 flex items-center justify-center">
-              <button
-                type="button"
-                onClick={() => setShowMore((s) => !s)}
-                className="rounded-xl border border-white/12 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 transition w-full sm:w-auto"
-              >
-                {showMore ? "Show Less" : "Show More"}
-              </button>
-            </div>
-
-            <div className="mt-4 text-center text-xs text-white/45">
-              Star ratings shown reflect individual reviewers.
-            </div>
+          <div className="mt-4 text-center text-xs text-white/45">
+            Star ratings shown reflect individual reviewers.
           </div>
         </div>
 
