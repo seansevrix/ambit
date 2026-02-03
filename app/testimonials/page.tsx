@@ -390,15 +390,8 @@ export default function TestimonialsPage() {
         <div className="mt-10">
           <Carousel items={visibleCarousel} />
 
-          <div className="mt-4 flex items-center justify-center">
-            <button
-              type="button"
-              onClick={() => setShowMore((s) => !s)}
-              className="rounded-xl border border-white/12 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 transition w-full sm:w-auto"
-            >
-              {showMore ? "Show Less" : "Show More"}
-            </button>
-          </div>
+         
+          
 
           <div className="mt-4 text-center text-xs text-white/45">
             Star ratings shown reflect individual reviewers.
