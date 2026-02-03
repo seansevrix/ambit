@@ -163,11 +163,10 @@ export default function CallRequestWidget() {
               QUICK CHAT
             </div>
             <div className="mt-1 text-base font-black text-black leading-snug">
-              Still haven’t signed up?
+              Haven’t signed up yet?
             </div>
             <div className="mt-1 text-sm text-black/65 leading-relaxed">
-              AMBIT would love a quick 5-minute phone call to learn your needs
-              and show you how matches work.
+              Got 5 minutes? We’ll learn your needs and walk you through how matches work.
             </div>
           </div>
 
@@ -207,7 +206,7 @@ export default function CallRequestWidget() {
                   <input
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Sean"
+                    placeholder="Your Name"
                     className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                   />
                 </div>
