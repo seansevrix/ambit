@@ -98,9 +98,11 @@ const TESTIMONIALS: Testimonial[] = [
   {
     segment: "Commercial",
     quote: [
-      { t: "I sat on AMBIT for weeks because I thought setup would be complicated. " },
-      { t: "Fully up and running in under 5 minutes.", strong: true },
-      { t: " Now we get opportunities every morning instead of searching for hours." },
+      {
+        t: "Proposals for gov/commercial contracts always made me nervous, but the two Ambit associates I worked with for six weeks were incredible. ",
+      },
+      { t: "They took the stress out of it", strong: true },
+      { t: " and were awesome to work with." },
     ],
     stars: 5,
     name: "Sarah K.",
@@ -112,9 +114,12 @@ const TESTIMONIALS: Testimonial[] = [
   {
     segment: "Commercial",
     quote: [
-      { t: "We’ve tested a lot of tools. " },
-      { t: "Relevant opportunities and clear summaries saved our team hours.", strong: true },
-      { t: " It’s the first one that actually scales with us." },
+      { t: "Shout out to Sean at Ambit. " },
+      {
+        t: "We spent hours on a project last year that actually won, largely thanks to his hard work.",
+        strong: true,
+      },
+      { t: " He’s definitely someone who takes pride in his craft." },
     ],
     stars: 5,
     name: "David Chen",
