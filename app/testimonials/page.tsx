@@ -18,16 +18,16 @@ type Testimonial = {
 };
 
 const PRIMARY =
-  "inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#15428B] transition";
+  "inline-flex items-center justify-center rounded-xl bg-[#1A4FA3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#15428B] transition w-full sm:w-auto";
 
 const SECONDARY =
-  "inline-flex items-center justify-center rounded-xl border border-white/12 bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition";
+  "inline-flex items-center justify-center rounded-xl border border-white/12 bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition w-full sm:w-auto";
 
 const CARD =
   "rounded-2xl border border-white/10 bg-white/5 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]";
 
 const PILL =
-  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-4 py-2 text-sm text-white/85";
+  "inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 sm:px-4 py-2 text-xs sm:text-sm text-white/85 w-full sm:w-auto justify-center sm:justify-start";
 
 const LOGOS = {
   g2: "/logos/g2.png",
@@ -238,8 +238,8 @@ function QuoteCard({
 
 function G2Badge() {
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-white/12 bg-white/5 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10">
+    <div className="flex w-full sm:w-auto items-center gap-3 rounded-2xl border border-white/12 bg-white/5 px-4 py-3 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+      <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-white/10">
         <Img src={LOGOS.g2} alt="G2" className="h-7 w-7 rounded-sm" />
       </div>
 
@@ -262,13 +262,13 @@ function PartnerStrip() {
         Partnered with contractors working alongside:
       </div>
 
-      <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-10 gap-y-5">
+      <div className="mx-auto mt-4 flex max-w-4xl flex-wrap items-center justify-center gap-x-8 sm:gap-x-10 gap-y-5">
         {LOGOS.partners.map((b) => (
           <div key={b.name} className="flex items-center">
             <Img
               src={b.src}
               alt={b.name}
-              className="h-7 w-auto opacity-85 grayscale hover:opacity-100 hover:grayscale-0 transition"
+              className="h-6 sm:h-7 w-auto opacity-85 grayscale hover:opacity-100 hover:grayscale-0 transition"
             />
           </div>
         ))}
@@ -341,9 +341,10 @@ function Carousel({ items }: { items: Testimonial[] }) {
         <div className="text-xs text-white/50">Scroll →</div>
       </div>
 
-      <div className="mt-3 flex gap-4 overflow-x-auto pb-2 [-webkit-overflow-scrolling:touch]">
+      {/* Mobile-friendly horizontal scroll (prevents page overflow on iPhone) */}
+      <div className="mt-3 -mx-2 flex gap-4 overflow-x-auto px-2 pb-2 [-webkit-overflow-scrolling:touch]">
         {items.map((t) => (
-          <div key={t.name} className="w-[340px] flex-shrink-0">
+          <div key={t.name} className="w-[280px] sm:w-[340px] flex-shrink-0">
             <QuoteCard t={t} />
           </div>
         ))}
@@ -370,7 +371,7 @@ export default function TestimonialsPage() {
   const visibleCarousel = showMore ? rest : rest.slice(0, 6);
 
   return (
-    <main className="min-h-screen bg-[#070B18] text-white">
+    <main className="min-h-[100dvh] bg-[#070B18] text-white">
       {/* Background glow + subtle grid (matches the site) */}
       <div className="pointer-events-none fixed inset-0 -z-10">
         <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_0%,rgba(26,79,163,0.25),transparent_60%)]" />
@@ -379,7 +380,7 @@ export default function TestimonialsPage() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-16 md:py-20">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 py-12 sm:py-16 md:py-20">
         {/* Hero */}
         <div className="mx-auto max-w-5xl text-center">
           <div className="mx-auto flex w-fit items-center gap-2 rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold text-white/80">
@@ -390,21 +391,21 @@ export default function TestimonialsPage() {
             Live customer feedback
           </div>
 
-          <h1 className="mt-4 text-4xl font-semibold tracking-tight md:text-5xl">
+          <h1 className="mt-4 text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight">
             Trusted proof from real contractors
           </h1>
-          <p className="mt-4 text-white/70">
+          <p className="mt-4 text-sm sm:text-base text-white/70">
             Skimmable reviews from contractors using AMBIT to find better-fit opportunities faster.
           </p>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            <div className="flex flex-wrap items-center justify-center gap-3">
+            <div className="flex w-full flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
               <G2Badge />
               <div className={PILL}>{TRUST.contractorCountLabel}</div>
               <div className={PILL}>U.S. based businesses</div>
             </div>
 
-            <div className="flex flex-wrap items-center justify-center gap-3 text-sm text-white/70">
+            <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-sm text-white/70 leading-relaxed">
               <Stars value={5} />
               <span>
                 Average rating:{" "}
@@ -432,7 +433,7 @@ export default function TestimonialsPage() {
           <div className="text-sm text-white/70">
             Ready to see your matches? Start your trial — no credit card.
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-3">
+          <div className="flex w-full sm:w-auto flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
             <Link href="/get-started" className={PRIMARY}>
               Start Free Trial — No Credit Card
             </Link>
@@ -452,7 +453,7 @@ export default function TestimonialsPage() {
               <button
                 type="button"
                 onClick={() => setShowMore((s) => !s)}
-                className="rounded-xl border border-white/12 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+                className="rounded-xl border border-white/12 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white/90 hover:bg-white/10 transition w-full sm:w-auto"
               >
                 {showMore ? "Show Less" : "Show More"}
               </button>
