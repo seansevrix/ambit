@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
 const DEV_BACKEND = "http://localhost:5001";
@@ -15,34 +16,84 @@ const RAW_BASE =
 
 const API_BASE = String(RAW_BASE).replace(/\/$/, "");
 
+// If you set NEXT_PUBLIC_LEAD_CAPTURE_URL to your Formspree URL, we’ll post there.
+// Otherwise we’ll try your backend at /engine/leads/free-matches (you can add this route server-side).
+const LEAD_CAPTURE_URL =
+  process.env.NEXT_PUBLIC_LEAD_CAPTURE_URL ||
+  process.env.NEXT_PUBLIC_FORM_ENDPOINT ||
+  process.env.NEXT_PUBLIC_FORM_URL ||
+  `${API_BASE}/engine/leads/free-matches`;
+
 const MODE_KEY = "ambit_call_widget_mode_v1"; // "docked" | "hidden"
 const SUBMITTED_KEY = "ambit_call_widget_submitted_v1";
 
 type Mode = "modal" | "docked" | "hidden";
 
-function digitsOnly(s: string) {
-  return String(s || "").replace(/[^\d]/g, "");
-}
-
-function isValidPhone(s: string) {
-  const d = digitsOnly(s);
-  return d.length === 10 || (d.length === 11 && d.startsWith("1"));
+function isValidEmail(s: string) {
+  const email = String(s || "").trim();
+  if (!email) return false;
+  // Simple, practical validator (good enough for lead capture UI)
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email);
 }
 
 export default function CallRequestWidget() {
   const [mode, setMode] = useState<Mode>("hidden");
-  const [firstName, setFirstName] = useState("");
-  const [phone, setPhone] = useState("");
+  const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const canSubmit = useMemo(() => {
-    return !!firstName.trim() && isValidPhone(phone) && !sending && !sent;
-  }, [firstName, phone, sending, sent]);
+  const triggeredRef = useRef(false);
 
-  // Boot: show modal after delay unless previously submitted, or user already minimized it.
+  const canSubmit = useMemo(() => {
+    return isValidEmail(email) && !sending && !sent;
+  }, [email, sending, sent]);
+
+  function persistMode(next: Mode) {
+    setMode(next);
+    try {
+      if (next === "modal") return; // don’t persist modal
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      // ignore
+    }
+  }
+
+  function minimize() {
+    persistMode("docked");
+  }
+
+  // Boot: show modal via (exit intent OR scroll depth OR delay) unless previously submitted,
+  // or user already minimized it.
   useEffect(() => {
+    let delayTimer: any = null;
+
+    const cleanupFns: Array<() => void> = [];
+
+    function cleanup() {
+      cleanupFns.forEach((fn) => {
+        try {
+          fn();
+        } catch {
+          // ignore
+        }
+      });
+      cleanupFns.length = 0;
+
+      if (delayTimer) {
+        clearTimeout(delayTimer);
+        delayTimer = null;
+      }
+    }
+
+    function showModalOnce() {
+      if (triggeredRef.current) return;
+      triggeredRef.current = true;
+      setMode("modal");
+      cleanup();
+    }
+
+    // Respect “submitted” + remembered mode
     try {
       const submitted = localStorage.getItem(SUBMITTED_KEY) === "1";
       if (submitted) return;
@@ -60,59 +111,64 @@ export default function CallRequestWidget() {
       // ignore
     }
 
-    const t = setTimeout(() => setMode("modal"), 7000);
-    return () => clearTimeout(t);
+    // Trigger #1: delay (give them time to read first)
+    delayTimer = setTimeout(() => showModalOnce(), 25000); // was 7s
+
+    // Trigger #2: scroll depth (user is engaged)
+    const onScroll = () => {
+      if (triggeredRef.current) return;
+      const doc = document.documentElement;
+      const scrollTop = window.scrollY || doc.scrollTop || 0;
+      const maxScroll = (doc.scrollHeight || 1) - (window.innerHeight || 1);
+      const pct = maxScroll > 0 ? scrollTop / maxScroll : 0;
+      if (pct >= 0.55) showModalOnce();
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    cleanupFns.push(() => window.removeEventListener("scroll", onScroll));
+
+    // Trigger #3: exit intent (desktop only-ish)
+    const onMouseOut = (e: MouseEvent) => {
+      if (triggeredRef.current) return;
+      // Leaving the viewport at the top
+      if (e.clientY <= 0) showModalOnce();
+    };
+    window.addEventListener("mouseout", onMouseOut);
+    cleanupFns.push(() => window.removeEventListener("mouseout", onMouseOut));
+
+    // Ensure we don’t keep listeners if component unmounts
+    return () => cleanup();
   }, []);
-
-  function persistMode(next: Mode) {
-    setMode(next);
-    try {
-      if (next === "modal") {
-        // don’t persist modal
-        return;
-      }
-      localStorage.setItem(MODE_KEY, next);
-    } catch {
-      // ignore
-    }
-  }
-
-  function minimize() {
-    persistMode("docked");
-  }
 
   async function submit() {
     setErr(null);
 
-    if (!firstName.trim()) {
-      setErr("Please enter your first name.");
-      return;
-    }
-    if (!isValidPhone(phone)) {
-      setErr("Please enter a valid phone number.");
+    if (!isValidEmail(email)) {
+      setErr("Please enter a valid email.");
       return;
     }
 
     setSending(true);
     try {
-      // ✅ FIX #1: remove credentials: "include"
-      const res = await fetch(`${API_BASE}/engine/leads/call-request`, {
+      const payload = {
+        email: email.trim(),
+        page: typeof window !== "undefined" ? window.location.href : null,
+        source: "free-matches-popup",
+        intent: "free-matches",
+      };
+
+      const res = await fetch(LEAD_CAPTURE_URL, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          firstName: firstName.trim(),
-          phone: phone.trim(),
-          page: typeof window !== "undefined" ? window.location.href : null,
-        }),
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(payload),
       });
 
-      // safer parsing (won’t throw if non-JSON)
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(
-          json?.error || json?.message || `Request failed (${res.status})`
-        );
+        throw new Error(json?.error || json?.message || `Request failed (${res.status})`);
       }
 
       setSent(true);
@@ -137,15 +193,15 @@ export default function CallRequestWidget() {
       <button
         type="button"
         onClick={() => setMode("modal")}
-        className="fixed bottom-6 right-6 z-50 hidden sm:inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/80 shadow-lg hover:bg-black/[0.03]"
+        className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/80 shadow-lg hover:bg-black/[0.03]"
       >
         <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        5-min call?
+        Free matches
       </button>
     );
   }
 
-  // Modal mode (forced pop-up; user must minimize)
+  // Modal mode
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
@@ -156,17 +212,20 @@ export default function CallRequestWidget() {
         className="absolute inset-0 bg-black/25"
       />
 
-      <div className="relative w-full max-w-[440px] rounded-3xl border border-black/10 bg-white shadow-2xl overflow-hidden">
-        <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-black/10">
+      <div className="relative w-full max-w-[440px] overflow-hidden rounded-3xl border border-black/10 bg-white shadow-2xl">
+        <div className="flex items-start justify-between gap-3 border-b border-black/10 px-5 py-4">
           <div className="min-w-0">
             <div className="text-xs font-black tracking-[0.16em] text-black/45">
-              QUICK CHAT
+              FREE MATCHES
             </div>
-            <div className="mt-1 text-base font-black text-black leading-snug">
-              Haven’t signed up yet?
+            <div className="mt-1 text-base font-black leading-snug text-black">
+              Want free matches tomorrow morning?
             </div>
-            <div className="mt-1 text-sm text-black/65 leading-relaxed">
-              Got 5 minutes? We’ll learn your needs and walk you through how matches work.
+            <div className="mt-1 text-sm leading-relaxed text-black/65">
+              Enter your email and we’ll send sample opportunities to show how AMBIT works.
+              <span className="block mt-1 text-[12px] text-black/45">
+                No spam. Unsubscribe anytime.
+              </span>
             </div>
           </div>
 
@@ -182,49 +241,43 @@ export default function CallRequestWidget() {
         <div className="px-5 py-4">
           {sent ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-4 text-sm text-emerald-900">
-              <div className="font-semibold">Thank you.</div>
+              <div className="font-semibold">You’re in.</div>
               <div className="mt-1 text-emerald-900/80">
-                An AMBIT associate will reach out via call within the next
-                business day.
+                We’ll email your matches starting tomorrow morning.
               </div>
 
-              <button
-                type="button"
-                onClick={minimize}
-                className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B]"
-              >
-                Done
-              </button>
+              <div className="mt-4 grid gap-2">
+                <Link
+                  href="/get-started"
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B]"
+                >
+                  Start 7-day free trial
+                </Link>
+
+                <button
+                  type="button"
+                  onClick={minimize}
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 hover:bg-black/[0.03]"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           ) : (
             <>
               <div className="grid gap-3">
                 <div>
-                  <div className="text-xs font-semibold text-black/55">
-                    First name
-                  </div>
+                  <div className="text-xs font-semibold text-black/55">Email</div>
                   <input
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Your Name"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Work email"
+                    inputMode="email"
+                    autoComplete="email"
                     className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                   />
-                </div>
-
-                <div>
-                  <div className="text-xs font-semibold text-black/55">
-                    Phone number
-                  </div>
-                  <input
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(555) 555-5555"
-                    inputMode="tel"
-                    className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
-                  />
-                  <div className="mt-2 text-[11px] text-black/45 leading-relaxed">
-                    By submitting, you agree AMBIT may contact you about your
-                    account.
+                  <div className="mt-2 text-[11px] leading-relaxed text-black/45">
+                    We’ll only use this to send your matches and AMBIT updates.
                   </div>
                 </div>
 
@@ -235,20 +288,27 @@ export default function CallRequestWidget() {
                 ) : null}
               </div>
 
-              <div className="mt-4 flex items-center gap-2">
+              <div className="mt-4 grid gap-2">
                 <button
                   type="button"
                   onClick={submit}
                   disabled={!canSubmit}
-                  className="inline-flex flex-1 items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B] disabled:opacity-60"
+                  className="inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B] disabled:opacity-60"
                 >
-                  {sending ? "Sending…" : "Request a call"}
+                  {sending ? "Sending…" : "Send my matches"}
                 </button>
+
+                <Link
+                  href="/get-started"
+                  className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 hover:bg-black/[0.03]"
+                >
+                  Or start the 7-day free trial
+                </Link>
 
                 <button
                   type="button"
                   onClick={minimize}
-                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/60 hover:bg-black/[0.03]"
+                  className="text-xs font-semibold text-black/45 hover:text-black/60"
                 >
                   Not now
                 </button>
