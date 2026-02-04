@@ -3,27 +3,6 @@
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 
-const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
-const DEV_BACKEND = "http://localhost:5001";
-const FALLBACK =
-  process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
-
-const RAW_BASE =
-  process.env.NEXT_PUBLIC_BACKEND_URL ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  process.env.NEXT_PUBLIC_API_BASE ||
-  FALLBACK;
-
-const API_BASE = String(RAW_BASE).replace(/\/$/, "");
-
-// If you set NEXT_PUBLIC_LEAD_CAPTURE_URL to your Formspree URL, we’ll post there.
-// Otherwise we’ll try your backend at /engine/leads/free-matches (you can add this route server-side).
-const LEAD_CAPTURE_URL =
-  process.env.NEXT_PUBLIC_LEAD_CAPTURE_URL ||
-  process.env.NEXT_PUBLIC_FORM_ENDPOINT ||
-  process.env.NEXT_PUBLIC_FORM_URL ||
-  `${API_BASE}/engine/leads/free-matches`;
-
 const MODE_KEY = "ambit_call_widget_mode_v1"; // "docked" | "hidden"
 const SUBMITTED_KEY = "ambit_call_widget_submitted_v1";
 
@@ -32,7 +11,6 @@ type Mode = "modal" | "docked" | "hidden";
 function isValidEmail(s: string) {
   const email = String(s || "").trim();
   if (!email) return false;
-  // Simple, practical validator (good enough for lead capture UI)
   return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/i.test(email);
 }
 
@@ -44,6 +22,12 @@ export default function CallRequestWidget() {
   const [err, setErr] = useState<string | null>(null);
 
   const triggeredRef = useRef(false);
+
+  // ✅ Formspree (or any lead-capture endpoint you control)
+  const LEAD_CAPTURE_URL =
+    process.env.NEXT_PUBLIC_LEAD_CAPTURE_URL ||
+    process.env.NEXT_PUBLIC_FORMSPREE_URL ||
+    "";
 
   const canSubmit = useMemo(() => {
     return isValidEmail(email) && !sending && !sent;
@@ -67,7 +51,6 @@ export default function CallRequestWidget() {
   // or user already minimized it.
   useEffect(() => {
     let delayTimer: any = null;
-
     const cleanupFns: Array<() => void> = [];
 
     function cleanup() {
@@ -112,9 +95,9 @@ export default function CallRequestWidget() {
     }
 
     // Trigger #1: delay (give them time to read first)
-    delayTimer = setTimeout(() => showModalOnce(), 25000); // was 7s
+    delayTimer = setTimeout(() => showModalOnce(), 25000);
 
-    // Trigger #2: scroll depth (user is engaged)
+    // Trigger #2: scroll depth
     const onScroll = () => {
       if (triggeredRef.current) return;
       const doc = document.documentElement;
@@ -126,16 +109,14 @@ export default function CallRequestWidget() {
     window.addEventListener("scroll", onScroll, { passive: true });
     cleanupFns.push(() => window.removeEventListener("scroll", onScroll));
 
-    // Trigger #3: exit intent (desktop only-ish)
+    // Trigger #3: exit intent (desktop)
     const onMouseOut = (e: MouseEvent) => {
       if (triggeredRef.current) return;
-      // Leaving the viewport at the top
       if (e.clientY <= 0) showModalOnce();
     };
     window.addEventListener("mouseout", onMouseOut);
     cleanupFns.push(() => window.removeEventListener("mouseout", onMouseOut));
 
-    // Ensure we don’t keep listeners if component unmounts
     return () => cleanup();
   }, []);
 
@@ -147,28 +128,38 @@ export default function CallRequestWidget() {
       return;
     }
 
+    if (!LEAD_CAPTURE_URL) {
+      setErr(
+        "Lead capture isn’t configured yet. Set NEXT_PUBLIC_LEAD_CAPTURE_URL in Vercel and redeploy."
+      );
+      return;
+    }
+
     setSending(true);
     try {
-      const payload = {
-        email: email.trim(),
-        page: typeof window !== "undefined" ? window.location.href : null,
-        source: "free-matches-popup",
-        intent: "free-matches",
-      };
+      // ✅ Formspree-friendly payload
+      const form = new FormData();
+      form.append("email", email.trim());
+      form.append(
+        "page",
+        typeof window !== "undefined" ? window.location.href : ""
+      );
+      form.append("source", "free-matches-popup");
+      form.append("intent", "free-matches");
+      form.append("_subject", "New AMBIT: Free matches request");
 
       const res = await fetch(LEAD_CAPTURE_URL, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify(payload),
+        headers: { Accept: "application/json" },
+        body: form,
       });
 
       const json = await res.json().catch(() => ({}));
 
       if (!res.ok) {
-        throw new Error(json?.error || json?.message || `Request failed (${res.status})`);
+        throw new Error(
+          json?.error || json?.message || `Request failed (${res.status})`
+        );
       }
 
       setSent(true);
@@ -184,7 +175,6 @@ export default function CallRequestWidget() {
     }
   }
 
-  // Nothing to show
   if (mode === "hidden") return null;
 
   // Docked pill
@@ -222,7 +212,8 @@ export default function CallRequestWidget() {
               Want free matches tomorrow morning?
             </div>
             <div className="mt-1 text-sm leading-relaxed text-black/65">
-              Enter your email and we’ll send sample opportunities to show how AMBIT works.
+              Enter your email and we’ll send sample opportunities to show how
+              AMBIT works.
               <span className="block mt-1 text-[12px] text-black/45">
                 No spam. Unsubscribe anytime.
               </span>
@@ -267,7 +258,9 @@ export default function CallRequestWidget() {
             <>
               <div className="grid gap-3">
                 <div>
-                  <div className="text-xs font-semibold text-black/55">Email</div>
+                  <div className="text-xs font-semibold text-black/55">
+                    Email
+                  </div>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
