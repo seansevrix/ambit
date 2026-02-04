@@ -287,7 +287,7 @@ function TestimonialsSection({ market }: { market: Market }) {
           </div>
         </div>
 
-        <div className="mt-3 text-xs font-semibold text-black/55">
+        <div className="mt-3 text-xs font-semibold text-black/60">
           7-day free trial • No credit card • First matches tomorrow morning
         </div>
       </div>
@@ -313,12 +313,12 @@ export default function HomePage() {
       <section className={`${CONTAINER} pt-14 pb-10`}>
         <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
           <div className="text-center">
-            {/* NEW: Offer badge (makes “free” obvious instantly) */}
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-black/70 shadow-sm">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              7-day free trial
+            {/* LOUDER: Offer badge */}
+            <div className="mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/20 bg-[#F4FAFF] px-5 py-2.5 text-sm font-black tracking-tight text-black/85 shadow-[0_10px_30px_rgba(92,116,255,0.18)]">
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.20)]" />
+              Free 7 days
               <span className="text-black/35">•</span>
-              No credit card
+              No card
             </div>
 
             <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl">
@@ -349,8 +349,8 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* NEW: microcopy under CTA (kills hesitation) */}
-            <div className="mt-3 text-xs font-semibold text-black/55">
+            {/* Slightly louder microcopy too */}
+            <div className="mt-3 text-xs font-semibold text-black/65">
               7-day free trial • No credit card • First matches tomorrow morning
             </div>
 
@@ -359,7 +359,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TOP MATCH PREVIEW (separate section — no more nested mega panels) */}
+      {/* TOP MATCH PREVIEW */}
       <section className={`${CONTAINER} pb-16`}>
         <LandingEmailPreview market={market} />
       </section>
