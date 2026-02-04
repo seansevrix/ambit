@@ -210,7 +210,10 @@ function TestimonialsSection({ market }: { market: Market }) {
 
                 <div className="mt-5 text-base leading-relaxed text-white/85">
                   {x.quote.map((p, i) => (
-                    <span key={i} className={p.strong ? "font-black text-white" : ""}>
+                    <span
+                      key={i}
+                      className={p.strong ? "font-black text-white" : ""}
+                    >
                       {p.t}
                     </span>
                   ))}
@@ -231,12 +234,18 @@ function TestimonialsSection({ market }: { market: Market }) {
                     </div>
 
                     <div>
-                      <div className="text-sm font-black text-white">{x.name}</div>
-                      <div className="text-xs font-semibold text-white/60">{x.role}</div>
+                      <div className="text-sm font-black text-white">
+                        {x.name}
+                      </div>
+                      <div className="text-xs font-semibold text-white/60">
+                        {x.role}
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-xs font-semibold text-white/45">{x.location}</div>
+                  <div className="text-xs font-semibold text-white/45">
+                    {x.location}
+                  </div>
                 </div>
               </div>
             ))}
@@ -273,9 +282,13 @@ function TestimonialsSection({ market }: { market: Market }) {
               className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
             >
               <ArrowBadge />
-              Sign Up
+              Start free trial
             </Link>
           </div>
+        </div>
+
+        <div className="mt-3 text-xs font-semibold text-black/55">
+          7-day free trial • No credit card • First matches tomorrow morning
         </div>
       </div>
     </section>
@@ -300,7 +313,15 @@ export default function HomePage() {
       <section className={`${CONTAINER} pt-14 pb-10`}>
         <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
           <div className="text-center">
-            <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
+            {/* NEW: Offer badge (makes “free” obvious instantly) */}
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-black/70 shadow-sm">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              7-day free trial
+              <span className="text-black/35">•</span>
+              No credit card
+            </div>
+
+            <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl">
               Stop hunting. Start receiving.
             </h1>
 
@@ -323,9 +344,14 @@ export default function HomePage() {
                   className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
                 >
                   <ArrowBadge />
-                  Sign Up
+                  Start free trial
                 </Link>
               </div>
+            </div>
+
+            {/* NEW: microcopy under CTA (kills hesitation) */}
+            <div className="mt-3 text-xs font-semibold text-black/55">
+              7-day free trial • No credit card • First matches tomorrow morning
             </div>
 
             <SignupSocialProof />
@@ -353,7 +379,9 @@ export default function HomePage() {
                 </div>
                 <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
                   <div className="text-4xl font-black text-[#34D399]">Daily</div>
-                  <div className="mt-1 text-sm text-black/65">Updated opportunities</div>
+                  <div className="mt-1 text-sm text-black/65">
+                    Updated opportunities
+                  </div>
                 </div>
               </div>
             </div>
@@ -387,21 +415,26 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black text-black">Move With Purpose.</div>
             <div className="mt-3 text-black/80">
-              Strategically aligning your business with the jobs in your chosen industry.
+              Strategically aligning your business with the jobs in your chosen
+              industry.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
-            <div className="text-2xl font-black">A Command Center for Your Company.</div>
+            <div className="text-2xl font-black">
+              A Command Center for Your Company.
+            </div>
             <div className="mt-3 text-white/90">
-              Use precision matching to find the right jobs and simple summaries to decide fast.
+              Use precision matching to find the right jobs and simple summaries to
+              decide fast.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Visibility Without Guesswork.</div>
             <div className="mt-3 text-black/70">
-              Built to prioritize transparency—so your status is clear at every stage.
+              Built to prioritize transparency—so your status is clear at every
+              stage.
             </div>
           </div>
         </div>
