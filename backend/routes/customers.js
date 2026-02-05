@@ -142,6 +142,27 @@ function normEmail(v) {
 }
 
 /**
+ * ✅ Normalize phone so email notifications are clean/consistent
+ */
+function normalizePhone(raw) {
+  const s = cleanStr(raw);
+  if (!s) return undefined;
+
+  const digits = s.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  }
+
+  if (digits.length === 11 && digits.startsWith("1")) {
+    return `+1 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7)}`;
+  }
+
+  // Keep original if international/custom format
+  return s;
+}
+
+/**
  * ✅ Array helpers
  */
 function normalizeStringArray(v) {
@@ -260,6 +281,7 @@ router.get("/customers/:id/profile", async (req, res) => {
         id: true,
         name: true,
         email: true,
+        phone: true,
         location: true,
         serviceArea: true,
         naics: true,
@@ -315,6 +337,7 @@ router.patch("/customers/:id/profile", async (req, res) => {
     }
 
     const name = optionalStr(body.name) || optionalStr(body.companyName);
+    const phone = normalizePhone(body.phone || body.phoneNumber);
 
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
     const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
@@ -329,6 +352,7 @@ router.patch("/customers/:id/profile", async (req, res) => {
 
     const data = {};
     if (name !== undefined) data.name = name;
+    if (phone !== undefined) data.phone = phone;
     if (location !== undefined) data.location = location;
     if (serviceArea !== undefined) data.serviceArea = serviceArea;
     if (naics !== undefined) data.naics = naics;
@@ -365,6 +389,7 @@ router.get("/customers", async (req, res) => {
         id: true,
         name: true,
         email: true,
+        phone: true,
         location: true,
         serviceArea: true,
         keywords: true,
@@ -405,6 +430,7 @@ router.get("/customers/:id", async (req, res) => {
         id: true,
         name: true,
         email: true,
+        phone: true,
         location: true,
         serviceArea: true,
         keywords: true,
@@ -441,7 +467,7 @@ router.post("/customers", async (req, res) => {
     const emailPrefix = email.includes("@") ? email.split("@")[0] : email;
     const nameForCreate = providedName || emailPrefix || "Customer";
 
-    const phone = optionalStr(body.phone);
+    const phone = normalizePhone(body.phone || body.phoneNumber);
     const industry = optionalStr(body.industry);
 
     const location = optionalStr(body.location) || optionalStr(body.serviceArea);
@@ -528,6 +554,7 @@ router.post("/customers", async (req, res) => {
       id: customer.id,
       name: customer.name,
       email: customer.email,
+      phone: customer.phone ?? null,
       location: customer.location,
       serviceArea: customer.serviceArea,
       services: customer.services,
@@ -633,6 +660,7 @@ router.post("/customers", async (req, res) => {
             <p style="margin:0 0 12px"><b>${customer.email}</b> just created a profile.</p>
             <ul style="margin:0;padding-left:18px">
               <li><b>Name:</b> ${customer.name || "—"}</li>
+              <li><b>Phone:</b> ${customer.phone || "—"}</li>
               <li><b>Location:</b> ${customer.location || customer.serviceArea || "—"}</li>
               <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
               <li><b>NAICS:</b> ${customer.naics || "—"}</li>
@@ -642,11 +670,22 @@ router.post("/customers", async (req, res) => {
           </div>
         `;
 
+        const text =
+          `New AMBIT signup\n` +
+          `Email: ${customer.email}\n` +
+          `Name: ${customer.name || "—"}\n` +
+          `Phone: ${customer.phone || "—"}\n` +
+          `Location: ${customer.location || customer.serviceArea || "—"}\n` +
+          `Segments: ${(customer.segments || []).join(", ") || "—"}\n` +
+          `NAICS: ${customer.naics || "—"}\n` +
+          `Keywords: ${customer.keywords || "—"}\n` +
+          `Trial ends: ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}`;
+
         void sendResendEmailSafe({
           to: ADMIN_NOTIFY_EMAIL,
           subject,
           html,
-          text: `New AMBIT signup: ${customer.email}`,
+          text,
         });
       }
     });
