@@ -17,7 +17,7 @@ function isValidEmail(s: string) {
 export default function CallRequestWidget() {
   const [mode, setMode] = useState<Mode>("hidden");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(""); // UI only
+  const [phone, setPhone] = useState("");
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -141,10 +141,14 @@ export default function CallRequestWidget() {
       // ✅ Formspree-friendly payload
       const form = new FormData();
       form.append("email", email.trim());
-      form.append(
-        "page",
-        typeof window !== "undefined" ? window.location.href : ""
-      );
+
+      const cleanPhone = phone.trim();
+      if (cleanPhone) {
+        form.append("phone", cleanPhone);
+        form.append("phone_number", cleanPhone); // optional alias
+      }
+
+      form.append("page", typeof window !== "undefined" ? window.location.href : "");
       form.append("source", "free-matches-popup");
       form.append("intent", "free-matches");
       form.append("_subject", "New AMBIT: Free matches request");
@@ -259,9 +263,7 @@ export default function CallRequestWidget() {
             <>
               <div className="grid gap-3">
                 <div>
-                  <div className="text-xs font-semibold text-black/55">
-                    Email
-                  </div>
+                  <div className="text-xs font-semibold text-black/55">Email</div>
                   <input
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -276,16 +278,14 @@ export default function CallRequestWidget() {
                 </div>
 
                 <div>
-                  <div className="text-xs font-semibold text-black/55">
-                    Phone Number
-                  </div>
+                  <div className="text-xs font-semibold text-black/55">Phone Number</div>
                   <input
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
+                    placeholder="(555) 123-4567"
                     type="tel"
                     inputMode="tel"
                     autoComplete="tel"
-                    placeholder="(555) 123-4567"
                     className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                   />
                 </div>

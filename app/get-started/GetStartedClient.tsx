@@ -87,7 +87,7 @@ export default function GetStartedClient() {
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState(""); // UI only
+  const [phone, setPhone] = useState("");
   const [serviceArea, setServiceArea] = useState("");
   const [keywords, setKeywords] = useState("");
   const [naics, setNaics] = useState("");
@@ -108,8 +108,12 @@ export default function GetStartedClient() {
 
     setLoading(true);
     try {
+      const trimmedPhone = phone.trim();
+
       const payload = {
         email: trimmedEmail,
+        phone: trimmedPhone || null,
+        phoneNumber: trimmedPhone || null, // optional alias for backend compatibility
         companyName: companyName.trim() || null,
         name: companyName.trim() || null,
         serviceArea: serviceArea.trim() || null,
