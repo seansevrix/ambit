@@ -87,6 +87,7 @@ export default function GetStartedClient() {
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState(""); // UI only
   const [serviceArea, setServiceArea] = useState("");
   const [keywords, setKeywords] = useState("");
   const [naics, setNaics] = useState("");
@@ -186,6 +187,19 @@ export default function GetStartedClient() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="you@company.com"
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+                  />
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-black/55">Phone number</div>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(555) 123-4567"
                     className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                   />
                 </div>

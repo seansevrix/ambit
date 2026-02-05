@@ -17,6 +17,7 @@ function isValidEmail(s: string) {
 export default function CallRequestWidget() {
   const [mode, setMode] = useState<Mode>("hidden");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState(""); // UI only
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
   const [err, setErr] = useState<string | null>(null);
@@ -272,6 +273,21 @@ export default function CallRequestWidget() {
                   <div className="mt-2 text-[11px] leading-relaxed text-black/45">
                     We’ll only use this to send your matches and AMBIT updates.
                   </div>
+                </div>
+
+                <div>
+                  <div className="text-xs font-semibold text-black/55">
+                    Phone Number
+                  </div>
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    type="tel"
+                    inputMode="tel"
+                    autoComplete="tel"
+                    placeholder="(555) 123-4567"
+                    className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+                  />
                 </div>
 
                 {err ? (
