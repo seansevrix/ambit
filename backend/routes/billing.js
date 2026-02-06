@@ -6,18 +6,25 @@ import prisma from "../lib/prismaClient.js";
 const router = express.Router();
 
 // ---- Stripe setup ----
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
+const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || "";
 
 // New preferred env vars
 const STRIPE_PRICE_ASSOCIATE = process.env.STRIPE_PRICE_ASSOCIATE || "";
 const STRIPE_PRICE_EXECUTIVE = process.env.STRIPE_PRICE_EXECUTIVE || "";
 
 // Back-compat env vars (older naming)
-const STRIPE_PRICE_SINGLE_ID = process.env.STRIPE_PRICE_SINGLE_ID || process.env.STRIPE_PRICE_SINGLE || "";
-const STRIPE_PRICE_ALL_ID = process.env.STRIPE_PRICE_ALL_ID || process.env.STRIPE_PRICE_ALL || "";
+const STRIPE_PRICE_SINGLE_ID =
+  process.env.STRIPE_PRICE_SINGLE_ID || process.env.STRIPE_PRICE_SINGLE || "";
+const STRIPE_PRICE_ALL_ID =
+  process.env.STRIPE_PRICE_ALL_ID || process.env.STRIPE_PRICE_ALL || "";
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ""; // legacy single fallback
 
-const TRIAL_DAYS = Number(process.env.STRIPE_TRIAL_DAYS || 7);
+// IMPORTANT: default is 0 (no Stripe trial)
+const parsedTrialDays = Number(process.env.STRIPE_TRIAL_DAYS || 0);
+const TRIAL_DAYS =
+  Number.isFinite(parsedTrialDays) && parsedTrialDays > 0
+    ? Math.floor(parsedTrialDays)
+    : 0;
 
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
@@ -160,6 +167,20 @@ async function createCheckoutSession(req, res) {
       customer.email || ""
     )}`;
 
+    // Build subscription_data without trial by default
+    const subscriptionData = {
+      metadata: {
+        customerId: String(customer.id),
+        plan,
+        tier: plan,
+      },
+    };
+
+    // Only include trial if explicitly configured (> 0)
+    if (TRIAL_DAYS > 0) {
+      subscriptionData.trial_period_days = TRIAL_DAYS;
+    }
+
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: stripeCustomerId,
@@ -174,14 +195,7 @@ async function createCheckoutSession(req, res) {
         plan,
         tier: plan,
       },
-      subscription_data: {
-        trial_period_days: TRIAL_DAYS,
-        metadata: {
-          customerId: String(customer.id),
-          plan,
-          tier: plan,
-        },
-      },
+      subscription_data: subscriptionData,
     });
 
     return res.status(200).json({
