@@ -3,6 +3,8 @@ import Link from "next/link";
 const WRAP = "mx-auto max-w-[1200px] px-6 lg:px-10";
 const TITLE = "text-xs font-semibold text-white/70";
 const LINK = "text-sm font-semibold text-white/55 hover:text-white transition";
+const PRIME_BTN =
+  "inline-flex items-center justify-center rounded-md border border-[#4C7DFF]/70 bg-[#2E5BFF]/20 px-3 py-2 text-sm font-semibold text-[#CFE0FF] hover:bg-[#2E5BFF]/30 hover:text-white transition";
 
 export default function SiteFooter() {
   return (
@@ -59,6 +61,9 @@ export default function SiteFooter() {
               </Link>
               <Link href="/get-started" className={LINK}>
                 Get started
+              </Link>
+              <Link href="/prime" className={PRIME_BTN}>
+                Ambit Prime
               </Link>
             </div>
           </div>
