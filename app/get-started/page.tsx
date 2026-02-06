@@ -6,8 +6,8 @@ import GetStartedClient from "./GetStartedClient";
 const TRUST_BADGES = [
   "7-day free trial",
   "No credit card required",
-  "$49.99/mo",
-  "$299/mo - Ambit Prime",
+  "$49.99/mo - Individual",
+  "$299/mo - Executive",
 ];
 
 function LockIcon() {
