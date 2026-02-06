@@ -29,7 +29,7 @@ function LockIcon() {
 }
 
 function BlueCheck() {
-  return <span className="text-[#1A4FA3] font-black">✓</span>;
+  return <span className="font-black text-[#1A4FA3]">✓</span>;
 }
 
 function LoadingFallback() {
@@ -97,47 +97,44 @@ function MicroTrustRow() {
   );
 }
 
-function PlanCard({
-  tier,
+function PlanReferenceCard({
+  name,
   price,
   subtitle,
   badge,
-  features,
-  description,
-  href,
+  bullets,
+  note,
   featured = false,
 }: {
-  tier: string;
+  name: string;
   price: string;
   subtitle: string;
   badge: string;
-  features: string[];
-  description: string;
-  href: string;
+  bullets: string[];
+  note: string;
   featured?: boolean;
 }) {
   return (
     <div
       className={[
-        "rounded-3xl border bg-white/78 p-6 backdrop-blur-md transition-all duration-200",
+        "rounded-3xl border p-6 bg-white/75 backdrop-blur-md",
         featured
-          ? "border-[#1A4FA3]/45 shadow-[0_20px_55px_rgba(26,79,163,0.18)]"
+          ? "border-[#1A4FA3]/35 shadow-[0_20px_55px_rgba(26,79,163,0.16)]"
           : "border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.10)]",
-        "hover:-translate-y-[2px] hover:shadow-[0_24px_60px_rgba(0,0,0,0.13)]",
       ].join(" ")}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="text-4xl leading-none font-black tracking-tight">{tier}</div>
+          <div className="text-4xl font-black tracking-tight">{name}</div>
           <div className="mt-2 text-3xl font-black">{price}</div>
           <div className="mt-1 text-sm text-black/60">{subtitle}</div>
         </div>
 
         <span
           className={[
-            "rounded-full border px-3 py-1 text-[11px] font-bold",
+            "rounded-full px-3 py-1 text-[11px] font-bold border",
             featured
-              ? "border-[#1A4FA3]/35 bg-[#1A4FA3]/8 text-[#1A4FA3]"
+              ? "border-[#1A4FA3]/30 bg-[#1A4FA3]/10 text-[#1A4FA3]"
               : "border-black/15 bg-white text-black/65",
           ].join(" ")}
         >
@@ -146,31 +143,17 @@ function PlanCard({
       </div>
 
       <ul className="mt-5 space-y-2.5">
-        {features.map((f) => (
-          <li key={f} className="flex items-start gap-2 text-[15px] text-black/85">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2 text-[15px] text-black/86">
             <span className="mt-[1px]">
               <BlueCheck />
             </span>
-            <span>{f}</span>
+            <span>{b}</span>
           </li>
         ))}
       </ul>
 
-      <p className="mt-5 text-sm text-black/62">{description}</p>
-
-      <div className="mt-5">
-        <Link
-          href={href}
-          className={[
-            "inline-flex items-center justify-center rounded-xl border px-4 py-2.5 text-sm font-semibold transition",
-            featured
-              ? "border-[#1A4FA3] bg-[#1A4FA3] text-white hover:brightness-110"
-              : "border-black/20 bg-white text-black hover:bg-black/5",
-          ].join(" ")}
-        >
-          Choose {tier}
-        </Link>
-      </div>
+      <p className="mt-5 text-sm text-black/62">{note}</p>
     </div>
   );
 }
@@ -215,8 +198,9 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 max-w-3xl text-black/65">
-            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
+          <p className="mt-3 max-w-2xl text-black/65">
+            Create your profile in about 60 seconds. We’ll deliver ranked matches
+            daily across{" "}
             <span className="font-semibold text-black/80">
               Residential • Commercial • Government
             </span>
@@ -236,7 +220,7 @@ export default function Page() {
         </div>
 
         {/* SIGNUP CARD */}
-        <div id="signup-card" className="mt-10 rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+        <div className="mt-10 rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center font-black">
@@ -263,22 +247,22 @@ export default function Page() {
           </div>
         </div>
 
-        {/* PLAN DETAILS */}
+        {/* PLAN REFERENCE ONLY */}
         <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <h2 className="text-2xl font-black tracking-tight">Choose the support level that fits your growth</h2>
-            <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/8 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
-              Blue check = included
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <h2 className="text-2xl font-black tracking-tight">Plan details (reference)</h2>
+            <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
+              Your 7-day access flow remains unchanged
             </span>
           </div>
 
           <div className="mt-5 grid gap-5 lg:grid-cols-2">
-            <PlanCard
-              tier="Associate"
+            <PlanReferenceCard
+              name="Associate"
               price="$49.99/mo"
               subtitle="Daily matched opportunities"
               badge="Best for getting started"
-              features={[
+              bullets={[
                 "Residential, Commercial, and Government matches",
                 "Ranked opportunities delivered daily",
                 "AMBIT-built proposal",
@@ -286,17 +270,16 @@ export default function Page() {
                 "Fast setup and simple dashboard access",
                 "24/7 Associate Support",
               ]}
-              description="Great fit for operators who want consistent opportunity flow and fast execution."
-              href="/get-started?plan=associate#signup-card"
+              note="Great fit for operators who want consistent opportunity flow and fast execution."
             />
 
-            <PlanCard
-              tier="Executive"
+            <PlanReferenceCard
+              featured
+              name="Executive"
               price="$299/mo"
               subtitle="Includes AMBIT Prime support"
               badge="Most growth-focused"
-              featured
-              features={[
+              bullets={[
                 "Everything in Associate",
                 "AMBIT Prime contracts lane",
                 "No wait times for commercial/government credentials",
@@ -304,49 +287,43 @@ export default function Page() {
                 "AMBIT-built proposal",
                 "Higher-touch coordination for bid execution",
               ]}
-              description="Built for teams targeting bigger contracts with faster support and tighter coordination."
-              href="/get-started?plan=executive#signup-card"
+              note="Built for teams targeting bigger contracts with faster support and tighter coordination."
             />
           </div>
-        </div>
 
-        {/* WHAT YOU NEED */}
-        <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-          <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
-          <p className="mt-2 text-sm text-black/62">
-            We help organize and guide the process, but these are the key items most service companies should have ready for contract work.
-          </p>
+          <div className="mt-6">
+            <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
+            <p className="mt-2 text-sm text-black/62">
+              We help organize and guide the process, but these are the key items most service companies should have ready for contract work:
+            </p>
 
-          <div className="mt-5 grid gap-5 md:grid-cols-2">
-            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
-              <div className="font-bold text-black/85">Core business docs</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Active business license(s)</span></li>
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Certificate of Insurance (COI)</span></li>
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Service area + scope of work details</span></li>
-              </ul>
+            <div className="mt-4 grid gap-4 md:grid-cols-2">
+              <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="font-bold text-black/85">Core business docs</div>
+                <ul className="mt-3 space-y-2 text-sm">
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Active business license(s)</span></li>
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Certificate of Insurance (COI)</span></li>
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Service area + scope of work details</span></li>
+                </ul>
+              </div>
+
+              <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="font-bold text-black/85">Bid & pricing readiness</div>
+                <ul className="mt-3 space-y-2 text-sm">
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Pricing sheet (labor, materials, markups)</span></li>
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Project timeline + staffing assumptions</span></li>
+                  <li className="flex items-start gap-2"><BlueCheck /> <span>Past project references/examples when available</span></li>
+                </ul>
+              </div>
             </div>
 
-            <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
-              <div className="font-bold text-black/85">Bid & pricing readiness</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Pricing sheet (labor, materials, markups)</span></li>
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Project timeline + staffing assumptions</span></li>
-                <li className="flex items-start gap-2"><BlueCheck /> <span>Past project references/examples when available</span></li>
-              </ul>
+            <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
+              Executive gives you the fastest AMBIT support lane for commercial/government credential workflows and tighter bid coordination.
             </div>
           </div>
 
-          <div className="mt-5 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/6 p-4 text-sm text-black/75">
-            <span className="font-semibold text-[#1A4FA3]">Executive:</span> fastest AMBIT support lane for commercial/government credential workflows and tighter bid coordination.
-          </div>
-        </div>
-
-        {/* COMPARISON */}
-        <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-          <h3 className="text-xl font-black">Side-by-side comparison</h3>
-
-          <div className="mt-4 overflow-x-auto">
+          <div className="mt-6 overflow-x-auto">
+            <h3 className="text-xl font-black mb-3">Side-by-side comparison</h3>
             <table className="w-full min-w-[760px] text-sm">
               <thead>
                 <tr className="border-b border-black/10 text-left">
@@ -355,7 +332,7 @@ export default function Page() {
                   <th className="py-3 px-4 font-semibold text-black/65">Executive</th>
                 </tr>
               </thead>
-              <tbody className="text-black/80">
+              <tbody className="text-black/82">
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Residential + Commercial + Government matches</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
@@ -413,35 +390,61 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Existing helpful block */}
+        {/* BELOW */}
         <div className="mt-8 space-y-4">
           <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
             <div className="text-lg font-black">What happens next</div>
 
             <div className="mt-4 space-y-4">
-              <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → match accuracy." />
-              <Step n={2} title="You select your plan" desc="Choose Associate or Executive based on your support needs." />
-              <Step n={3} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
+              <Step
+                n={1}
+                title="We build your profile"
+                desc="Service area + keywords + NAICS → match accuracy."
+              />
+              <Step
+                n={2}
+                title="Matches email daily"
+                desc="Ranked opportunities delivered every morning."
+              />
+              <Step
+                n={3}
+                title="You get the winning plan"
+                desc="Reply to connect with an AMBIT associate for strategy."
+              />
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT
+              uses your profile only to match and deliver opportunities. No spam.
             </div>
           </div>
 
           <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
             <div className="text-lg font-black">Perfect for</div>
+
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
-                >
-                  {t}
-                </span>
-              ))}
+              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map(
+                (t) => (
+                  <span
+                    key={t}
+                    className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
+                  >
+                    {t}
+                  </span>
+                )
+              )}
             </div>
-            <div className="mt-4 text-sm text-black/55">You can update keywords/NAICS anytime to refine matches.</div>
+
+            <div className="mt-4 text-sm text-black/55">
+              You can update keywords/NAICS anytime to refine matches.
+            </div>
+
+            <div className="mt-3 text-xs text-black/50">
+              Popular keywords:{" "}
+              <span className="font-semibold text-black/60">
+                emergency, preventive maintenance, install, repair, demo, cleanup
+              </span>
+            </div>
           </div>
         </div>
 

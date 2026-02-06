@@ -1,7 +1,6 @@
 // app/get-started/GetStartedClient.tsx
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -19,15 +18,10 @@ const API_BASE = (
 const REQUEST_TIMEOUT_MS = 15000;
 
 type Market = "residential" | "commercial" | "government";
-type Plan = "associate" | "executive";
 
 function normalizeMarket(m: string | null): Market {
   if (m === "commercial" || m === "government" || m === "residential") return m;
   return "residential";
-}
-
-function normalizePlan(p: string | null): Plan {
-  return p === "executive" ? "executive" : "associate";
 }
 
 async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
@@ -60,7 +54,6 @@ export default function GetStartedClient() {
   const sp = useSearchParams();
 
   const intent = useMemo(() => normalizeMarket(sp.get("intent")), [sp]);
-  const selectedPlan = useMemo(() => normalizePlan(sp.get("plan")), [sp]);
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
@@ -89,7 +82,7 @@ export default function GetStartedClient() {
       const payload = {
         email: trimmedEmail,
         phone: trimmedPhone || null,
-        phoneNumber: trimmedPhone || null, // backend compatibility alias
+        phoneNumber: trimmedPhone || null, // optional alias for backend compatibility
         companyName: companyName.trim() || null,
         name: companyName.trim() || null,
         serviceArea: serviceArea.trim() || null,
@@ -114,12 +107,8 @@ export default function GetStartedClient() {
         json?.customer?.customerId ??
         null;
 
-      const q = new URLSearchParams();
-      q.set("email", trimmedEmail);
-      q.set("plan", selectedPlan);
-      if (id != null && Number.isFinite(Number(id))) q.set("customerId", String(Number(id)));
-
-      router.push(`/choose-plan?${q.toString()}`);
+      if (id) router.push(`/matches/${id}`);
+      else router.push(`/matches`);
     } catch (e: any) {
       setErr(e?.message || "Something went wrong. Please try again.");
     } finally {
@@ -129,20 +118,6 @@ export default function GetStartedClient() {
 
   return (
     <div className="grid gap-4">
-      {/* plan preselect */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-black/55">Selected plan:</span>
-        <span className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/80">
-          {selectedPlan === "executive" ? "Executive ($299/mo)" : "Associate ($49.99/mo)"}
-        </span>
-        <Link
-          href={selectedPlan === "executive" ? "/get-started?plan=associate#signup-card" : "/get-started?plan=executive#signup-card"}
-          className="text-xs font-semibold text-[#1A4FA3] hover:underline"
-        >
-          Switch
-        </Link>
-      </div>
-
       <div>
         <div className="text-xs font-semibold text-black/55">Work email *</div>
         <input
@@ -220,14 +195,14 @@ export default function GetStartedClient() {
         <button
           onClick={onContinue}
           disabled={loading}
-          className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-10 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(26,79,163,0.30)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-full bg-[#63A7FF] px-10 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(99,167,255,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Working..." : "Continue to plan selection"}
+          {loading ? "Working…" : "Continue"}
         </button>
       </div>
 
-      <div className="pt-1 text-center text-xs text-black/45">
-        No credit card required for profile setup. Billing starts only after you choose a plan.
+      <div className="pt-1 text-center text-xs text-black/40">
+        Secure signup • 7-day free access starts after profile creation
       </div>
     </div>
   );
