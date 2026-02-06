@@ -1,5 +1,5 @@
 // app/get-started/page.tsx
-import { Suspense } from "react";
+import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
 
@@ -158,6 +158,24 @@ function PlanReferenceCard({
   );
 }
 
+/** Subtle blue-highlight frame to make the signup card feel alive */
+function GlowFrame({ children, className = "" }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={[
+        className,
+        "rounded-[30px] p-[1.5px]",
+        "bg-[linear-gradient(135deg,rgba(26,79,163,0.46),rgba(99,167,255,0.28),rgba(26,79,163,0.10))]",
+        "shadow-[0_28px_90px_rgba(26,79,163,0.20)]",
+      ].join(" ")}
+    >
+      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <main className="min-h-screen text-black">
@@ -220,7 +238,7 @@ export default function Page() {
         </div>
 
         {/* SIGNUP CARD */}
-        <div className="mt-10 rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md shadow-[0_24px_80px_rgba(0,0,0,0.12)]">
+        <GlowFrame className="mt-10">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center font-black">
@@ -245,7 +263,7 @@ export default function Page() {
               <GetStartedClient />
             </Suspense>
           </div>
-        </div>
+        </GlowFrame>
 
         {/* PLAN REFERENCE ONLY */}
         <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
