@@ -6,7 +6,7 @@ import GetStartedClient from "./GetStartedClient";
 const TRUST_BADGES = [
   "7-day free trial",
   "No credit card required",
-  "$49.99/mo - Individual",
+  "$49.99/mo - Associate",
   "$299/mo - Executive",
 ];
 
