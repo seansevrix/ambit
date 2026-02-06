@@ -61,6 +61,7 @@ function ChoosePlanInner() {
 
   const [email, setEmail] = useState(emailFromQuery);
   const [selectedPlan, setSelectedPlan] = useState<PlanKey>(planFromQuery);
+  const [hoveredPlan, setHoveredPlan] = useState<PlanKey | null>(null);
   const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
   const [error, setError] = useState("");
 
@@ -90,7 +91,8 @@ function ChoosePlanInner() {
         cta: "Choose Executive",
         bullets: [
           "Everything in Associate",
-          "AMBIT Prime contracts lane — no wait times for commercial/government credentials",
+          "AMBIT Prime contracts lane",
+          "No wait times for commercial/government credentials",
           "Priority support path",
           "AMBIT-built proposal",
           "Higher-touch coordination for bid execution",
@@ -111,8 +113,9 @@ function ChoosePlanInner() {
     { label: "AMBIT-built proposal", associate: true, executive: true },
     { label: "Project breakdown and description", associate: true, executive: true },
     { label: "24/7 support access", associate: true, executive: true },
+    { label: "AMBIT Prime contracts lane", associate: false, executive: true },
     {
-      label: "AMBIT Prime contracts lane (commercial/government credentials)",
+      label: "No wait times for commercial/government credentials",
       associate: false,
       executive: true,
     },
@@ -155,9 +158,11 @@ function ChoosePlanInner() {
     }
   }
 
+  const associateActive = selectedPlan === "associate" || hoveredPlan === "associate";
+  const executiveActive = selectedPlan === "executive" || hoveredPlan === "executive";
+
   return (
     <main className="mx-auto max-w-[1160px] px-6 py-14 text-black sm:py-20">
-      {/* Header */}
       <header className="max-w-3xl">
         <h1 className="text-4xl font-black tracking-tight sm:text-5xl">Choose your AMBIT plan</h1>
         <p className="mt-3 text-lg text-black/72">
@@ -166,7 +171,6 @@ function ChoosePlanInner() {
         </p>
       </header>
 
-      {/* Email */}
       <section className="mt-7 max-w-2xl">
         <label className="mb-2 block text-sm font-semibold text-black/75">Work email</label>
         <input
@@ -180,14 +184,17 @@ function ChoosePlanInner() {
         />
       </section>
 
-      {/* Plan cards */}
       <section className="mt-8 grid gap-6 md:grid-cols-2">
         {/* Associate */}
         <article
+          onMouseEnter={() => setHoveredPlan("associate")}
+          onMouseLeave={() => setHoveredPlan((v) => (v === "associate" ? null : v))}
+          onFocus={() => setHoveredPlan("associate")}
+          onBlur={() => setHoveredPlan((v) => (v === "associate" ? null : v))}
           className={[
-            "rounded-2xl border bg-white/85 p-6 transition",
-            selectedPlan === "associate"
-              ? "border-[#1A4FA3]/45 ring-2 ring-[#1A4FA3]/20"
+            "rounded-2xl border bg-white/85 p-6 transition duration-200",
+            associateActive
+              ? "border-[#1A4FA3]/55 ring-2 ring-[#1A4FA3]/20 shadow-[0_12px_38px_rgba(26,79,163,0.14)] -translate-y-0.5"
               : "border-black/12",
           ].join(" ")}
         >
@@ -241,11 +248,15 @@ function ChoosePlanInner() {
 
         {/* Executive */}
         <article
+          onMouseEnter={() => setHoveredPlan("executive")}
+          onMouseLeave={() => setHoveredPlan((v) => (v === "executive" ? null : v))}
+          onFocus={() => setHoveredPlan("executive")}
+          onBlur={() => setHoveredPlan((v) => (v === "executive" ? null : v))}
           className={[
-            "rounded-2xl border bg-white/90 p-6 shadow-[0_12px_40px_rgba(26,79,163,0.15)] transition",
-            selectedPlan === "executive"
-              ? "border-[#1A4FA3]/55 ring-2 ring-[#1A4FA3]/25"
-              : "border-[#1A4FA3]/30",
+            "rounded-2xl border bg-white/90 p-6 transition duration-200",
+            executiveActive
+              ? "border-[#1A4FA3]/70 ring-2 ring-[#1A4FA3]/25 shadow-[0_16px_45px_rgba(26,79,163,0.18)] -translate-y-0.5"
+              : "border-[#1A4FA3]/30 shadow-[0_12px_40px_rgba(26,79,163,0.12)]",
           ].join(" ")}
         >
           <div className="flex items-start justify-between gap-3">
@@ -297,7 +308,6 @@ function ChoosePlanInner() {
         </article>
       </section>
 
-      {/* Clear requirements section */}
       <section className="mt-8 rounded-2xl border border-black/10 bg-white/80 p-6">
         <h3 className="text-2xl font-black tracking-tight">What you’ll need to bid confidently</h3>
         <p className="mt-2 text-black/72">
@@ -331,7 +341,6 @@ function ChoosePlanInner() {
         </p>
       </section>
 
-      {/* Comparison */}
       <section className="mt-8 rounded-2xl border border-black/10 bg-white/80 p-6">
         <h3 className="text-xl font-black">Side-by-side comparison</h3>
         <div className="mt-4 overflow-x-auto">
