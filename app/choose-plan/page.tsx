@@ -1,12 +1,17 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 type Plan = "associate" | "executive";
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "";
+const BACKEND_URL = (
+  process.env.NEXT_PUBLIC_BACKEND_URL ||
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_BASE ||
+  ""
+).replace(/\/$/, "");
 
 const PLAN_COPY: Record<
   Plan,
@@ -34,8 +39,9 @@ const PLAN_COPY: Record<
   },
 };
 
-export default function ChoosePlanPage() {
+function ChoosePlanInner() {
   const searchParams = useSearchParams();
+
   const qPlan = (searchParams.get("plan") || "").toLowerCase();
   const qEmail = searchParams.get("email") || "";
 
@@ -51,7 +57,7 @@ export default function ChoosePlanPage() {
   async function startCheckout(plan: Plan) {
     setError("");
 
-    const cleanEmail = email.trim();
+    const cleanEmail = email.trim().toLowerCase();
     if (!cleanEmail) {
       setError("Please enter your email.");
       return;
@@ -65,17 +71,11 @@ export default function ChoosePlanPage() {
     try {
       setLoadingPlan(plan);
 
-      const res = await fetch(
-        `${BACKEND_URL}/engine/billing/create-checkout-session`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            email: cleanEmail,
-            plan, // <- associate | executive
-          }),
-        }
-      );
+      const res = await fetch(`${BACKEND_URL}/engine/billing/create-checkout-session`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, plan }),
+      });
 
       const data = await res.json().catch(() => ({}));
 
@@ -100,21 +100,17 @@ export default function ChoosePlanPage() {
         <h1 className="text-3xl font-semibold tracking-tight text-black sm:text-4xl">
           Choose your AMBIT plan
         </h1>
-        <p className="mt-3 text-black/70">
-          Pick a plan and continue to secure checkout.
-        </p>
+        <p className="mt-3 text-black/70">Pick a plan and continue to secure checkout.</p>
       </header>
 
       <div className="mt-6 max-w-xl">
-        <label className="mb-2 block text-sm font-medium text-black/80">
-          Work email
-        </label>
+        <label className="mb-2 block text-sm font-medium text-black/80">Work email</label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="you@company.com"
-          className="w-full rounded-xl border border-black/15 bg-white/80 px-4 py-3 text-sm outline-none ring-0 placeholder:text-black/40 focus:border-black/30"
+          className="w-full rounded-xl border border-black/15 bg-white/80 px-4 py-3 text-sm outline-none placeholder:text-black/40 focus:border-black/30"
         />
       </div>
 
@@ -173,10 +169,29 @@ export default function ChoosePlanPage() {
 
       <div className="mt-6 text-sm text-black/60">
         Already subscribed?{" "}
-        <Link href="/matches/1" className="font-medium text-black hover:underline">
-          See my matches
+        <Link href="/login" className="font-medium text-black hover:underline">
+          Log in
         </Link>
       </div>
     </main>
+  );
+}
+
+function ChoosePlanFallback() {
+  return (
+    <main className="mx-auto max-w-[1060px] px-6 py-14 sm:py-20">
+      <h1 className="text-3xl font-semibold tracking-tight text-black sm:text-4xl">
+        Choose your AMBIT plan
+      </h1>
+      <p className="mt-3 text-black/70">Loading plans…</p>
+    </main>
+  );
+}
+
+export default function ChoosePlanPage() {
+  return (
+    <Suspense fallback={<ChoosePlanFallback />}>
+      <ChoosePlanInner />
+    </Suspense>
   );
 }
