@@ -19,6 +19,25 @@ function isValidEmail(v: string) {
   return s.length >= 5 && s.includes("@") && s.includes(".");
 }
 
+function extractCustomerId(data: any) {
+  return (
+    data?.customerId ??
+    data?.customer?.id ??
+    data?.id ??
+    data?.customer?.customerId ??
+    null
+  );
+}
+
+function isActiveFrom(data: any) {
+  return Boolean(
+    data?.access?.isActive ??
+      data?.isActive ??
+      data?.customer?.isActive ??
+      false
+  );
+}
+
 export default function LoginClient({ safeNext }: { safeNext?: string }) {
   const router = useRouter();
 
@@ -26,7 +45,7 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(true);
 
-  const [loading, setLoading] = useState(false);
+  const [loadingAction, setLoadingAction] = useState<"matches" | "plan" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -38,64 +57,95 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
     }
   }, []);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function loginAndGetAccount(trimmedEmail: string) {
+    if (!backend) {
+      throw new Error("Login is unavailable (missing NEXT_PUBLIC_BACKEND_URL).");
+    }
+
+    const res = await fetch(`${backend}/engine/auth/login`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: trimmedEmail }),
+    });
+
+    const data = await res.json().catch(() => ({}));
+
+    if (!res.ok) {
+      throw new Error(
+        data?.error || "Login failed. Double-check your email and try again."
+      );
+    }
+
+    const idRaw = extractCustomerId(data);
+    const id = idRaw ? Number(idRaw) : null;
+    const active = isActiveFrom(data);
+
+    if (remember) {
+      try {
+        localStorage.setItem("ambit_email", trimmedEmail);
+      } catch {
+        // ignore
+      }
+    } else {
+      try {
+        localStorage.removeItem("ambit_email");
+      } catch {
+        // ignore
+      }
+    }
+
+    return { id: id && Number.isFinite(id) ? id : null, active };
+  }
+
+  async function handleShowMatches(e?: React.FormEvent) {
+    if (e) e.preventDefault();
     setError(null);
 
     const trimmedEmail = email.trim().toLowerCase();
-
     if (!isValidEmail(trimmedEmail)) {
       setError("Enter the email you used during signup.");
       return;
     }
 
-    if (!backend) {
-      setError("Login is unavailable (missing NEXT_PUBLIC_BACKEND_URL).");
-      return;
-    }
-
-    setLoading(true);
+    setLoadingAction("matches");
     try {
-      const res = await fetch(`${backend}/engine/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: trimmedEmail }),
-      });
+      const { id } = await loginAndGetAccount(trimmedEmail);
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok) {
-        throw new Error(
-          data?.error || "Login failed. Double-check your email and try again."
-        );
-      }
-
-      const id = Number(data?.id);
-      if (!id || !Number.isFinite(id)) {
-        throw new Error("Login succeeded, but no account id was returned.");
-      }
-
-      if (remember) {
-        try {
-          localStorage.setItem("ambit_email", trimmedEmail);
-        } catch {
-          // ignore
-        }
-      } else {
-        try {
-          localStorage.removeItem("ambit_email");
-        } catch {
-          // ignore
-        }
-      }
-
-      const destination = safeNext || `/matches/${id}`;
+      const destination = safeNext || (id ? `/matches/${id}` : "/matches");
       router.push(destination);
       router.refresh();
     } catch (err: any) {
       setError(err?.message || "Login failed. Please try again.");
     } finally {
-      setLoading(false);
+      setLoadingAction(null);
+    }
+  }
+
+  async function handleChoosePlan() {
+    setError(null);
+
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!isValidEmail(trimmedEmail)) {
+      setError("Enter the email you used during signup.");
+      return;
+    }
+
+    setLoadingAction("plan");
+    try {
+      const { id, active } = await loginAndGetAccount(trimmedEmail);
+
+      if (active) {
+        router.push(id ? `/matches/${id}` : "/matches");
+        router.refresh();
+        return;
+      }
+
+      router.push(`/choose-plan?email=${encodeURIComponent(trimmedEmail)}`);
+      router.refresh();
+    } catch (err: any) {
+      setError(err?.message || "Unable to open plan selection.");
+    } finally {
+      setLoadingAction(null);
     }
   }
 
@@ -105,9 +155,11 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
   const primaryBtn =
     "w-full rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-900 shadow hover:bg-white/90 disabled:cursor-not-allowed disabled:opacity-60";
 
+  const secondaryBtn =
+    "w-full rounded-2xl border border-white/25 bg-transparent px-4 py-3 text-sm font-semibold text-white hover:bg-white/10 disabled:cursor-not-allowed disabled:opacity-60";
+
   return (
     <div>
-      {/* Compact header */}
       <div className="flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 text-white">
           A
@@ -129,7 +181,7 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="mt-6 space-y-4">
+      <form onSubmit={handleShowMatches} className="mt-6 space-y-4">
         <div>
           <label className="mb-1.5 block text-xs font-semibold text-white/70">
             Email
@@ -183,9 +235,20 @@ export default function LoginClient({ safeNext }: { safeNext?: string }) {
           </div>
         ) : null}
 
-        <button type="submit" disabled={loading} className={primaryBtn}>
-          {loading ? "Signing in…" : "Show My Matches"}
-        </button>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button type="submit" disabled={loadingAction !== null} className={primaryBtn}>
+            {loadingAction === "matches" ? "Signing in…" : "Show My Matches"}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleChoosePlan}
+            disabled={loadingAction !== null}
+            className={secondaryBtn}
+          >
+            {loadingAction === "plan" ? "Opening Plans…" : "Choose Plan"}
+          </button>
+        </div>
 
         <div className="text-xs text-white/50">
           By continuing you agree to our{" "}

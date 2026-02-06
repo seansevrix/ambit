@@ -21,10 +21,8 @@ const EMAIL_KEY = "ambit_login_email";
 function PageBackdrop() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {/* base */}
       <div className="absolute inset-0 bg-[#EAF3FF]" />
 
-      {/* blueprint grid (visible) */}
       <div
         className="absolute inset-0 opacity-[0.16]"
         style={{
@@ -34,7 +32,6 @@ function PageBackdrop() {
         }}
       />
 
-      {/* soft glow blobs */}
       <div
         className="absolute inset-0 opacity-100"
         style={{
@@ -43,7 +40,6 @@ function PageBackdrop() {
         }}
       />
 
-      {/* vignette / fade */}
       <div
         className="absolute inset-0"
         style={{
@@ -96,11 +92,10 @@ export default function LoginPage() {
   const [remember, setRemember] = useState(true);
 
   const [loadingLogin, setLoadingLogin] = useState(false);
-  const [loadingCheckout, setLoadingCheckout] = useState(false);
+  const [loadingChoosePlan, setLoadingChoosePlan] = useState(false);
 
   const [err, setErr] = useState<string | null>(null);
 
-  // If login returns customerId, store it so Finish Signup can reuse it
   const [customerId, setCustomerId] = useState<number | null>(null);
   const [isActive, setIsActive] = useState<boolean>(false);
 
@@ -112,27 +107,32 @@ export default function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (!remember) return;
-    const e = email.trim().toLowerCase();
-    if (!e) return;
-    try {
-      localStorage.setItem(EMAIL_KEY, e);
-    } catch {}
+    const trimmed = email.trim().toLowerCase();
+    if (remember && trimmed) {
+      try {
+        localStorage.setItem(EMAIL_KEY, trimmed);
+      } catch {}
+    }
+    if (!remember) {
+      try {
+        localStorage.removeItem(EMAIL_KEY);
+      } catch {}
+    }
   }, [email, remember]);
 
   const canSubmit = useMemo(() => email.trim().length > 0, [email]);
 
-  async function loginOnly(): Promise<{ id: number | null; active: boolean }> {
+  async function loginOnly(): Promise<{ id: number | null; active: boolean; cleanEmail: string }> {
     setErr(null);
 
-    const trimmed = email.trim().toLowerCase();
-    if (!trimmed) throw new Error("Enter your email.");
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail) throw new Error("Enter your email.");
 
     const res = await abortableFetch(`${API_BASE}/engine/auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({ email: trimmed }),
+      body: JSON.stringify({ email: cleanEmail }),
     });
 
     const json = await res.json().catch(() => ({}));
@@ -140,17 +140,18 @@ export default function LoginPage() {
       throw new Error(json?.error || json?.message || `Login failed (${res.status})`);
     }
 
-    const id = extractCustomerId(json);
+    const idRaw = extractCustomerId(json);
+    const id = idRaw ? Number(idRaw) : null;
     const active = isActiveFrom(json);
 
     setIsActive(active);
-    setCustomerId(typeof id === "number" ? id : id ? Number(id) : null);
+    setCustomerId(id && Number.isFinite(id) ? id : null);
 
-    return { id: id ? Number(id) : null, active };
+    return { id: id && Number.isFinite(id) ? id : null, active, cleanEmail };
   }
 
   async function onShowMatches() {
-    if (!canSubmit || loadingLogin || loadingCheckout) return;
+    if (!canSubmit || loadingLogin || loadingChoosePlan) return;
 
     setLoadingLogin(true);
     try {
@@ -164,39 +165,23 @@ export default function LoginPage() {
     }
   }
 
-  async function onFinishSignup() {
-    if (!canSubmit || loadingLogin || loadingCheckout) return;
+  async function onChoosePlan() {
+    if (!canSubmit || loadingLogin || loadingChoosePlan) return;
 
-    setLoadingCheckout(true);
+    setLoadingChoosePlan(true);
     try {
-      // Always login first so we reliably get customerId
-      const { id, active } = await loginOnly();
+      const { id, active, cleanEmail } = await loginOnly();
 
-      if (!id) throw new Error("Missing customer id. Please try again.");
       if (active) {
-        // Already active -> send to matches
-        router.push(`/matches/${id}`);
+        router.push(id ? `/matches/${id}` : "/matches");
         return;
       }
 
-      // Now create Stripe checkout session
-      const res = await abortableFetch("/api/stripe/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ customerId: id }),
-      });
-
-      const txt = await res.text().catch(() => "");
-      if (!res.ok) throw new Error(txt || `Checkout failed (${res.status})`);
-
-      const { url } = JSON.parse(txt || "{}");
-      if (!url) throw new Error("Missing Stripe checkout URL.");
-
-      window.location.href = url;
+      router.push(`/choose-plan?email=${encodeURIComponent(cleanEmail)}`);
     } catch (e: any) {
       setErr(prettyErr(e));
     } finally {
-      setLoadingCheckout(false);
+      setLoadingChoosePlan(false);
     }
   }
 
@@ -266,32 +251,30 @@ export default function LoginPage() {
               <div className="grid gap-3 sm:grid-cols-2">
                 <button
                   onClick={onShowMatches}
-                  disabled={!canSubmit || loadingLogin || loadingCheckout}
+                  disabled={!canSubmit || loadingLogin || loadingChoosePlan}
                   className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(26,79,163,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {loadingLogin ? "Signing in…" : "Show My Matches"}
                 </button>
 
-                {/* ✅ new green button */}
                 <button
-                  onClick={onFinishSignup}
-                  disabled={!canSubmit || loadingLogin || loadingCheckout || isActive}
-                  className="inline-flex items-center justify-center rounded-full bg-emerald-600 px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(16,185,129,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                  title={isActive ? "You’re already subscribed." : "Finish signup and subscribe."}
+                  onClick={onChoosePlan}
+                  disabled={!canSubmit || loadingLogin || loadingChoosePlan || isActive}
+                  className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-8 py-3 text-sm font-semibold text-black shadow-[0_10px_28px_rgba(0,0,0,0.08)] transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  title={isActive ? "You’re already subscribed." : "Choose Associate or Executive plan."}
                 >
-                  {loadingCheckout
-                    ? "Opening Checkout…"
+                  {loadingChoosePlan
+                    ? "Opening Plans…"
                     : isActive
-                      ? "Subscribed ✓"
-                      : "Finish Signing Up"}
+                    ? "Subscribed ✓"
+                    : "Choose Plan"}
                 </button>
               </div>
 
               <div className="pt-1 text-center text-xs text-black/45">
-                Finish Signing Up takes you to secure checkout to add a card and activate your subscription.
+                Choose Plan lets you pick Associate ($49.99) or Executive ($299) in secure checkout.
               </div>
 
-              {/* helpful if login already returned id */}
               {customerId ? (
                 <div className="text-center text-xs text-black/35">
                   Account detected: Customer #{customerId}
