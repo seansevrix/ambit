@@ -4,6 +4,15 @@ import prisma from "../lib/prisma.js";
 const router = express.Router();
 
 /** ---------------------------
+ * ✅ Env helpers
+ * -------------------------- */
+function envBool(value, defaultValue = false) {
+  if (value === null || value === undefined || value === "") return defaultValue;
+  const v = String(value).trim().toLowerCase();
+  return v === "1" || v === "true" || v === "yes" || v === "on";
+}
+
+/** ---------------------------
  * ✅ SIMPLE TUNING KNOBS
  * -------------------------- */
 const MIN_SCORE = 60; // government strictness
@@ -18,19 +27,17 @@ const MAX_OPPS = Number(process.env.MATCHES_MAX_OPPS || 3000);
 const OUT_OF_AREA_PENALTY = 25;
 
 // ✅ Strict nearby-only filter
-const STRICT_NEARBY_ONLY = String(process.env.MATCHES_STRICT_NEARBY || "") === "1";
+const STRICT_NEARBY_ONLY = envBool(process.env.MATCHES_STRICT_NEARBY, false);
+
+// ✅ Gov safety filters (defaults ON)
+const MATCHES_GOV_FILTER_CLOSED = envBool(process.env.MATCHES_GOV_FILTER_CLOSED, true);
+const MATCHES_GOV_REQUIRE_DUE_DATE = envBool(process.env.MATCHES_GOV_REQUIRE_DUE_DATE, true);
 
 /** ---------------------------
  * ✅ CRAIGSLIST WANTED-ONLY FLAG (FIXED)
  * - Supports multiple env var names + typo
  * - Provides back-compat alias so old references won't crash
  * -------------------------- */
-function envBool(value, defaultValue = false) {
-  if (value === null || value === undefined || value === "") return defaultValue;
-  const v = String(value).trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
-}
-
 // Default ON (matches your current behavior)
 const CRAIGSLIST_WANTED_ONLY = envBool(
   process.env.MATCHES_CRAIGSLIST_WANTED_ONLY ??
@@ -40,7 +47,7 @@ const CRAIGSLIST_WANTED_ONLY = envBool(
 );
 
 // Back-compat alias in case code references the misspelled constant name
-const CRAILSLIST_WANTED_ONLY = CRAIGSLIST_WANTED_ONLY;
+const CRAILSLIST_WANTED_ONLY = CRAIGSLIST_WANTED_ONLY; // eslint-disable-line no-unused-vars
 
 const STOP = new Set([
   "the",
@@ -215,6 +222,14 @@ function normalize(s) {
 
 function normUrl(u) {
   return normalize(u).replace(/\/+$/, "");
+}
+
+function parseDateSafe(v) {
+  if (!v) return null;
+  const d = new Date(v);
+  const t = d.getTime();
+  if (Number.isNaN(t)) return null;
+  return t;
 }
 
 /**
@@ -453,16 +468,66 @@ function minScoreForMatch(m) {
   return seg === "government" ? MIN_SCORE : MIN_SCORE_NON_GOV;
 }
 
-// ✅ Craigslist buyer-intent filter (Wanted only)
+/** ---------------------------
+ * ✅ Government "open only" guardrail
+ * -------------------------- */
+const AWARD_OR_CLOSED_TERMS = [
+  "award notice",
+  "award",
+  "awarded",
+  "inactive",
+  "closed",
+  "archived",
+  "archive",
+  "cancelled",
+  "canceled",
+  "expired",
+  "fair opportunity/limited sources justification",
+  "justification",
+];
+
+function isOpenGovernmentOpportunity(m) {
+  const seg = String(m?.segment || "").toLowerCase();
+  if (seg !== "government") return true; // non-gov unaffected
+
+  const blob = [
+    m?.title,
+    m?.summary,
+    m?.keywords,
+    m?.agency,
+    m?.source,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  if (MATCHES_GOV_FILTER_CLOSED) {
+    for (const term of AWARD_OR_CLOSED_TERMS) {
+      if (blob.includes(term)) return false;
+    }
+  }
+
+  const now = Date.now();
+  const dueTs = parseDateSafe(m?.dueDate);
+  if (dueTs && dueTs <= now) return false;
+
+  // hard stop for gov entries with no due date (prevents award/closed bleed-through)
+  if (MATCHES_GOV_REQUIRE_DUE_DATE && !dueTs) return false;
+
+  return true;
+}
+
+// ✅ Craigslist buyer-intent filter + gov-open filter
 function keepMatch(m) {
   if (!m) return false;
 
-  // Use correct var, but alias exists so old references won't crash
   if (CRAIGSLIST_WANTED_ONLY && String(m.source || "").toLowerCase() === "craigslist") {
     const u = String(m.url || "").toLowerCase();
     // allow ONLY wanted posts
     if (!u.includes("/wan/")) return false;
   }
+
+  if (!isOpenGovernmentOpportunity(m)) return false;
 
   return true;
 }
