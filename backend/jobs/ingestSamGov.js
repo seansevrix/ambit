@@ -166,49 +166,12 @@ function pickInactiveDateRaw(o) {
   ]);
 }
 
+// ✅ ONLY block "award notice" (no other gate behavior)
 function isClosedOrNonActionable({ title, noticeType, status, active, dueDate, inactiveDate }) {
   const text = `${lower(title)} ${lower(noticeType)} ${lower(status)}`;
 
-  // Hard-block non-biddable types
-  const blockedTerms = [
-    "award notice",
-    "award",
-    "awarded",
-    "inactive",
-    "closed",
-    "archive",
-    "archived",
-    "cancelled",
-    "canceled",
-    "expired",
-    "justification",
-    "fair opportunity/limited sources justification",
-  ];
-
-  for (const term of blockedTerms) {
-    if (text.includes(term)) {
-      return { blocked: true, reason: `term:${term}` };
-    }
-  }
-
-  // Explicit inactive flags
-  if (active === false || lower(active) === "false") {
-    return { blocked: true, reason: "active:false" };
-  }
-
-  const now = Date.now();
-
-  // Inactive date passed => closed
-  if (inactiveDate && inactiveDate.getTime() <= now) {
-    return { blocked: true, reason: "inactiveDate passed" };
-  }
-
-  // Require open due date (default ON)
-  if (REQUIRE_OPEN_DUE_DATE) {
-    if (!dueDate) return { blocked: true, reason: "missing dueDate" };
-    if (dueDate.getTime() <= now) return { blocked: true, reason: "dueDate passed" };
-  } else if (dueDate && dueDate.getTime() <= now) {
-    return { blocked: true, reason: "dueDate passed" };
+  if (text.includes("award notice")) {
+    return { blocked: true, reason: "term:award notice" };
   }
 
   return { blocked: false, reason: "open" };
