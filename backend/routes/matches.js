@@ -6,8 +6,15 @@ const router = express.Router();
 /** ---------------------------
  * ✅ SIMPLE TUNING KNOBS
  * -------------------------- */
-const MIN_SCORE = 60; // government strictness
-const MIN_SCORE_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_NON_GOV || 35);
+const MIN_SCORE = Number(process.env.MATCHES_MIN_SCORE_GOV || 35); // lowered from 60
+const MIN_SCORE_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_NON_GOV || 20);
+
+const MIN_SCORE_RELAXED_GOV = Number(process.env.MATCHES_MIN_SCORE_RELAXED_GOV || 20);
+const MIN_SCORE_RELAXED_NON_GOV = Number(process.env.MATCHES_MIN_SCORE_RELAXED_NON_GOV || 10);
+
+const ENABLE_ZERO_MATCH_FALLBACK =
+  String(process.env.MATCHES_ENABLE_ZERO_MATCH_FALLBACK || "1") === "1";
+
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
 
@@ -447,10 +454,15 @@ function groupMatchesBySegment(matches) {
   return buckets;
 }
 
-// ✅ threshold helper
+// ✅ threshold helpers
 function minScoreForMatch(m) {
   const seg = String(m?.segment || "").toLowerCase();
   return seg === "government" ? MIN_SCORE : MIN_SCORE_NON_GOV;
+}
+
+function relaxedMinScoreForMatch(m) {
+  const seg = String(m?.segment || "").toLowerCase();
+  return seg === "government" ? MIN_SCORE_RELAXED_GOV : MIN_SCORE_RELAXED_NON_GOV;
 }
 
 // ✅ ONLY filter "award notice" records
@@ -478,7 +490,7 @@ function keepMatch(m) {
     if (!u.includes("/wan/")) return false;
   }
 
-  // ✅ NEW: block award notices
+  // ✅ block award notices
   if (isAwardNotice(m)) return false;
 
   return true;
@@ -526,6 +538,7 @@ router.get("/matches/:customerId", async (req, res) => {
           subscriptionStatus: true,
           trialEndsAt: true,
           segments: true,
+          sources: true,
         },
       });
     } catch (e) {
@@ -534,10 +547,17 @@ router.get("/matches/:customerId", async (req, res) => {
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    // ✅ TRIAL-AWARE PAYWALL
+    // ✅ TRIAL + PAID AWARE ACCESS
     const now = Date.now();
-    const trialActive = customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now;
-    const accessAllowed = Boolean(customer.isActive) || Boolean(trialActive);
+    const subStatus = String(customer.subscriptionStatus || "").trim().toUpperCase();
+
+    const paidActive = ["ACTIVE", "PAST_DUE", "UNPAID"].includes(subStatus);
+    const trialActive =
+      subStatus === "TRIALING"
+        ? !customer.trialEndsAt || new Date(customer.trialEndsAt).getTime() > now
+        : Boolean(customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now);
+
+    const accessAllowed = Boolean(customer.isActive) || paidActive || trialActive;
 
     if (!accessAllowed) {
       return res.status(402).json({
@@ -551,11 +571,15 @@ router.get("/matches/:customerId", async (req, res) => {
 
     // ✅ segments normalized (supports array or csv string)
     const segRaw = customer.segments;
-    const allowedSegments = Array.isArray(segRaw)
-      ? (segRaw.length ? segRaw : ["residential", "commercial", "government"])
-      : (typeof segRaw === "string" && segRaw.trim()
-          ? splitCsv(segRaw.toLowerCase())
-          : ["residential", "commercial", "government"]);
+    const normalizedSegments = Array.isArray(segRaw)
+      ? segRaw
+      : typeof segRaw === "string" && segRaw.trim()
+      ? splitCsv(segRaw.toLowerCase())
+      : [];
+
+    const allowedSegments = normalizedSegments.length
+      ? normalizedSegments
+      : ["residential", "commercial", "government"];
 
     // ✅ Only fetch fields we use
     let opportunities = [];
@@ -609,8 +633,9 @@ router.get("/matches/:customerId", async (req, res) => {
     const custState = extractStateCode(customerLocStr);
 
     let raw;
+    let scoredCount = 0;
     try {
-      raw = opportunities
+      const scored = opportunities
         .map((opp) => {
           const safeLocation =
             typeof opp.location === "string"
@@ -653,9 +678,32 @@ router.get("/matches/:customerId", async (req, res) => {
           };
         })
         .filter(Boolean)
-        .filter((m) => m.score >= minScoreForMatch(m))
         .filter(keepMatch)
         .sort((a, b) => b.score - a.score);
+
+      scoredCount = scored.length;
+
+      // Pass 1: strict thresholds
+      raw = scored.filter((m) => m.score >= minScoreForMatch(m));
+
+      // Pass 2: relaxed thresholds
+      if (raw.length === 0 && ENABLE_ZERO_MATCH_FALLBACK) {
+        raw = scored.filter((m) => m.score >= relaxedMinScoreForMatch(m));
+      }
+
+      // Pass 3: fail-open fallback (never dead-end dashboard)
+      if (raw.length === 0 && ENABLE_ZERO_MATCH_FALLBACK) {
+        const fallbackTake = Math.max(limit, 25);
+        raw = scored.slice(0, fallbackTake).map((m) => ({
+          ...m,
+          score: Math.max(Number(m.score || 0), 12),
+          profileIncomplete: true,
+          reasons: [
+            ...(Array.isArray(m.reasons) ? m.reasons : []),
+            "Fallback results shown. Add NAICS, keywords, and service area for stronger matches.",
+          ],
+        }));
+      }
     } catch (e) {
       return fail("scoring_map_filter_sort", e);
     }
@@ -673,12 +721,29 @@ router.get("/matches/:customerId", async (req, res) => {
       customerId,
       segments: allowedSegments,
       access: {
-        isActive: Boolean(customer.isActive),
+        isActive: Boolean(accessAllowed), // front-end should trust this for gating
+        isActiveFlag: Boolean(customer.isActive),
+        paidActive: Boolean(paidActive),
         subscriptionStatus: customer.subscriptionStatus ?? null,
         trialEndsAt: customer.trialEndsAt ?? null,
         trialActive: Boolean(trialActive),
       },
       matches,
+      ...(debug
+        ? {
+            debug: {
+              oppsFetched: opportunities.length,
+              scoredCount,
+              returned: matches.length,
+              strictGovMin: MIN_SCORE,
+              strictNonGovMin: MIN_SCORE_NON_GOV,
+              relaxedGovMin: MIN_SCORE_RELAXED_GOV,
+              relaxedNonGovMin: MIN_SCORE_RELAXED_NON_GOV,
+              strictNearbyOnly: STRICT_NEARBY_ONLY,
+              zeroMatchFallback: ENABLE_ZERO_MATCH_FALLBACK,
+            },
+          }
+        : {}),
       ...(grouped
         ? {
             grouped: true,
