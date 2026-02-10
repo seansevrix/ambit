@@ -348,11 +348,6 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Slightly louder microcopy too */}
-            <div className="mt-3 text-xs font-semibold text-black/65">
-              Proposal Development + Matches + RFQ alerts + bid support
-            </div>
-
             <SignupSocialProof />
           </div>
         </div>
