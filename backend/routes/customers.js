@@ -20,6 +20,7 @@ const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.co
 const ADMIN_NOTIFY_ON_REPEAT = String(process.env.ADMIN_NOTIFY_ON_REPEAT || "") === "1";
 
 const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.ambitco.app";
+const TRIAL_DAYS = Number(process.env.TRIAL_DAYS || 7);
 
 const RESEND_TIMEOUT_MS = Number(process.env.RESEND_TIMEOUT_MS || 2500);
 
@@ -502,7 +503,7 @@ router.post("/customers", async (req, res) => {
     const shouldStartTrial =
       !existing || (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
 
-    const { now, trialEndsAt } = buildTrialWindow(7);
+    const { now, trialEndsAt } = buildTrialWindow(TRIAL_DAYS);
 
     const updateData = {};
     if (providedName) updateData.name = providedName;
@@ -523,7 +524,16 @@ router.post("/customers", async (req, res) => {
     if (shouldStartTrial) {
       updateData.trialStartedAt = now;
       updateData.trialEndsAt = trialEndsAt;
-      if (!existing?.subscriptionStatus) updateData.subscriptionStatus = "TRIALING";
+      updateData.subscriptionStatus = "TRIALING";
+      updateData.isActive = true;
+    } else if (
+      existing?.subscriptionStatus === "TRIALING" &&
+      existing?.trialEndsAt &&
+      new Date(existing.trialEndsAt).getTime() > now.getTime() &&
+      existing?.isActive === false
+    ) {
+      // self-heal legacy trial records that were set inactive
+      updateData.isActive = true;
     }
 
     const customer = await prisma.customer.upsert({
@@ -545,7 +555,7 @@ router.post("/customers", async (req, res) => {
         trialStartedAt: now,
         trialEndsAt,
         subscriptionStatus: "TRIALING",
-        isActive: false,
+        isActive: true,
       },
     });
 
