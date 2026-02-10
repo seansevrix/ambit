@@ -18,7 +18,7 @@ const SEQUENCE = [
     headline: "Your AMBIT pipeline is running.",
     body: [
       "Tonight we’re ingesting and ranking opportunities based on your service area, NAICS, and keywords.",
-      "Tomorrow morning, you’ll get high-fit opportunities without manually searching portals."
+      "Tomorrow morning, you’ll get high-fit opportunities without manually searching portals.",
     ],
     cta: "Keep your pipeline active",
   },
@@ -27,7 +27,7 @@ const SEQUENCE = [
     headline: "Quick reality check:",
     body: [
       "If your AMBIT access is paused, you are likely missing opportunities your competitors are already seeing.",
-      "Reactivating takes less than a minute and keeps daily matches flowing."
+      "Reactivating takes less than a minute and keeps daily matches flowing.",
     ],
     cta: "Reactivate your pipeline",
   },
@@ -36,7 +36,7 @@ const SEQUENCE = [
     headline: "Less ad waste. More targeted opportunities.",
     body: [
       "Instead of increasing paid ads, AMBIT can deliver matched opportunities directly to your inbox.",
-      "You stay focused on bidding and closing work, not hunting manually."
+      "You stay focused on bidding and closing work, not hunting manually.",
     ],
     cta: "Resume daily matches",
   },
@@ -45,7 +45,7 @@ const SEQUENCE = [
     headline: "You don’t need more forms or funnels.",
     body: [
       "AMBIT is designed to route relevant opportunities to you based on the profile you already set up.",
-      "No extra signup campaigns required to keep quality opportunities coming."
+      "No extra signup campaigns required to keep quality opportunities coming.",
     ],
     cta: "Keep opportunities coming",
   },
@@ -54,7 +54,7 @@ const SEQUENCE = [
     headline: "You’re not doing this alone.",
     body: [
       "Need help choosing what to pursue? Reply to this email and an AMBIT associate will help prioritize your next best opportunities.",
-      "Software + human support is how you move faster."
+      "Software + human support is how you move faster.",
     ],
     cta: "Get associate support",
   },
@@ -63,7 +63,7 @@ const SEQUENCE = [
     headline: "Speed matters in contracting.",
     body: [
       "Every week, companies are reviewing and acting on new opportunities.",
-      "Keeping your AMBIT pipeline active helps you stay visible and competitive."
+      "Keeping your AMBIT pipeline active helps you stay visible and competitive.",
     ],
     cta: "Stay competitive",
   },
@@ -72,7 +72,7 @@ const SEQUENCE = [
     headline: "Final trial reminder.",
     body: [
       "If you want consistent matched opportunities without extra marketing complexity, keep your AMBIT access active.",
-      "Reply to this email if you want a quick profile tune-up before you continue."
+      "Reply to this email if you want a quick profile tune-up before you continue.",
     ],
     cta: "Activate AMBIT",
   },
@@ -102,6 +102,7 @@ function getPTParts(date) {
   for (const p of parts) {
     if (p.type !== "literal") map[p.type] = p.value;
   }
+
   return {
     year: Number(map.year),
     month: Number(map.month),
@@ -118,7 +119,6 @@ function ptDateKey(date) {
 
 function ptMidnightUtcMs(date) {
   const { year, month, day } = getPTParts(date);
-  // Convert PT calendar day to a stable UTC midnight anchor for day-diff math.
   return Date.UTC(year, month - 1, day);
 }
 
@@ -135,12 +135,11 @@ function isLikelySubscribed(customer) {
     "";
   const status = String(raw).toLowerCase().trim();
 
-  // Treat these as paid/active enough to skip trial nurture
+  // Paid/active-style states to skip trial nurture
   return ["active", "past_due", "unpaid", "paused"].includes(status);
 }
 
 function isUnsubscribed(customer) {
-  // Only hard-check common opt-out field names; safe no-op if absent
   return (
     customer.unsubscribed === true ||
     customer.emailUnsubscribed === true ||
@@ -149,14 +148,13 @@ function isUnsubscribed(customer) {
 }
 
 function getTrialStart(customer, now) {
-  // Preferred order: trialStartedAt -> createdAt
   return toDateSafe(customer.trialStartedAt) || toDateSafe(customer.createdAt) || now;
 }
 
 function getTrialDay(customer, now) {
   const start = getTrialStart(customer, now);
   const diff = dayDiffInPT(start, now);
-  return diff + 1; // Day 1..7
+  return diff + 1; // 1..7
 }
 
 function alreadySentTonight(customer, now) {
@@ -190,9 +188,7 @@ function buildEmail({ firstName, day, activateUrl }) {
       ">${tpl.cta}</a>
     </p>
 
-    <p>
-      Need help now? Just reply to this email and an AMBIT associate will connect with you.
-    </p>
+    <p>Need help now? Just reply to this email and an AMBIT associate will connect with you.</p>
 
     <p style="font-size:12px; color:#666; margin-top:24px;">
       You’re receiving this because you started an AMBIT free trial.<br/>
@@ -200,7 +196,7 @@ function buildEmail({ firstName, day, activateUrl }) {
     </p>
   </div>`;
 
-  const textLines = [
+  const text = [
     `Hi ${name},`,
     ``,
     tpl.headline,
@@ -212,13 +208,9 @@ function buildEmail({ firstName, day, activateUrl }) {
     `Need help now? Reply to this email and an AMBIT associate will connect with you.`,
     ``,
     `If you'd like to stop receiving these emails, reply STOP.`,
-  ];
+  ].join("\n");
 
-  return {
-    subject: tpl.subject,
-    html,
-    text: textLines.join("\n"),
-  };
+  return { subject: tpl.subject, html, text };
 }
 
 async function sendResendEmail({ to, subject, html, text }) {
@@ -261,12 +253,8 @@ async function main() {
 
   const now = new Date();
 
-  // Keep query broad for schema compatibility; filter in JS
-  const customers = await prisma.customer.findMany({
-    where: {
-      email: { not: null },
-    },
-  });
+  // IMPORTANT: no `email: { not: null }` filter here (caused Prisma validation error in your schema)
+  const customers = await prisma.customer.findMany();
 
   console.log(`Loaded customers: ${customers.length}`);
 
@@ -277,8 +265,8 @@ async function main() {
 
   for (const c of customers) {
     try {
-      // Basic guards
-      if (!c.email) {
+      // Basic email guard
+      if (!c.email || typeof c.email !== "string" || !c.email.includes("@")) {
         skipped++;
         continue;
       }
@@ -297,7 +285,6 @@ async function main() {
       // Trial window check
       const trialEndsAt = toDateSafe(c.trialEndsAt);
       if (trialEndsAt && now > trialEndsAt) {
-        // trial is over
         skipped++;
         continue;
       }
@@ -309,7 +296,7 @@ async function main() {
         continue;
       }
 
-      // Prevent duplicate sends for same PT calendar day
+      // Prevent duplicate sends on same PT calendar day
       if (alreadySentTonight(c, now)) {
         skipped++;
         continue;
@@ -334,7 +321,7 @@ async function main() {
         text,
       });
 
-      // Optional progress fields update (only if they exist in your schema)
+      // Optional progress fields update (only if fields exist in schema)
       if (!DRY_RUN && c.id != null) {
         const data = {};
 
@@ -367,7 +354,7 @@ async function main() {
     `Nightly trial sequence complete | eligible=${eligible} sent=${sent} skipped=${skipped} failed=${failed}`
   );
 
-  // Do not hard-fail whole cron for partial email failures
+  // Partial failures should not crash whole run
   process.exit(0);
 }
 
