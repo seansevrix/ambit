@@ -19,13 +19,6 @@ const STRIPE_PRICE_ALL_ID =
   process.env.STRIPE_PRICE_ALL_ID || process.env.STRIPE_PRICE_ALL || "";
 const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ""; // legacy single fallback
 
-// IMPORTANT: default is 0 (no Stripe trial)
-const parsedTrialDays = Number(process.env.STRIPE_TRIAL_DAYS || 0);
-const TRIAL_DAYS =
-  Number.isFinite(parsedTrialDays) && parsedTrialDays > 0
-    ? Math.floor(parsedTrialDays)
-    : 0;
-
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 function getFrontendBaseUrl(req) {
@@ -126,6 +119,9 @@ async function findCustomer({ customerId, email }) {
  *     email?: string,
  *     plan?: "associate" | "executive" | "single" | "all"
  *   }
+ *
+ * IMPORTANT:
+ * - Paid-first flow (no free trial)
  */
 async function createCheckoutSession(req, res) {
   try {
@@ -163,23 +159,9 @@ async function createCheckoutSession(req, res) {
     const frontendBase = getFrontendBaseUrl(req);
 
     const successUrl = `${frontendBase}/matches/${customer.id}?checkout=success&plan=${plan}`;
-    const cancelUrl = `${frontendBase}/choose-plan?checkout=cancel&plan=${plan}&email=${encodeURIComponent(
+    const cancelUrl = `${frontendBase}/get-started?checkout=cancel&plan=${plan}&email=${encodeURIComponent(
       customer.email || ""
     )}`;
-
-    // Build subscription_data without trial by default
-    const subscriptionData = {
-      metadata: {
-        customerId: String(customer.id),
-        plan,
-        tier: plan,
-      },
-    };
-
-    // Only include trial if explicitly configured (> 0)
-    if (TRIAL_DAYS > 0) {
-      subscriptionData.trial_period_days = TRIAL_DAYS;
-    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
@@ -195,7 +177,14 @@ async function createCheckoutSession(req, res) {
         plan,
         tier: plan,
       },
-      subscription_data: subscriptionData,
+      // No trial_period_days in paid-first model
+      subscription_data: {
+        metadata: {
+          customerId: String(customer.id),
+          plan,
+          tier: plan,
+        },
+      },
     });
 
     return res.status(200).json({

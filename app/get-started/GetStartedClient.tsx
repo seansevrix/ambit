@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
 const DEV_BACKEND = "http://localhost:5001";
@@ -18,10 +18,27 @@ const API_BASE = (
 const REQUEST_TIMEOUT_MS = 15000;
 
 type Market = "residential" | "commercial" | "government";
+type Plan = "associate" | "executive";
+
+const ONBOARDING_MESSAGE =
+  "To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.";
 
 function normalizeMarket(m: string | null): Market {
   if (m === "commercial" || m === "government" || m === "residential") return m;
   return "residential";
+}
+
+function normalizePlan(p: string | null): Plan {
+  const v = String(p || "").trim().toLowerCase();
+
+  if (v === "executive") return "executive";
+  if (v === "associate") return "associate";
+
+  // Back-compat aliases
+  if (v === "all" || v === "all3" || v === "all_markets" || v === "prime") return "executive";
+  if (v === "single" || v === "single_market" || v === "basic") return "associate";
+
+  return "associate";
 }
 
 async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
@@ -50,10 +67,12 @@ async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
 }
 
 export default function GetStartedClient() {
-  const router = useRouter();
   const sp = useSearchParams();
 
   const intent = useMemo(() => normalizeMarket(sp.get("intent")), [sp]);
+  const initialPlan = useMemo(() => normalizePlan(sp.get("plan")), [sp]);
+
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(initialPlan);
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
@@ -79,10 +98,11 @@ export default function GetStartedClient() {
     try {
       const trimmedPhone = phone.trim();
 
-      const payload = {
+      // 1) Create/update customer profile
+      const customerPayload = {
         email: trimmedEmail,
         phone: trimmedPhone || null,
-        phoneNumber: trimmedPhone || null, // optional alias for backend compatibility
+        phoneNumber: trimmedPhone || null, // alias for backend compatibility
         companyName: companyName.trim() || null,
         name: companyName.trim() || null,
         serviceArea: serviceArea.trim() || null,
@@ -90,25 +110,54 @@ export default function GetStartedClient() {
         keywords: keywords.trim() || null,
         naics: naics.trim() || null,
         intent,
+        plan: selectedPlan,
         segments: ["residential", "commercial", "government"],
       };
 
-      const { res, json } = await postJson(`${API_BASE}/engine/customers`, payload);
+      const { res: customerRes, json: customerJson } = await postJson(
+        `${API_BASE}/engine/customers`,
+        customerPayload
+      );
 
-      if (!res.ok) {
-        setErr(json?.error || json?.message || "Signup failed. Please try again.");
+      if (!customerRes.ok) {
+        setErr(customerJson?.error || customerJson?.message || "Signup failed. Please try again.");
         return;
       }
 
-      const id =
-        json?.customerId ??
-        json?.customer?.id ??
-        json?.id ??
-        json?.customer?.customerId ??
+      const customerId =
+        customerJson?.customerId ??
+        customerJson?.customer?.id ??
+        customerJson?.id ??
+        customerJson?.customer?.customerId ??
         null;
 
-      if (id) router.push(`/matches/${id}`);
-      else router.push(`/matches`);
+      // 2) Immediately create Stripe checkout session
+      const { res: checkoutRes, json: checkoutJson } = await postJson(
+        `${API_BASE}/engine/billing/create-checkout-session`,
+        {
+          customerId: customerId ?? undefined,
+          email: trimmedEmail,
+          plan: selectedPlan,
+        }
+      );
+
+      if (!checkoutRes.ok) {
+        setErr(
+          checkoutJson?.error ||
+            checkoutJson?.message ||
+            "Could not start secure checkout. Please try again."
+        );
+        return;
+      }
+
+      const checkoutUrl = checkoutJson?.url;
+      if (!checkoutUrl || typeof checkoutUrl !== "string") {
+        setErr("Checkout link was missing. Please try again.");
+        return;
+      }
+
+      // 3) Redirect to Stripe (payment required)
+      window.location.href = checkoutUrl;
     } catch (e: any) {
       setErr(e?.message || "Something went wrong. Please try again.");
     } finally {
@@ -118,6 +167,39 @@ export default function GetStartedClient() {
 
   return (
     <div className="grid gap-4">
+      <div>
+        <div className="text-xs font-semibold text-black/55">Choose plan *</div>
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setSelectedPlan("associate")}
+            className={[
+              "rounded-xl border px-4 py-3 text-left transition",
+              selectedPlan === "associate"
+                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
+                : "border-black/10 bg-white hover:border-black/20",
+            ].join(" ")}
+          >
+            <div className="text-sm font-semibold text-black">Associate</div>
+            <div className="text-xs text-black/55">$49.99/mo • Matches + alerts</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedPlan("executive")}
+            className={[
+              "rounded-xl border px-4 py-3 text-left transition",
+              selectedPlan === "executive"
+                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
+                : "border-black/10 bg-white hover:border-black/20",
+            ].join(" ")}
+          >
+            <div className="text-sm font-semibold text-black">Executive</div>
+            <div className="text-xs text-black/55">$299/mo • Bid-readiness support</div>
+          </button>
+        </div>
+      </div>
+
       <div>
         <div className="text-xs font-semibold text-black/55">Work email *</div>
         <input
@@ -197,13 +279,11 @@ export default function GetStartedClient() {
           disabled={loading}
           className="inline-flex items-center justify-center rounded-full bg-[#63A7FF] px-10 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(99,167,255,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Working…" : "Continue"}
+          {loading ? "Working…" : "Continue to Secure Checkout"}
         </button>
       </div>
 
-      <div className="pt-1 text-center text-xs text-black/40">
-        Secure signup • 7-day free access starts after profile creation
-      </div>
+      <div className="pt-1 text-center text-xs text-black/45">{ONBOARDING_MESSAGE}</div>
     </div>
   );
 }
