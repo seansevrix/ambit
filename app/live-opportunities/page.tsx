@@ -282,7 +282,7 @@ export default function LiveOpportunitiesPage() {
           <div className="mt-8 text-center text-xs text-white/60">
             Want these daily and fully unlocked?{" "}
             <Link href="/get-started" className="text-white underline underline-offset-4">
-              Start Free Trial
+              Choose plan
             </Link>
           </div>
         </div>

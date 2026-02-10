@@ -225,7 +225,7 @@ function normUrl(u) {
 }
 
 /**
- * Extract a US state code from a free-form location string.
+ * Extract a US state code from an unstructured location string.
  */
 function extractStateCode(locationStr) {
   const raw = String(locationStr || "").trim();
@@ -536,7 +536,6 @@ router.get("/matches/:customerId", async (req, res) => {
           naics: true,
           isActive: true,
           subscriptionStatus: true,
-          trialEndsAt: true,
           segments: true,
           sources: true,
         },
@@ -547,25 +546,16 @@ router.get("/matches/:customerId", async (req, res) => {
 
     if (!customer) return res.status(404).json({ message: "Customer not found" });
 
-    // ✅ TRIAL + PAID AWARE ACCESS
-    const now = Date.now();
+    // ✅ PAID-ONLY ACCESS
     const subStatus = String(customer.subscriptionStatus || "").trim().toUpperCase();
-
     const paidActive = ["ACTIVE", "PAST_DUE", "UNPAID"].includes(subStatus);
-    const trialActive =
-      subStatus === "TRIALING"
-        ? !customer.trialEndsAt || new Date(customer.trialEndsAt).getTime() > now
-        : Boolean(customer.trialEndsAt && new Date(customer.trialEndsAt).getTime() > now);
-
-    const accessAllowed = Boolean(customer.isActive) || paidActive || trialActive;
+    const accessAllowed = Boolean(customer.isActive) || paidActive;
 
     if (!accessAllowed) {
       return res.status(402).json({
         ok: false,
         message: "Subscription required",
         subscriptionStatus: customer.subscriptionStatus ?? "inactive",
-        trialEndedAt: customer.trialEndsAt ?? null,
-        trialEnded: Boolean(customer.trialEndsAt),
       });
     }
 
@@ -725,8 +715,6 @@ router.get("/matches/:customerId", async (req, res) => {
         isActiveFlag: Boolean(customer.isActive),
         paidActive: Boolean(paidActive),
         subscriptionStatus: customer.subscriptionStatus ?? null,
-        trialEndsAt: customer.trialEndsAt ?? null,
-        trialActive: Boolean(trialActive),
       },
       matches,
       ...(debug

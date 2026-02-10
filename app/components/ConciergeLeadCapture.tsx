@@ -71,7 +71,7 @@ function guessCompanyFromEmail(email: string) {
   const domain = (email.split("@")[1] || "").trim();
   const base = (domain.split(".")[0] || "").trim();
   const cleaned = base.replace(/[-_]/g, " ").replace(/\s+/g, " ").trim();
-  if (!cleaned) return "New AMBIT Trial";
+  if (!cleaned) return "New AMBIT Signup";
   return cleaned
     .split(" ")
     .filter(Boolean)
@@ -399,7 +399,7 @@ export default function ConciergeLeadCapture({ intent }: { intent?: IntentKey })
       <div className="grid items-start gap-6 lg:grid-cols-2">
         {/* LEFT */}
         <div className="min-w-0">
-          <div className="text-base font-semibold text-white sm:text-lg">Start your 7-day free trial</div>
+          <div className="text-base font-semibold text-white sm:text-lg">Start your Subscription required</div>
 
           <form onSubmit={onSubmit} className="mt-4 space-y-4 sm:mt-5">
             {/* Email */}
@@ -465,11 +465,11 @@ export default function ConciergeLeadCapture({ intent }: { intent?: IntentKey })
                 )}
                 style={{ backgroundColor: BRAND }}
               >
-                {submitting ? "Starting…" : "Start free trial"}
+                {submitting ? "Starting…" : "Choose plan"}
               </button>
 
               <div className="mt-3 text-center text-xs text-white/70">
-                No credit card required. Cancel anytime.
+                Subscription required. Cancel anytime.
               </div>
 
               {error && <div className="mt-3 text-sm text-red-200">{error}</div>}

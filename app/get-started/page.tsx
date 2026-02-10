@@ -4,8 +4,8 @@ import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
 
 const TRUST_BADGES = [
-  "7-day free trial",
-  "No credit card required",
+  "Subscription required",
+  "Subscription required",
   "$49.99/mo - Associate",
   "$299/mo - Executive",
 ];
@@ -73,7 +73,7 @@ function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
 
 function MicroTrustRow() {
   const items = [
-    { k: "No credit card", v: "required" },
+    { k: "Active subscription", v: "required" },
     { k: "Setup time", v: "~60 seconds" },
     { k: "Edit anytime", v: "keywords + NAICS" },
   ];
@@ -254,7 +254,7 @@ export default function Page() {
               <span className="text-black/70">
                 <LockIcon />
               </span>
-              No credit card required
+              Subscription required
             </span>
           </div>
 

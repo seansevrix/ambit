@@ -151,8 +151,7 @@ const TESTIMONIALS_BY_SEGMENT: Record<Segment, Testimonial> = {
   },
 };
 
-const TRIAL_BANNER_TEXT =
-  "7-day free trial • No credit card required • Cancel anytime • No spam";
+const SUBSCRIPTION_BANNER_TEXT = "Active subscription required for ongoing matches, RFQ alerts, and bid support.";
 
 type Stat = {
   label: string;
@@ -346,13 +345,13 @@ export default async function PreviewSegmentPage({
           ← Back
         </Link>
 
-        {/* Trial banner */}
+        {/* Subscription banner */}
         <div className="mt-6 mb-5 rounded-2xl border border-white/10 bg-white/5 px-4 py-3">
           <div className="flex flex-col gap-2 md:flex-row md:items-center">
             <span className="inline-flex w-fit items-center rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[11px] font-semibold tracking-widest text-white/80">
-              FREE TRIAL
+              PAID ACCESS
             </span>
-            <div className="text-xs font-semibold text-white/80 md:ml-2">{TRIAL_BANNER_TEXT}</div>
+            <div className="text-xs font-semibold text-white/80 md:ml-2">{SUBSCRIPTION_BANNER_TEXT}</div>
           </div>
         </div>
 
@@ -375,9 +374,9 @@ export default async function PreviewSegmentPage({
                 href={startSingleHref}
                 className="rounded-xl bg-[#1A4FA3] px-5 py-2 text-sm font-semibold text-white hover:bg-[#15428B]"
               >
-                Start Free Trial
+                Choose plan
               </Link>
-              <div className="text-xs text-white/50">No credit card required • ~2 minutes</div>
+              <div className="text-xs text-white/50">Subscription required • ~2 minutes</div>
             </div>
           </div>
         </div>
@@ -451,7 +450,7 @@ export default async function PreviewSegmentPage({
                 Unlock matches
               </Link>
               <span className="text-xs text-white/50">
-                No credit card required • Cancel anytime
+                Subscription required • Cancel anytime
               </span>
             </div>
 
@@ -510,10 +509,10 @@ export default async function PreviewSegmentPage({
                 href={startSingleHref}
                 className="block rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-center text-sm font-semibold text-white/80 hover:bg-white/10 hover:text-white"
               >
-                Start Free Trial
+                Choose plan
               </Link>
               <div className="mt-2 text-center text-xs text-white/45">
-                No credit card required • Cancel anytime
+                Subscription required • Cancel anytime
               </div>
             </div>
           </div>

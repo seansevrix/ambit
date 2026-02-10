@@ -377,11 +377,11 @@ export default function TestimonialsPage() {
         {/* CTA right after strongest proof */}
         <div className="mt-10 flex flex-col items-center justify-center gap-3 text-center">
           <div className="text-sm text-white/70">
-            Ready to see your matches? Start your trial — no credit card.
+            Ready to see your matches? Choose a plan and get started today.
           </div>
           <div className="flex w-full sm:w-auto flex-col sm:flex-row flex-wrap items-center justify-center gap-3">
             <Link href="/get-started" className={PRIMARY}>
-              Start Free Trial — No Credit Card
+              Choose plan — Subscription required
             </Link>
           </div>
         </div>

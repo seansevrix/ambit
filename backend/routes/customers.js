@@ -14,14 +14,12 @@ const router = express.Router();
  * Optional env:
  *  - ADMIN_NOTIFY_EMAIL (default: ambit@sevrixgov.com)
  *  - ADMIN_NOTIFY_ON_REPEAT=1  (also notify admin on repeat submits)
- *  - APP_URL / FRONTEND_URL (used for links in welcome email)
+ *  - APP_URL / FRONTEND_URL (used for links in emails)
  */
 const ADMIN_NOTIFY_EMAIL = process.env.ADMIN_NOTIFY_EMAIL || "ambit@sevrixgov.com";
 const ADMIN_NOTIFY_ON_REPEAT = String(process.env.ADMIN_NOTIFY_ON_REPEAT || "") === "1";
 
 const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.ambitco.app";
-const TRIAL_DAYS = Number(process.env.TRIAL_DAYS || 7);
-
 const RESEND_TIMEOUT_MS = Number(process.env.RESEND_TIMEOUT_MS || 2500);
 
 /**
@@ -251,14 +249,6 @@ function normalizeSources(v) {
   return uniq.length ? uniq : undefined;
 }
 
-// ✅ 7-day trial helper
-function buildTrialWindow(days = 7) {
-  const now = new Date();
-  const ms = days * 24 * 60 * 60 * 1000;
-  const trialEndsAt = new Date(now.getTime() + ms);
-  return { now, trialEndsAt };
-}
-
 /**
  * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
  */
@@ -293,8 +283,6 @@ router.get("/customers/:id/profile", async (req, res) => {
         sources: true,
         isActive: true,
         subscriptionStatus: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
         updatedAt: true,
       },
     });
@@ -402,8 +390,6 @@ router.get("/customers", async (req, res) => {
         subscriptionStatus: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -443,8 +429,6 @@ router.get("/customers/:id", async (req, res) => {
         subscriptionStatus: true,
         stripeCustomerId: true,
         stripeSubscriptionId: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -458,7 +442,7 @@ router.get("/customers/:id", async (req, res) => {
   }
 });
 
-// ✅ POST /engine/customers (create or update) + START 7-DAY TRIAL (no CC) + WELCOME + ADMIN NOTIFY
+// ✅ POST /engine/customers (create or update) — PAID-FIRST model (no trial start)
 router.post("/customers", async (req, res) => {
   try {
     const body = req.body || {};
@@ -493,20 +477,13 @@ router.post("/customers", async (req, res) => {
         id: true,
         isActive: true,
         subscriptionStatus: true,
-        trialStartedAt: true,
-        trialEndsAt: true,
       },
     });
 
     const isNewSignup = !existing;
 
-    const shouldStartTrial =
-      !existing || (!existing.isActive && !existing.trialStartedAt && !existing.trialEndsAt);
-
-    const { now, trialEndsAt } = buildTrialWindow(TRIAL_DAYS);
-
     const updateData = {};
-    if (providedName) updateData.name = providedName;
+    if (providedName !== undefined) updateData.name = providedName;
     if (phone !== undefined) updateData.phone = phone;
     if (industry !== undefined) updateData.industry = industry;
 
@@ -518,24 +495,10 @@ router.post("/customers", async (req, res) => {
     if (naics !== undefined) updateData.naics = naics;
 
     if (segments !== undefined) updateData.segments = segments;
-    if (sources !== undefined) updateData.sources = sources; // only if valid
+    if (sources !== undefined) updateData.sources = sources;
     if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
-    if (shouldStartTrial) {
-      updateData.trialStartedAt = now;
-      updateData.trialEndsAt = trialEndsAt;
-      updateData.subscriptionStatus = "TRIALING";
-      updateData.isActive = true;
-    } else if (
-      existing?.subscriptionStatus === "TRIALING" &&
-      existing?.trialEndsAt &&
-      new Date(existing.trialEndsAt).getTime() > now.getTime() &&
-      existing?.isActive === false
-    ) {
-      // self-heal legacy trial records that were set inactive
-      updateData.isActive = true;
-    }
-
+    // Keep existing paid customers active; new customers start inactive until Stripe confirms payment.
     const customer = await prisma.customer.upsert({
       where: { email },
       update: updateData,
@@ -552,10 +515,8 @@ router.post("/customers", async (req, res) => {
         segments: segmentsForCreate,
         sources: sourcesForCreate,
         naicsCodes: naicsCodesForCreate,
-        trialStartedAt: now,
-        trialEndsAt,
-        subscriptionStatus: "TRIALING",
-        isActive: true,
+        subscriptionStatus: "INACTIVE",
+        isActive: false,
       },
     });
 
@@ -575,8 +536,6 @@ router.post("/customers", async (req, res) => {
       sources: customer.sources,
       isActive: customer.isActive,
       subscriptionStatus: customer.subscriptionStatus,
-      trialStartedAt: customer.trialStartedAt,
-      trialEndsAt: customer.trialEndsAt,
       createdAt: customer.createdAt,
       updatedAt: customer.updatedAt,
     };
@@ -592,34 +551,27 @@ router.post("/customers", async (req, res) => {
     queueMicrotask(() => {
       // Welcome email to customer (NEW signup only)
       if (isNewSignup) {
-        const subject = "Welcome to AMBIT — your 7-day free trial starts now";
-        const matchesUrl = `${APP_URL}/matches/${customer.id}`;
+        const subject = "Welcome to AMBIT — complete your subscription to start receiving matches";
+        const choosePlanUrl = `${APP_URL}/choose-plan?email=${encodeURIComponent(customer.email || "")}`;
         const profileUrl = `${APP_URL}/customers/${customer.id}/profile`;
 
         const html = `
           <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
             <h2 style="margin:0 0 8px">Welcome to AMBIT 👋</h2>
+
             <p style="margin:0 0 12px">
-              Your <b>7-day free trial</b> is active. You’ll receive <b>daily matched opportunities</b>
-              across <b>Residential • Commercial • Government</b>.
+              To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.
             </p>
 
             <p style="margin:0 0 12px">
-              If you don’t see opportunities you like right away, widen your net:
+              Complete your plan selection to activate delivery across
+              <b> Residential • Commercial • Government</b>.
             </p>
-
-            <ul style="margin:0 0 12px;padding-left:18px;color:#444">
-              <li>Add or expand <b>NAICS codes</b> (even 2–4 helps a lot)</li>
-              <li>Add more <b>keywords</b> (services, materials, equipment, brands)</li>
-              <li>Expand your <b>service area</b> (nearby cities/counties/statewide)</li>
-            </ul>
-
-            <p style="margin:0 0 12px">Want to see your matches now?</p>
 
             <p style="margin:16px 0 0">
-              <a href="${matchesUrl}" target="_blank"
+              <a href="${choosePlanUrl}" target="_blank"
                 style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
-                View my matches
+                Choose my plan
               </a>
             </p>
 
@@ -627,10 +579,6 @@ router.post("/customers", async (req, res) => {
               <a href="${profileUrl}" target="_blank" style="color:#111;text-decoration:underline">
                 Update my profile
               </a>
-            </p>
-
-            <p style="margin:14px 0 0;color:#444;font-size:13px">
-              Trial ends: <b>${customer.trialEndsAt ? new Date(customer.trialEndsAt).toLocaleString("en-US") : "—"}</b>
             </p>
 
             <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
@@ -645,12 +593,8 @@ router.post("/customers", async (req, res) => {
 
         const text =
           `Welcome to AMBIT!\n\n` +
-          `Your 7-day free trial is active. You'll receive daily matched opportunities.\n\n` +
-          `If you don’t see opportunities you like right away, widen your net:\n` +
-          `- Add or expand NAICS codes (2–4 helps a lot)\n` +
-          `- Add more keywords (services, materials, equipment, brands)\n` +
-          `- Expand your service area (nearby cities/counties/statewide)\n\n` +
-          `View matches: ${matchesUrl}\n` +
+          `To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.\n\n` +
+          `Choose plan: ${choosePlanUrl}\n` +
           `Update profile: ${profileUrl}\n`;
 
         void sendResendEmailSafe({
@@ -675,7 +619,7 @@ router.post("/customers", async (req, res) => {
               <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
               <li><b>NAICS:</b> ${customer.naics || "—"}</li>
               <li><b>Keywords:</b> ${customer.keywords || "—"}</li>
-              <li><b>Trial ends:</b> ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}</li>
+              <li><b>Status:</b> ${customer.subscriptionStatus || "INACTIVE"}</li>
             </ul>
           </div>
         `;
@@ -689,7 +633,7 @@ router.post("/customers", async (req, res) => {
           `Segments: ${(customer.segments || []).join(", ") || "—"}\n` +
           `NAICS: ${customer.naics || "—"}\n` +
           `Keywords: ${customer.keywords || "—"}\n` +
-          `Trial ends: ${customer.trialEndsAt ? new Date(customer.trialEndsAt).toISOString() : "—"}`;
+          `Status: ${customer.subscriptionStatus || "INACTIVE"}`;
 
         void sendResendEmailSafe({
           to: ADMIN_NOTIFY_EMAIL,

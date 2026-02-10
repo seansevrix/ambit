@@ -193,7 +193,7 @@ function buildUpsellHtml({
       </div>
 
       <p style="margin:0 0 12px">
-        Your 7-day free trial ended, so daily match delivery is paused.
+        Your Subscription required ended, so daily match delivery is paused.
       </p>
 
       <p style="margin:0 0 12px">
@@ -373,7 +373,7 @@ async function main() {
           supportEmail: SUPPORT_EMAIL,
         });
 
-        const text = `Your 7-day free trial ended, so daily match delivery is paused.\nFinish signing up: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
+        const text = `Your Subscription required ended, so daily match delivery is paused.\nFinish signing up: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
 
         const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
         const listUnsubscribeHttp = unsubscribeUrl;

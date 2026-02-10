@@ -47,7 +47,7 @@ export async function sendMail({ to, subject, text, html }) {
 // ✅ Welcome email (uses sendMail defined above)
 export async function sendWelcomeEmail({ to, companyName }) {
   const name = (companyName || "").trim() || "there";
-  const subject = "Welcome to AMBIT — your 7-day trial is live";
+  const subject = "Welcome to AMBIT — your subscription setup is ready";
 
   const text = `Hi ${name},
 

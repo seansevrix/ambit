@@ -149,9 +149,9 @@ export default function CallRequestWidget() {
       }
 
       form.append("page", typeof window !== "undefined" ? window.location.href : "");
-      form.append("source", "free-matches-popup");
-      form.append("intent", "free-matches");
-      form.append("_subject", "New AMBIT: Free matches request");
+      form.append("source", "subscription-signup-popup");
+      form.append("intent", "subscription-signup");
+      form.append("_subject", "New AMBIT: Subscription signup request");
 
       const res = await fetch(LEAD_CAPTURE_URL, {
         method: "POST",
@@ -191,7 +191,7 @@ export default function CallRequestWidget() {
         className="fixed bottom-6 right-6 z-50 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-2 text-sm font-semibold text-black/80 shadow-lg hover:bg-black/[0.03]"
       >
         <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-        Free matches
+        Get started
       </button>
     );
   }
@@ -211,10 +211,10 @@ export default function CallRequestWidget() {
         <div className="flex items-start justify-between gap-3 border-b border-black/10 px-5 py-4">
           <div className="min-w-0">
             <div className="text-xs font-black tracking-[0.16em] text-black/45">
-              FREE MATCHES
+              Get started
             </div>
             <div className="mt-1 text-base font-black leading-snug text-black">
-              Want free matches tomorrow morning?
+              Want Get started tomorrow morning?
             </div>
             <div className="mt-1 text-sm leading-relaxed text-black/65">
               Enter your email and we’ll send sample opportunities to show how
@@ -247,7 +247,7 @@ export default function CallRequestWidget() {
                   href="/get-started"
                   className="inline-flex w-full items-center justify-center rounded-2xl bg-[#1A4FA3] px-4 py-3 text-sm font-semibold text-white hover:bg-[#15428B]"
                 >
-                  Start 7-day free trial
+                  Start Subscription required
                 </Link>
 
                 <button
@@ -311,7 +311,7 @@ export default function CallRequestWidget() {
                   href="/get-started"
                   className="inline-flex w-full items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/70 hover:bg-black/[0.03]"
                 >
-                  Or start the 7-day free trial
+                  Or start the Subscription required
                 </Link>
 
                 <button

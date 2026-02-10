@@ -2,8 +2,8 @@
 import Link from "next/link";
 
 const TRUST_BADGES = [
-  "7-day free trial",
-  "No credit card required",
+  "Subscription required",
+  "Subscription required",
   "Secure checkout (Stripe)",
   "Cancel anytime",
   "No spam",
@@ -11,12 +11,12 @@ const TRUST_BADGES = [
 
 const FAQ = [
   {
-    q: "Do I get charged during the free trial?",
-    a: "No. Your trial starts after you create a profile. You won’t be charged until the trial ends. Cancel anytime before that.",
+    q: "When do I get charged?",
+    a: "You are charged immediately when you activate a subscription. Cancel anytime.",
   },
   {
     q: "What happens after I click Get Started?",
-    a: "You’ll create a quick profile (markets + NAICS + keywords + location). Then AMBIT generates your matches in your portal and starts your trial.",
+    a: "You’ll create a quick profile (markets + NAICS + keywords + location). Then AMBIT generates your matches in your portal once your subscription is active.",
   },
   {
     q: "When do I receive matches?",
@@ -145,7 +145,7 @@ export default function PricingPage() {
               "Email digest (quiet mode)",
               "Edit profile anytime (NAICS, keywords, location)",
             ]}
-            cta="Create profile → Start free trial"
+            cta="Create profile → Choose plan"
             href="/get-started?plan=single"
             kicker="Best for: testing AMBIT fast"
           />
@@ -161,7 +161,7 @@ export default function PricingPage() {
               "Email digest (quiet mode)",
               "Edit profile anytime (NAICS, keywords, location)",
             ]}
-            cta="Create profile → Start free trial"
+            cta="Create profile → Choose plan"
             href="/get-started?plan=all"
             featured
             badge="Most popular"
@@ -179,7 +179,7 @@ export default function PricingPage() {
           <div className="mt-5 grid gap-4 md:grid-cols-3">
             <Step n="1" title="Create your profile" desc="Markets + NAICS + keywords + service area." />
             <Step n="2" title="Review your first matches" desc="See ranked opportunities in your portal." />
-            <Step n="3" title="Start your free trial" desc="Daily delivery. Cancel anytime." accent />
+            <Step n="3" title="Activate your subscription" desc="Daily delivery with active subscription. Cancel anytime." accent />
           </div>
 
           <div className="mt-5 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-xs text-white/60">

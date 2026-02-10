@@ -15,7 +15,7 @@ function setIfDefined(obj, key, value) {
 }
 
 function isActiveStatus(status) {
-  return status === "active" || status === "trialing";
+  return status === "active";
 }
 
 async function updateCustomerById(customerId, patch) {
