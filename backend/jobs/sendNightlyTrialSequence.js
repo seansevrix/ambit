@@ -8,6 +8,11 @@ const REPLY_TO = process.env.REPLY_TO || "ambit@sevrixgov.com";
 const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.ambitco.app";
 const DRY_RUN = String(process.env.DRY_RUN || "") === "1";
 
+// Throttle/retry controls (override with env vars if needed)
+const SEND_GAP_MS = Number(process.env.SEND_GAP_MS || 650); // <= 2 req/sec
+const RESEND_MAX_RETRIES = Number(process.env.RESEND_MAX_RETRIES || 4);
+const RESEND_BASE_RETRY_MS = Number(process.env.RESEND_BASE_RETRY_MS || 800);
+
 /**
  * 7-night trial sequence
  * Day index is 1..7
@@ -80,6 +85,10 @@ const SEQUENCE = [
 
 /* ---------------- Helpers ---------------- */
 
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 function hasField(obj, field) {
   return Object.prototype.hasOwnProperty.call(obj, field);
 }
@@ -88,6 +97,17 @@ function toDateSafe(value) {
   if (!value) return null;
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function normalizeEmail(raw) {
+  if (raw == null) return "";
+  return String(raw).trim().toLowerCase();
+}
+
+// Basic practical validator for outbound sending
+function isValidEmail(email) {
+  // disallow spaces, require exactly one "@", require dot in domain with 2+ char TLD
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email);
 }
 
 function getPTParts(date) {
@@ -213,34 +233,69 @@ function buildEmail({ firstName, day, activateUrl }) {
   return { subject: tpl.subject, html, text };
 }
 
+function getRetryDelayMs(res, attempt) {
+  const retryAfter = res.headers.get("retry-after");
+  if (retryAfter) {
+    const asNumber = Number(retryAfter);
+    if (!Number.isNaN(asNumber)) {
+      return Math.max(500, asNumber * 1000);
+    }
+    const asDate = new Date(retryAfter);
+    if (!Number.isNaN(asDate.getTime())) {
+      return Math.max(500, asDate.getTime() - Date.now());
+    }
+  }
+
+  // Exponential backoff fallback: 800ms, 1600ms, 3200ms...
+  return Math.min(10000, RESEND_BASE_RETRY_MS * 2 ** (attempt - 1));
+}
+
 async function sendResendEmail({ to, subject, html, text }) {
   if (DRY_RUN) {
     console.log(`[DRY_RUN] Would send to ${to}: ${subject}`);
     return { id: "dry_run" };
   }
 
-  const res = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: RESEND_FROM,
-      to: [to],
-      reply_to: REPLY_TO,
-      subject,
-      html,
-      text,
-    }),
-  });
+  let lastErr;
 
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Resend ${res.status}: ${err}`);
+  for (let attempt = 1; attempt <= RESEND_MAX_RETRIES; attempt++) {
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: RESEND_FROM,
+        to: [to],
+        reply_to: REPLY_TO,
+        subject,
+        html,
+        text,
+      }),
+    });
+
+    if (res.ok) {
+      return res.json();
+    }
+
+    const errText = await res.text();
+    const isRetryable = res.status === 429 || res.status >= 500;
+
+    if (isRetryable && attempt < RESEND_MAX_RETRIES) {
+      const waitMs = getRetryDelayMs(res, attempt);
+      console.warn(
+        `Resend ${res.status} for ${to} (attempt ${attempt}/${RESEND_MAX_RETRIES}). Retrying in ${waitMs}ms`
+      );
+      await sleep(waitMs);
+      continue;
+    }
+
+    lastErr = new Error(`Resend ${res.status}: ${errText}`);
+    break;
   }
 
-  return res.json();
+  throw lastErr || new Error("Unknown email send error");
 }
 
 /* ---------------- Main ---------------- */
@@ -252,8 +307,6 @@ async function main() {
   }
 
   const now = new Date();
-
-  // IMPORTANT: no `email: { not: null }` filter here (caused Prisma validation error in your schema)
   const customers = await prisma.customer.findMany();
 
   console.log(`Loaded customers: ${customers.length}`);
@@ -262,41 +315,53 @@ async function main() {
   let sent = 0;
   let skipped = 0;
   let failed = 0;
+  let invalidEmailCount = 0;
+  let duplicateEmailCount = 0;
+
+  const seenEmails = new Set();
 
   for (const c of customers) {
     try {
+      const email = normalizeEmail(c.email);
+
       // Basic email guard
-      if (!c.email || typeof c.email !== "string" || !c.email.includes("@")) {
+      if (!email || !isValidEmail(email)) {
+        invalidEmailCount++;
+        skipped++;
+        if (c.email) console.warn(`Skipping invalid email: ${c.email}`);
+        continue;
+      }
+
+      // De-duplicate recipients in same run
+      if (seenEmails.has(email)) {
+        duplicateEmailCount++;
         skipped++;
         continue;
       }
+      seenEmails.add(email);
 
       if (isUnsubscribed(c)) {
         skipped++;
         continue;
       }
 
-      // Paid users should not receive trial nurture
       if (isLikelySubscribed(c)) {
         skipped++;
         continue;
       }
 
-      // Trial window check
       const trialEndsAt = toDateSafe(c.trialEndsAt);
       if (trialEndsAt && now > trialEndsAt) {
         skipped++;
         continue;
       }
 
-      // Day 1..7 only
       const day = getTrialDay(c, now);
       if (day < 1 || day > 7) {
         skipped++;
         continue;
       }
 
-      // Prevent duplicate sends on same PT calendar day
       if (alreadySentTonight(c, now)) {
         skipped++;
         continue;
@@ -305,7 +370,7 @@ async function main() {
       eligible++;
 
       const activateUrl = `${APP_URL.replace(/\/$/, "")}/get-started?email=${encodeURIComponent(
-        c.email
+        email
       )}`;
 
       const { subject, html, text } = buildEmail({
@@ -315,7 +380,7 @@ async function main() {
       });
 
       await sendResendEmail({
-        to: c.email,
+        to: email,
         subject,
         html,
         text,
@@ -343,7 +408,12 @@ async function main() {
       }
 
       sent++;
-      console.log(`Sent day ${day} to ${c.email}`);
+      console.log(`Sent day ${day} to ${email}`);
+
+      // Throttle for Resend 2 req/sec limit
+      if (!DRY_RUN) {
+        await sleep(SEND_GAP_MS);
+      }
     } catch (err) {
       failed++;
       console.error(`Failed for ${c.email}:`, err?.message || err);
@@ -351,10 +421,9 @@ async function main() {
   }
 
   console.log(
-    `Nightly trial sequence complete | eligible=${eligible} sent=${sent} skipped=${skipped} failed=${failed}`
+    `Nightly trial sequence complete | eligible=${eligible} sent=${sent} skipped=${skipped} failed=${failed} invalidEmails=${invalidEmailCount} duplicates=${duplicateEmailCount}`
   );
 
-  // Partial failures should not crash whole run
   process.exit(0);
 }
 
