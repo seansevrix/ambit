@@ -2,6 +2,7 @@
 import express from "express";
 import crypto from "crypto";
 import prisma from "../lib/prisma.js";
+import stripe from "../lib/stripe.js"; // make sure this path matches your project
 
 const router = express.Router();
 
@@ -21,6 +22,27 @@ const ADMIN_NOTIFY_ON_REPEAT = String(process.env.ADMIN_NOTIFY_ON_REPEAT || "") 
 
 const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.ambitco.app";
 const RESEND_TIMEOUT_MS = Number(process.env.RESEND_TIMEOUT_MS || 2500);
+
+/**
+ * Paid-first plan mapping.
+ * Supports multiple env var naming styles for flexibility.
+ */
+const PRICE_ID_ASSOCIATE =
+  process.env.STRIPE_PRICE_ID_ASSOCIATE ||
+  process.env.STRIPE_ASSOCIATE_PRICE_ID ||
+  process.env.STRIPE_PRICE_ASSOCIATE ||
+  "";
+
+const PRICE_ID_EXECUTIVE =
+  process.env.STRIPE_PRICE_ID_EXECUTIVE ||
+  process.env.STRIPE_EXECUTIVE_PRICE_ID ||
+  process.env.STRIPE_PRICE_EXECUTIVE ||
+  "";
+
+/**
+ * Consider these statuses "paid/allowed" from Stripe webhook sync.
+ */
+const PAID_ACTIVE_STATUSES = new Set(["ACTIVE", "PAST_DUE", "UNPAID"]);
 
 /**
  * ✅ Resend email with hard timeout (so it can’t hang the server)
@@ -249,6 +271,28 @@ function normalizeSources(v) {
   return uniq.length ? uniq : undefined;
 }
 
+function normalizePlan(v) {
+  const p = String(v || "").trim().toLowerCase();
+  if (["executive", "exec", "pro", "299", "299/mo"].includes(p)) return "executive";
+  return "associate";
+}
+
+function resolvePriceId(plan) {
+  if (plan === "executive") return PRICE_ID_EXECUTIVE;
+  return PRICE_ID_ASSOCIATE;
+}
+
+function getSuccessUrl(customerId) {
+  // change to your real post-checkout route if needed
+  return `${APP_URL}/matches/${customerId}?checkout=success`;
+}
+
+function getCancelUrl(customerId, email) {
+  return `${APP_URL}/get-started?customerId=${customerId}&email=${encodeURIComponent(
+    email || ""
+  )}&checkout=canceled`;
+}
+
 /**
  * ✅ SELF-SERVE PROFILE ROUTES (NO ADMIN KEY)
  */
@@ -442,7 +486,13 @@ router.get("/customers/:id", async (req, res) => {
   }
 });
 
-// ✅ POST /engine/customers (create or update) — PAID-FIRST model (no trial start)
+/**
+ * ✅ POST /engine/customers
+ * Paid-first + immediate checkout session creation.
+ * - New customers are created as INACTIVE.
+ * - Checkout session is created immediately.
+ * - Account becomes active only after Stripe webhook confirms payment/subscription.
+ */
 router.post("/customers", async (req, res) => {
   try {
     const body = req.body || {};
@@ -459,17 +509,27 @@ router.post("/customers", async (req, res) => {
     const serviceArea = optionalStr(body.serviceArea) || optionalStr(body.location);
 
     const services = optionalStr(body.services);
-
     const keywords = normalizeComma(body.keywords);
     const naics = normalizeComma(body.naics);
 
     const segments = normalizeSegments(body.segments);
-    const sources = normalizeSources(body.sources); // ingest sources only
+    const sources = normalizeSources(body.sources);
     const naicsCodes = normalizeNaicsCodes(body.naicsCodes);
 
     const segmentsForCreate = segments ?? ["residential", "commercial", "government"];
     const sourcesForCreate = sources ?? ["sam", "opengov"];
     const naicsCodesForCreate = naicsCodes ?? [];
+
+    const plan = normalizePlan(body.plan);
+    const priceId = resolvePriceId(plan);
+
+    if (!priceId) {
+      return res.status(500).json({
+        ok: false,
+        error:
+          "Stripe price ID is missing. Set STRIPE_PRICE_ID_ASSOCIATE and/or STRIPE_PRICE_ID_EXECUTIVE in backend env.",
+      });
+    }
 
     const existing = await prisma.customer.findUnique({
       where: { email },
@@ -477,6 +537,7 @@ router.post("/customers", async (req, res) => {
         id: true,
         isActive: true,
         subscriptionStatus: true,
+        stripeCustomerId: true,
       },
     });
 
@@ -486,19 +547,21 @@ router.post("/customers", async (req, res) => {
     if (providedName !== undefined) updateData.name = providedName;
     if (phone !== undefined) updateData.phone = phone;
     if (industry !== undefined) updateData.industry = industry;
-
     if (location !== undefined) updateData.location = location;
     if (serviceArea !== undefined) updateData.serviceArea = serviceArea;
-
     if (services !== undefined) updateData.services = services;
     if (keywords !== undefined) updateData.keywords = keywords;
     if (naics !== undefined) updateData.naics = naics;
-
     if (segments !== undefined) updateData.segments = segments;
     if (sources !== undefined) updateData.sources = sources;
     if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
-    // Keep existing paid customers active; new customers start inactive until Stripe confirms payment.
+    // Ensure unpaid accounts remain inactive until webhook confirms paid subscription.
+    updateData.isActive = false;
+    if (!PAID_ACTIVE_STATUSES.has(String(existing?.subscriptionStatus || "").toUpperCase())) {
+      updateData.subscriptionStatus = "INACTIVE";
+    }
+
     const customer = await prisma.customer.upsert({
       where: { email },
       update: updateData,
@@ -520,7 +583,66 @@ router.post("/customers", async (req, res) => {
       },
     });
 
-    // ✅ respond immediately (never block signup on email)
+    // If already paid/active, no need to force another checkout.
+    const statusUpper = String(customer.subscriptionStatus || "").toUpperCase();
+    const alreadyPaid = PAID_ACTIVE_STATUSES.has(statusUpper) && Boolean(customer.isActive);
+
+    let checkoutUrl = null;
+    let checkoutSessionId = null;
+
+    if (!alreadyPaid) {
+      // Ensure Stripe customer exists (re-use if present)
+      let stripeCustomerId = customer.stripeCustomerId || existing?.stripeCustomerId || null;
+
+      if (!stripeCustomerId) {
+        const sc = await stripe.customers.create({
+          email: customer.email,
+          name: customer.name || undefined,
+          phone: customer.phone || undefined,
+          metadata: {
+            customerId: String(customer.id),
+            app: "ambit",
+          },
+        });
+        stripeCustomerId = sc.id;
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "subscription",
+        customer: stripeCustomerId,
+        line_items: [{ price: priceId, quantity: 1 }],
+        success_url: getSuccessUrl(customer.id),
+        cancel_url: getCancelUrl(customer.id, customer.email),
+        payment_method_collection: "always",
+        allow_promotion_codes: true,
+        client_reference_id: String(customer.id),
+        metadata: {
+          customerId: String(customer.id),
+          email: customer.email,
+          plan,
+          source: "customers_signup",
+        },
+        subscription_data: {
+          metadata: {
+            customerId: String(customer.id),
+            plan,
+          },
+        },
+      });
+
+      checkoutUrl = session.url || null;
+      checkoutSessionId = session.id || null;
+
+      await prisma.customer.update({
+        where: { id: customer.id },
+        data: {
+          stripeCustomerId,
+          isActive: false,
+          subscriptionStatus: "INACTIVE",
+        },
+      });
+    }
+
     const safeCustomer = {
       id: customer.id,
       name: customer.name,
@@ -534,25 +656,30 @@ router.post("/customers", async (req, res) => {
       naicsCodes: customer.naicsCodes,
       segments: customer.segments,
       sources: customer.sources,
-      isActive: customer.isActive,
-      subscriptionStatus: customer.subscriptionStatus,
+      isActive: alreadyPaid ? true : false,
+      subscriptionStatus: alreadyPaid ? customer.subscriptionStatus : "INACTIVE",
+      stripeCustomerId: customer.stripeCustomerId ?? null,
       createdAt: customer.createdAt,
       updatedAt: customer.updatedAt,
     };
 
+    // Respond immediately
     res.status(200).json({
       ok: true,
       customerId: customer.id,
       customer: safeCustomer,
       isNewSignup,
+      alreadyPaid,
+      requiresCheckout: !alreadyPaid,
+      checkoutUrl,
+      checkoutSessionId,
+      plan,
     });
 
-    // ✅ background work (emails)
+    // Background emails
     queueMicrotask(() => {
-      // Welcome email to customer (NEW signup only)
       if (isNewSignup) {
-        const subject = "Welcome to AMBIT — complete your subscription to start receiving matches";
-        const choosePlanUrl = `${APP_URL}/choose-plan?email=${encodeURIComponent(customer.email || "")}`;
+        const subject = "Welcome to AMBIT — complete payment to activate your account";
         const profileUrl = `${APP_URL}/customers/${customer.id}/profile`;
 
         const html = `
@@ -560,20 +687,21 @@ router.post("/customers", async (req, res) => {
             <h2 style="margin:0 0 8px">Welcome to AMBIT 👋</h2>
 
             <p style="margin:0 0 12px">
-              To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.
+              Your profile is created. Complete payment to activate daily matched opportunities.
             </p>
 
-            <p style="margin:0 0 12px">
-              Complete your plan selection to activate delivery across
-              <b> Residential • Commercial • Government</b>.
-            </p>
-
-            <p style="margin:16px 0 0">
-              <a href="${choosePlanUrl}" target="_blank"
-                style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
-                Choose my plan
-              </a>
-            </p>
+            ${
+              checkoutUrl
+                ? `
+              <p style="margin:16px 0 0">
+                <a href="${checkoutUrl}" target="_blank"
+                  style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
+                  Complete payment
+                </a>
+              </p>
+              `
+                : ""
+            }
 
             <p style="margin:10px 0 0">
               <a href="${profileUrl}" target="_blank" style="color:#111;text-decoration:underline">
@@ -593,8 +721,8 @@ router.post("/customers", async (req, res) => {
 
         const text =
           `Welcome to AMBIT!\n\n` +
-          `To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.\n\n` +
-          `Choose plan: ${choosePlanUrl}\n` +
+          `Your profile is created. Complete payment to activate daily matched opportunities.\n\n` +
+          (checkoutUrl ? `Complete payment: ${checkoutUrl}\n` : "") +
           `Update profile: ${profileUrl}\n`;
 
         void sendResendEmailSafe({
@@ -605,13 +733,12 @@ router.post("/customers", async (req, res) => {
         });
       }
 
-      // Admin notify on new signup (and optionally on repeats)
       if (isNewSignup || ADMIN_NOTIFY_ON_REPEAT) {
         const subject = `New AMBIT signup: ${customer.email}`;
         const html = `
           <div style="font-family:ui-sans-serif,system-ui;line-height:1.5">
             <h2 style="margin:0 0 8px">New AMBIT signup</h2>
-            <p style="margin:0 0 12px"><b>${customer.email}</b> just created a profile.</p>
+            <p style="margin:0 0 12px"><b>${customer.email}</b> created/updated a profile.</p>
             <ul style="margin:0;padding-left:18px">
               <li><b>Name:</b> ${customer.name || "—"}</li>
               <li><b>Phone:</b> ${customer.phone || "—"}</li>
@@ -619,7 +746,9 @@ router.post("/customers", async (req, res) => {
               <li><b>Segments:</b> ${(customer.segments || []).join(", ")}</li>
               <li><b>NAICS:</b> ${customer.naics || "—"}</li>
               <li><b>Keywords:</b> ${customer.keywords || "—"}</li>
-              <li><b>Status:</b> ${customer.subscriptionStatus || "INACTIVE"}</li>
+              <li><b>Plan:</b> ${plan}</li>
+              <li><b>Status:</b> ${alreadyPaid ? customer.subscriptionStatus : "INACTIVE"}</li>
+              <li><b>Checkout created:</b> ${checkoutSessionId ? "Yes" : "No"}</li>
             </ul>
           </div>
         `;
@@ -633,7 +762,9 @@ router.post("/customers", async (req, res) => {
           `Segments: ${(customer.segments || []).join(", ") || "—"}\n` +
           `NAICS: ${customer.naics || "—"}\n` +
           `Keywords: ${customer.keywords || "—"}\n` +
-          `Status: ${customer.subscriptionStatus || "INACTIVE"}`;
+          `Plan: ${plan}\n` +
+          `Status: ${alreadyPaid ? customer.subscriptionStatus : "INACTIVE"}\n` +
+          `Checkout created: ${checkoutSessionId ? "Yes" : "No"}`;
 
         void sendResendEmailSafe({
           to: ADMIN_NOTIFY_EMAIL,
