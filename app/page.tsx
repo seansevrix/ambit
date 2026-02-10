@@ -316,9 +316,8 @@ export default function HomePage() {
             {/* LOUDER: Offer badge */}
             <div className="mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/20 bg-[#F4FAFF] px-5 py-2.5 text-sm font-black tracking-tight text-black/85 shadow-[0_10px_30px_rgba(92,116,255,0.18)]">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.20)]" />
-              Paid plans
-              <span className="text-black/35">•</span>
-              Subscription required
+              Live Tracking
+            
             </div>
 
             <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl">
@@ -351,7 +350,7 @@ export default function HomePage() {
 
             {/* Slightly louder microcopy too */}
             <div className="mt-3 text-xs font-semibold text-black/65">
-              Active subscription required • Matches + RFQ alerts + bid support
+              Proposal Development + Matches + RFQ alerts + bid support
             </div>
 
             <SignupSocialProof />
