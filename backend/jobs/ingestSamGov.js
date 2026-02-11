@@ -16,8 +16,22 @@ function envBool(value, defaultValue = false) {
 const REQUIRE_OPEN_DUE_DATE = envBool(process.env.SAM_REQUIRE_OPEN_DUE_DATE, true);
 const FORCE_ACTIVE_QUERY = envBool(process.env.SAM_FORCE_ACTIVE_QUERY, false);
 
+// ✅ Resiliency knobs
+const SAM_MAX_RETRIES = Number(process.env.SAM_MAX_RETRIES || 6);
+const SAM_RETRY_BASE_MS = Number(process.env.SAM_RETRY_BASE_MS || 2500);
+const SAM_RETRY_MAX_MS = Number(process.env.SAM_RETRY_MAX_MS || 45000);
+const SAM_FETCH_TIMEOUT_MS = Number(process.env.SAM_FETCH_TIMEOUT_MS || 30000);
+const SAM_SOFT_FAIL_ON_UPSTREAM = envBool(process.env.SAM_SOFT_FAIL_ON_UPSTREAM, true);
+
+const RETRYABLE_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
+
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+function jitter(ms) {
+  // 80% - 120% jitter
+  return Math.floor(ms * (0.8 + Math.random() * 0.4));
 }
 
 function mmddyyyy(d) {
@@ -105,12 +119,7 @@ function pickUiLink(o) {
 }
 
 function pickNoticeId(o) {
-  return (
-    asStr(o?.noticeId) ||
-    asStr(o?.noticeID) ||
-    asStr(o?.id) ||
-    null
-  );
+  return asStr(o?.noticeId) || asStr(o?.noticeID) || asStr(o?.id) || null;
 }
 
 function pickNoticeType(o) {
@@ -124,12 +133,7 @@ function pickNoticeType(o) {
 }
 
 function pickStatus(o) {
-  return (
-    asStr(o?.status) ||
-    asStr(o?.opportunityStatus) ||
-    asStr(o?.data?.status) ||
-    null
-  );
+  return asStr(o?.status) || asStr(o?.opportunityStatus) || asStr(o?.data?.status) || null;
 }
 
 function pickAgency(o) {
@@ -158,21 +162,42 @@ function pickDueDateRaw(o) {
 }
 
 function pickInactiveDateRaw(o) {
-  return pickFirst(o, [
-    "inactiveDate",
-    "data.inactiveDate",
-    "archiveDate",
-    "data.archiveDate",
-  ]);
+  return pickFirst(o, ["inactiveDate", "data.inactiveDate", "archiveDate", "data.archiveDate"]);
 }
 
-// ✅ ONLY block "award notice" (no other gate behavior)
+function isSamSuspendedPayload(text = "") {
+  const t = String(text || "");
+  return (
+    t.includes('"code":"303001"') ||
+    t.includes("code\":\"303001\"") ||
+    (t.includes("303001") && /State\s*:\s*SUSPENDED/i.test(t))
+  );
+}
+
+class UpstreamTransientError extends Error {
+  constructor(message, meta = {}) {
+    super(message);
+    this.name = "UpstreamTransientError";
+    Object.assign(this, meta);
+  }
+}
+
+// ✅ ONLY block "award notice" + optional closed-due-date gate
 function isClosedOrNonActionable({ title, noticeType, status, active, dueDate, inactiveDate }) {
   const text = `${lower(title)} ${lower(noticeType)} ${lower(status)}`;
 
   if (text.includes("award notice")) {
     return { blocked: true, reason: "term:award notice" };
   }
+
+  // Optional gate (on by default): skip rows with clearly expired due date
+  if (REQUIRE_OPEN_DUE_DATE && dueDate && dueDate.getTime() < Date.now()) {
+    return { blocked: true, reason: "past_due_date" };
+  }
+
+  // Keep prior behavior: do NOT hard-block by active/inactive fields
+  void active;
+  void inactiveDate;
 
   return { blocked: false, reason: "open" };
 }
@@ -190,39 +215,80 @@ async function fetchPage({ postedFrom, postedTo, limit, offset }) {
     url.searchParams.set("active", "true");
   }
 
-  const attempts = 5;
+  for (let attempt = 0; attempt <= SAM_MAX_RETRIES; attempt++) {
+    const ac = new AbortController();
+    const timeout = setTimeout(() => ac.abort(), SAM_FETCH_TIMEOUT_MS);
 
-  for (let i = 1; i <= attempts; i++) {
     try {
-      const res = await fetch(url.toString());
-
-      if (res.ok) return res.json();
+      const res = await fetch(url.toString(), {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        signal: ac.signal,
+      });
 
       const text = await res.text().catch(() => "");
-      const transient = res.status === 429 || res.status >= 500;
+      clearTimeout(timeout);
 
-      if (transient && i < attempts) {
-        const backoffMs = 2000 * i; // 2s, 4s, 6s, 8s...
-        console.warn(
-          `[ingestSamGov] SAM.gov ${res.status} (try ${i}/${attempts}) — retrying in ${backoffMs}ms`
-        );
-        await sleep(backoffMs);
-        continue;
+      if (res.ok) {
+        try {
+          return JSON.parse(text);
+        } catch {
+          throw new Error(`SAM.gov returned non-JSON body (${res.status}): ${text.slice(0, 300)}`);
+        }
       }
 
-      throw new Error(`SAM.gov API failed ${res.status}: ${text.slice(0, 260)}`);
+      const retryable = RETRYABLE_HTTP.has(res.status) || isSamSuspendedPayload(text);
+      const errMsg = `SAM.gov API failed ${res.status}: ${text.slice(0, 600)}`;
+
+      if (!retryable) {
+        throw new Error(errMsg);
+      }
+
+      if (attempt === SAM_MAX_RETRIES) {
+        throw new UpstreamTransientError(errMsg, {
+          retryable: true,
+          status: res.status,
+          body: text,
+          samSuspended: isSamSuspendedPayload(text),
+        });
+      }
+
+      const backoffMs = Math.min(SAM_RETRY_MAX_MS, SAM_RETRY_BASE_MS * 2 ** attempt);
+      console.warn(
+        `[ingestSamGov] transient ${res.status} (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms`
+      );
+      await sleep(jitter(backoffMs));
     } catch (err) {
-      if (i < attempts) {
-        const backoffMs = 2000 * i;
-        console.warn(
-          `[ingestSamGov] fetch error (try ${i}/${attempts}) — retrying in ${backoffMs}ms: ${err?.message || err}`
-        );
-        await sleep(backoffMs);
-        continue;
+      clearTimeout(timeout);
+
+      const msg = String(err?.message || err || "");
+      const networkLike =
+        err?.name === "AbortError" ||
+        err?.name === "TypeError" ||
+        err?.code === "ECONNRESET" ||
+        err?.code === "ETIMEDOUT" ||
+        /fetch failed|network|timeout|aborted/i.test(msg);
+
+      if (!networkLike) {
+        throw err;
       }
-      throw err;
+
+      if (attempt === SAM_MAX_RETRIES) {
+        throw new UpstreamTransientError(`SAM.gov network failure after retries: ${msg}`, {
+          retryable: true,
+          networkLike: true,
+        });
+      }
+
+      const backoffMs = Math.min(SAM_RETRY_MAX_MS, SAM_RETRY_BASE_MS * 2 ** attempt);
+      console.warn(
+        `[ingestSamGov] network error (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms: ${msg}`
+      );
+      await sleep(jitter(backoffMs));
     }
   }
+
+  throw new UpstreamTransientError("SAM.gov fetch exhausted retries", { retryable: true });
 }
 
 async function findExistingOpportunity({ title, naics, location, postedDate, url, noticeId }) {
@@ -253,6 +319,14 @@ async function findExistingOpportunity({ title, naics, location, postedDate, url
     where,
     select: { id: true },
   });
+}
+
+function shouldSoftFail(err) {
+  const msg = String(err?.message || err || "");
+  if (err instanceof UpstreamTransientError) return true;
+  if (isSamSuspendedPayload(msg)) return true;
+  if (/SAM\.gov API failed (408|425|429|500|502|503|504)/i.test(msg)) return true;
+  return false;
 }
 
 async function main() {
@@ -395,8 +469,20 @@ async function main() {
 }
 
 main()
-  .then(() => prisma.$disconnect())
+  .then(async () => {
+    await prisma.$disconnect();
+    process.exit(0);
+  })
   .catch(async (err) => {
+    const msg = String(err?.message || err || "");
+
+    if (SAM_SOFT_FAIL_ON_UPSTREAM && shouldSoftFail(err)) {
+      console.warn(`[ingestSamGov] upstream outage/transient issue detected — soft fail: ${msg}`);
+      await prisma.$disconnect();
+      process.exit(0);
+      return;
+    }
+
     console.error(err);
     await prisma.$disconnect();
     process.exit(1);
