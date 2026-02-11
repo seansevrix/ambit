@@ -214,7 +214,7 @@ export default function CallRequestWidget() {
               Get started
             </div>
             <div className="mt-1 text-base font-black leading-snug text-black">
-              Want Get started tomorrow morning?
+              Get started tomorrow morning!
             </div>
             <div className="mt-1 text-sm leading-relaxed text-black/65">
               Enter your email and we’ll send sample opportunities to show how
