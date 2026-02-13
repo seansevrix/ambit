@@ -6,7 +6,7 @@ import GetStartedClient from "./GetStartedClient";
 const TRUST_BADGES = [
   "Subscription required",
   "$49.99/mo - Associate",
-  "$299/mo - Executive",
+  "$299.99/mo - Executive",
   "$899.99/mo - Enterprise",
 ];
 
@@ -34,20 +34,20 @@ function BlueCheck() {
 
 function LoadingFallback() {
   return (
-    <div className="h-[360px] flex items-center justify-center">
-      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/75 backdrop-blur-md p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)]">
+    <div className="flex h-[360px] items-center justify-center">
+      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/75 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)] backdrop-blur-md">
         <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center">
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
           </div>
 
           <div className="min-w-0">
-            <div className="text-black text-base font-semibold">Getting your setup ready…</div>
-            <div className="text-black/60 text-sm mt-0.5">Loading your profile builder.</div>
+            <div className="text-base font-semibold text-black">Getting your setup ready…</div>
+            <div className="mt-0.5 text-sm text-black/60">Loading your profile builder.</div>
           </div>
         </div>
 
-        <div className="mt-5 h-2 w-full rounded-full bg-black/10 overflow-hidden">
+        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-black/10">
           <div className="h-full w-[55%] bg-black/30" />
         </div>
 
@@ -60,12 +60,12 @@ function LoadingFallback() {
 function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
   return (
     <div className="flex gap-3">
-      <div className="mt-0.5 h-7 w-7 shrink-0 rounded-full bg-black/5 flex items-center justify-center text-[11px] font-black text-black/70">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-black text-black/70">
         {n}
       </div>
       <div>
         <div className="font-semibold text-black/85">{title}</div>
-        <div className="text-black/60 text-sm">{desc}</div>
+        <div className="text-sm text-black/60">{desc}</div>
       </div>
     </div>
   );
@@ -79,7 +79,7 @@ function MicroTrustRow() {
   ];
 
   return (
-    <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+    <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)] backdrop-blur-md">
       <div className="grid gap-3 sm:grid-cols-3">
         {items.map((x) => (
           <div key={x.k} className="flex items-center gap-3">
@@ -101,7 +101,6 @@ function PlanReferenceCard({
   name,
   price,
   subtitle,
-  badge,
   bullets,
   note,
   featured = false,
@@ -109,7 +108,6 @@ function PlanReferenceCard({
   name: string;
   price: string;
   subtitle: string;
-  badge: string;
   bullets: string[];
   note: string;
   featured?: boolean;
@@ -117,29 +115,16 @@ function PlanReferenceCard({
   return (
     <div
       className={[
-        "rounded-3xl border p-6 bg-white/75 backdrop-blur-md",
+        "rounded-3xl border bg-white/75 p-6 backdrop-blur-md",
         featured
           ? "border-[#1A4FA3]/35 shadow-[0_20px_55px_rgba(26,79,163,0.16)]"
           : "border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.10)]",
       ].join(" ")}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <div className="text-4xl font-black tracking-tight">{name}</div>
-          <div className="mt-2 text-3xl font-black">{price}</div>
-          <div className="mt-1 text-sm text-black/60">{subtitle}</div>
-        </div>
-
-        <span
-          className={[
-            "rounded-full px-3 py-1 text-[11px] font-bold border",
-            featured
-              ? "border-[#1A4FA3]/30 bg-[#1A4FA3]/10 text-[#1A4FA3]"
-              : "border-black/15 bg-white text-black/65",
-          ].join(" ")}
-        >
-          {badge}
-        </span>
+      <div>
+        <div className="text-4xl font-black tracking-tight">{name}</div>
+        <div className="mt-2 text-3xl font-black">{price}</div>
+        <div className="mt-1 text-sm text-black/60">{subtitle}</div>
       </div>
 
       <ul className="mt-5 space-y-2.5">
@@ -158,7 +143,6 @@ function PlanReferenceCard({
   );
 }
 
-/** Subtle blue-highlight frame to make the signup card feel alive */
 function GlowFrame({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <div
@@ -169,9 +153,7 @@ function GlowFrame({ children, className = "" }: { children: ReactNode; classNam
         "shadow-[0_28px_90px_rgba(26,79,163,0.20)]",
       ].join(" ")}
     >
-      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">
-        {children}
-      </div>
+      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">{children}</div>
     </div>
   );
 }
@@ -182,7 +164,7 @@ export default function Page() {
       {/* Base tone */}
       <div className="pointer-events-none fixed inset-0 -z-[90] bg-[#DEDEDE]" />
 
-      {/* Blueprint grid (minor + major) */}
+      {/* Blueprint grid */}
       <div className="pointer-events-none fixed inset-0 -z-[85]">
         <div className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(0,0,0,0.20)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.20)_1px,transparent_1px)] [background-size:360px_360px]" />
@@ -212,16 +194,14 @@ export default function Page() {
 
         {/* Header */}
         <div className="mt-8">
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight">
+          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
             Start getting matched opportunities today
           </h1>
 
           <p className="mt-3 max-w-3xl text-black/65">
             Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
-            <span className="font-semibold text-black/80">
-              Residential • Commercial • Government
-            </span>
-            , with optional high-touch coordination for growth-focused teams.
+            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>, with
+            optional high-touch coordination for growth-focused teams.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -236,35 +216,34 @@ export default function Page() {
           </div>
         </div>
 
-        {/* ENTERPRISE CALL-OUT */}
-        <div className="mt-6 rounded-3xl border border-[#1A4FA3]/25 bg-[linear-gradient(135deg,rgba(26,79,163,0.10),rgba(99,167,255,0.06))] p-5 shadow-[0_18px_55px_rgba(26,79,163,0.14)]">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <div className="text-xs font-bold uppercase tracking-wide text-[#1A4FA3]">
-                Ambit Enterprise
-              </div>
-              <div className="mt-1 text-lg font-black text-black">
-                $899.99/mo • 24/7 CEO/Founder access + dedicated enterprise sourcing desk
-              </div>
-              <div className="mt-1 text-sm text-black/68">
-                Designed for serious operators who need executive-level support, priority triage, and tighter
-                pursuit discipline.
-              </div>
+        {/* High-conversion enterprise tagline block */}
+        <div className="mt-6 rounded-3xl border border-[#1A4FA3]/25 bg-[linear-gradient(135deg,rgba(26,79,163,0.12),rgba(99,167,255,0.06))] p-5 shadow-[0_18px_55px_rgba(26,79,163,0.14)]">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="max-w-3xl">
+              <div className="text-xs font-bold uppercase tracking-wide text-[#1A4FA3]">Enterprise</div>
+              <h2 className="mt-1 text-xl font-black tracking-tight text-black sm:text-2xl">
+                Win higher-value contracts with less wasted estimator time.
+              </h2>
+              <p className="mt-2 text-sm text-black/70">
+                Ambit Enterprise turns your pipeline into a revenue engine with priority sourcing, faster
+                decision support, and direct leadership access when deals are on the line.
+              </p>
             </div>
+
             <Link
               href="/prime"
-              className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/30 bg-white/75 px-4 py-2 text-xs font-bold text-[#1A4FA3] hover:bg-white"
+              className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/35 bg-white/80 px-5 py-2.5 text-xs font-bold text-[#1A4FA3] transition hover:bg-white"
             >
-              View Enterprise details
+              Activate Enterprise
             </Link>
           </div>
         </div>
 
-        {/* SIGNUP CARD */}
+        {/* Signup card */}
         <GlowFrame className="mt-10">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-black/5 flex items-center justify-center font-black">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">
                 A
               </div>
               <div>
@@ -288,9 +267,9 @@ export default function Page() {
           </div>
         </GlowFrame>
 
-        {/* PLAN REFERENCE ONLY */}
-        <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
+        {/* Plan details */}
+        <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-2xl font-black tracking-tight">Plan details (reference)</h2>
             <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
               Paid-first secure checkout flow
@@ -302,7 +281,6 @@ export default function Page() {
               name="Associate"
               price="$49.99/mo"
               subtitle="Daily matched opportunities"
-              badge="Best for getting started"
               bullets={[
                 "Residential, Commercial, and Government matches",
                 "Ranked opportunities delivered daily",
@@ -316,9 +294,8 @@ export default function Page() {
 
             <PlanReferenceCard
               name="Executive"
-              price="$299/mo"
+              price="$299.99/mo"
               subtitle="Higher-touch bid-readiness support"
-              badge="Most growth-focused"
               bullets={[
                 "Everything in Associate",
                 "Priority support path",
@@ -335,7 +312,6 @@ export default function Page() {
               name="Enterprise"
               price="$899.99/mo"
               subtitle="Executive-grade sourcing + founder access"
-              badge="Highest-touch tier"
               bullets={[
                 "Everything in Executive",
                 "24/7 direct CEO/Founder access",
@@ -351,36 +327,50 @@ export default function Page() {
           <div className="mt-6">
             <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
             <p className="mt-2 text-sm text-black/62">
-              We help organize and guide the process, but these are the key items most service companies should have ready for contract work:
+              We help organize and guide the process, but these are the key items most service companies should
+              have ready for contract work:
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
               <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
                 <div className="font-bold text-black/85">Core business docs</div>
                 <ul className="mt-3 space-y-2 text-sm">
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Active business license(s)</span></li>
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Certificate of Insurance (COI)</span></li>
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Service area + scope of work details</span></li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Active business license(s)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Certificate of Insurance (COI)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Service area + scope of work details</span>
+                  </li>
                 </ul>
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
                 <div className="font-bold text-black/85">Bid & pricing readiness</div>
                 <ul className="mt-3 space-y-2 text-sm">
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Pricing sheet (labor, materials, markups)</span></li>
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Project timeline + staffing assumptions</span></li>
-                  <li className="flex items-start gap-2"><BlueCheck /> <span>Past project references/examples when available</span></li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Pricing sheet (labor, materials, markups)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Project timeline + staffing assumptions</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <BlueCheck /> <span>Past project references/examples when available</span>
+                  </li>
                 </ul>
               </div>
             </div>
 
             <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a dedicated sourcing desk.
+              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a
+              dedicated sourcing desk.
             </div>
           </div>
 
           <div className="mt-6 overflow-x-auto">
-            <h3 className="text-xl font-black mb-3">Side-by-side comparison</h3>
+            <h3 className="mb-3 text-xl font-black">Side-by-side comparison</h3>
             <table className="w-full min-w-[980px] text-sm">
               <thead>
                 <tr className="border-b border-black/10 text-left">
@@ -393,72 +383,101 @@ export default function Page() {
               <tbody className="text-black/82">
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Residential + Commercial + Government matches</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Ranked opportunities delivered daily</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">AMBIT-built proposal support</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Priority support path</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Higher-touch bid execution coordination</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">No-wait commercial/government support workflow</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Dedicated enterprise sourcing desk (AI + analyst)</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">24/7 direct CEO/Founder access</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Weekly executive pipeline review</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
-
                 <tr>
                   <td className="py-3 pr-4">Same-day opportunity triage SLA (priority queue)</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4">
+                    <BlueCheck /> Included
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -472,9 +491,9 @@ export default function Page() {
           </div>
         </div>
 
-        {/* BELOW */}
+        {/* Below */}
         <div className="mt-8 space-y-4">
-          <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
+          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
             <div className="text-lg font-black">What happens next</div>
 
             <div className="mt-4 space-y-4">
@@ -496,11 +515,12 @@ export default function Page() {
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to
+              match and deliver opportunities. No spam.
             </div>
           </div>
 
-          <div className="rounded-3xl border border-black/10 bg-white/70 backdrop-blur-md p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)]">
+          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
             <div className="text-lg font-black">Perfect for</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
