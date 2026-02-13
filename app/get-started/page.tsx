@@ -5,9 +5,9 @@ import GetStartedClient from "./GetStartedClient";
 
 const TRUST_BADGES = [
   "Subscription required",
-  "Subscription required",
   "$49.99/mo - Associate",
   "$299/mo - Executive",
+  "$899.99/mo - Enterprise",
 ];
 
 function LockIcon() {
@@ -195,7 +195,7 @@ export default function Page() {
         <div className="absolute inset-0 bg-gradient-to-b from-white/[0.18] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-[1080px] px-6 py-12 lg:px-10">
+      <div className="mx-auto max-w-[1140px] px-6 py-12 lg:px-10">
         {/* Top row */}
         <div className="flex items-center justify-between">
           <Link href="/" className="text-sm font-semibold text-black/60 hover:text-black">
@@ -216,13 +216,12 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 max-w-2xl text-black/65">
-            Create your profile in about 60 seconds. We’ll deliver ranked matches
-            daily across{" "}
+          <p className="mt-3 max-w-3xl text-black/65">
+            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
             <span className="font-semibold text-black/80">
               Residential • Commercial • Government
             </span>
-            .
+            , with optional high-touch coordination for growth-focused teams.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -234,6 +233,30 @@ export default function Page() {
                 {t}
               </span>
             ))}
+          </div>
+        </div>
+
+        {/* ENTERPRISE CALL-OUT */}
+        <div className="mt-6 rounded-3xl border border-[#1A4FA3]/25 bg-[linear-gradient(135deg,rgba(26,79,163,0.10),rgba(99,167,255,0.06))] p-5 shadow-[0_18px_55px_rgba(26,79,163,0.14)]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-wide text-[#1A4FA3]">
+                Ambit Enterprise
+              </div>
+              <div className="mt-1 text-lg font-black text-black">
+                $899.99/mo • 24/7 CEO/Founder access + dedicated enterprise sourcing desk
+              </div>
+              <div className="mt-1 text-sm text-black/68">
+                Designed for serious operators who need executive-level support, priority triage, and tighter
+                pursuit discipline.
+              </div>
+            </div>
+            <Link
+              href="/prime"
+              className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/30 bg-white/75 px-4 py-2 text-xs font-bold text-[#1A4FA3] hover:bg-white"
+            >
+              View Enterprise details
+            </Link>
           </div>
         </div>
 
@@ -270,11 +293,11 @@ export default function Page() {
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-2xl font-black tracking-tight">Plan details (reference)</h2>
             <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
-              Your 7-day access flow remains unchanged
+              Paid-first secure checkout flow
             </span>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
             <PlanReferenceCard
               name="Associate"
               price="$49.99/mo"
@@ -283,29 +306,45 @@ export default function Page() {
               bullets={[
                 "Residential, Commercial, and Government matches",
                 "Ranked opportunities delivered daily",
-                "AMBIT-built proposal",
-                "Project breakdown and description",
+                "AMBIT-built proposal support",
+                "Project breakdown and summary",
                 "Fast setup and simple dashboard access",
-                "24/7 Associate Support",
+                "24/7 support lane",
               ]}
               note="Great fit for operators who want consistent opportunity flow and fast execution."
             />
 
             <PlanReferenceCard
-              featured
               name="Executive"
               price="$299/mo"
-              subtitle="Includes AMBIT Prime support"
+              subtitle="Higher-touch bid-readiness support"
               badge="Most growth-focused"
               bullets={[
                 "Everything in Associate",
-                "AMBIT Prime contracts lane",
-                "No wait times for commercial/government credentials",
                 "Priority support path",
-                "AMBIT-built proposal",
-                "Higher-touch coordination for bid execution",
+                "Higher-touch bid coordination",
+                "Faster commercial/government support workflows",
+                "AMBIT Prime/priority lane access",
+                "Enhanced response speed for active pursuits",
               ]}
-              note="Built for teams targeting bigger contracts with faster support and tighter coordination."
+              note="Built for teams targeting bigger contracts with tighter coordination."
+            />
+
+            <PlanReferenceCard
+              featured
+              name="Enterprise"
+              price="$899.99/mo"
+              subtitle="Executive-grade sourcing + founder access"
+              badge="Highest-touch tier"
+              bullets={[
+                "Everything in Executive",
+                "24/7 direct CEO/Founder access",
+                "Dedicated enterprise sourcing desk (AI + analyst)",
+                "Weekly executive pipeline review cadence",
+                "Same-day opportunity triage SLA (priority queue)",
+                "White-glove onboarding + escalation support",
+              ]}
+              note="Built for serious operators who need speed, accountability, and enterprise-level execution support."
             />
           </div>
 
@@ -336,18 +375,19 @@ export default function Page() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-              Executive gives you the fastest AMBIT support lane for commercial/government credential workflows and tighter bid coordination.
+              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a dedicated sourcing desk.
             </div>
           </div>
 
           <div className="mt-6 overflow-x-auto">
             <h3 className="text-xl font-black mb-3">Side-by-side comparison</h3>
-            <table className="w-full min-w-[760px] text-sm">
+            <table className="w-full min-w-[980px] text-sm">
               <thead>
                 <tr className="border-b border-black/10 text-left">
                   <th className="py-3 pr-4 font-semibold text-black/65">Feature</th>
                   <th className="py-3 px-4 font-semibold text-black/65">Associate</th>
                   <th className="py-3 px-4 font-semibold text-black/65">Executive</th>
+                  <th className="py-3 px-4 font-semibold text-black/65">Enterprise</th>
                 </tr>
               </thead>
               <tbody className="text-black/82">
@@ -355,44 +395,68 @@ export default function Page() {
                   <td className="py-3 pr-4">Residential + Commercial + Government matches</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
                 </tr>
+
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Ranked opportunities delivered daily</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
                 </tr>
+
                 <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">AMBIT-built proposal</td>
+                  <td className="py-3 pr-4">AMBIT-built proposal support</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Project breakdown and description</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
                 </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">24/7 support access</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">AMBIT Prime contracts lane</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">No wait times for commercial/government credentials</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4"><BlueCheck /> Included</td>
-                </tr>
+
                 <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Priority support path</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
                 </tr>
-                <tr>
+
+                <tr className="border-b border-black/10">
                   <td className="py-3 pr-4">Higher-touch bid execution coordination</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                </tr>
+
+                <tr className="border-b border-black/10">
+                  <td className="py-3 pr-4">No-wait commercial/government support workflow</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                </tr>
+
+                <tr className="border-b border-black/10">
+                  <td className="py-3 pr-4">Dedicated enterprise sourcing desk (AI + analyst)</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                </tr>
+
+                <tr className="border-b border-black/10">
+                  <td className="py-3 pr-4">24/7 direct CEO/Founder access</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                </tr>
+
+                <tr className="border-b border-black/10">
+                  <td className="py-3 pr-4">Weekly executive pipeline review</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
+                  <td className="py-3 px-4"><BlueCheck /> Included</td>
+                </tr>
+
+                <tr>
+                  <td className="py-3 pr-4">Same-day opportunity triage SLA (priority queue)</td>
+                  <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4 text-black/45">—</td>
                   <td className="py-3 px-4"><BlueCheck /> Included</td>
                 </tr>
@@ -417,23 +481,22 @@ export default function Page() {
               <Step
                 n={1}
                 title="We build your profile"
-                desc="Service area + keywords + NAICS → match accuracy."
+                desc="Service area + keywords + NAICS → improved match accuracy."
               />
               <Step
                 n={2}
-                title="Matches email daily"
-                desc="Ranked opportunities delivered every morning."
+                title="Matches begin daily"
+                desc="Ranked opportunities are delivered every morning."
               />
               <Step
                 n={3}
-                title="You get the winning plan"
-                desc="Reply to connect with an AMBIT associate for strategy."
+                title="Execution lane activates"
+                desc="Associate/Executive/Enterprise support cadence starts based on your selected plan."
               />
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT
-              uses your profile only to match and deliver opportunities. No spam.
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
             </div>
           </div>
 
@@ -441,20 +504,27 @@ export default function Page() {
             <div className="text-lg font-black">Perfect for</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial"].map(
-                (t) => (
-                  <span
-                    key={t}
-                    className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
-                  >
-                    {t}
-                  </span>
-                )
-              )}
+              {[
+                "Landscaping",
+                "HVAC",
+                "Plumbing",
+                "Junk removal",
+                "Concrete",
+                "Janitorial",
+                "Multi-crew operators",
+                "Regional contractors",
+              ].map((t) => (
+                <span
+                  key={t}
+                  className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
+                >
+                  {t}
+                </span>
+              ))}
             </div>
 
             <div className="mt-4 text-sm text-black/55">
-              You can update keywords/NAICS anytime to refine matches.
+              You can update keywords/NAICS anytime to refine match quality.
             </div>
 
             <div className="mt-3 text-xs text-black/50">
