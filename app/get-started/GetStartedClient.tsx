@@ -18,7 +18,7 @@ const API_BASE = (
 const REQUEST_TIMEOUT_MS = 15000;
 
 type Market = "residential" | "commercial" | "government";
-type Plan = "associate" | "executive";
+type Plan = "associate" | "executive" | "enterprise";
 
 const ONBOARDING_MESSAGE =
   "To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.";
@@ -31,10 +31,15 @@ function normalizeMarket(m: string | null): Market {
 function normalizePlan(p: string | null): Plan {
   const v = String(p || "").trim().toLowerCase();
 
+  if (v === "enterprise") return "enterprise";
   if (v === "executive") return "executive";
   if (v === "associate") return "associate";
 
+  // Enterprise aliases
+  if (v === "corp" || v === "corporate" || v === "enterprise_plus") return "enterprise";
+
   // Back-compat aliases
+  // Keep prime => executive for legacy links. New enterprise pages should use ?plan=enterprise.
   if (v === "all" || v === "all3" || v === "all_markets" || v === "prime") return "executive";
   if (v === "single" || v === "single_market" || v === "basic") return "associate";
 
@@ -169,7 +174,7 @@ export default function GetStartedClient() {
     <div className="grid gap-4">
       <div>
         <div className="text-xs font-semibold text-black/55">Choose plan *</div>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
           <button
             type="button"
             onClick={() => setSelectedPlan("associate")}
@@ -196,6 +201,22 @@ export default function GetStartedClient() {
           >
             <div className="text-sm font-semibold text-black">Executive</div>
             <div className="text-xs text-black/55">$299/mo • Bid-readiness support</div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setSelectedPlan("enterprise")}
+            className={[
+              "rounded-xl border px-4 py-3 text-left transition",
+              selectedPlan === "enterprise"
+                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
+                : "border-black/10 bg-white hover:border-black/20",
+            ].join(" ")}
+          >
+            <div className="text-sm font-semibold text-black">Enterprise</div>
+            <div className="text-xs text-black/55">
+              $899.99/mo • 24/7 founder access + priority sourcing desk
+            </div>
           </button>
         </div>
       </div>

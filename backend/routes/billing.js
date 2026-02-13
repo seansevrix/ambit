@@ -11,6 +11,8 @@ const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SE
 // New preferred env vars
 const STRIPE_PRICE_ASSOCIATE = process.env.STRIPE_PRICE_ASSOCIATE || "";
 const STRIPE_PRICE_EXECUTIVE = process.env.STRIPE_PRICE_EXECUTIVE || "";
+const STRIPE_PRICE_ENTERPRISE =
+  process.env.STRIPE_PRICE_ENTERPRISE || process.env.STRIPE_PRICE_ENTERPRISE_ID || "";
 
 // Back-compat env vars (older naming)
 const STRIPE_PRICE_SINGLE_ID =
@@ -45,10 +47,15 @@ function normalizePlan(planRaw) {
   const p = String(planRaw || "").trim().toLowerCase();
 
   // New names
+  if (p === "enterprise") return "enterprise";
   if (p === "executive") return "executive";
   if (p === "associate") return "associate";
 
+  // Enterprise aliases (safe additions)
+  if (p === "corp" || p === "corporate" || p === "enterprise_plus") return "enterprise";
+
   // Back-compat names
+  // NOTE: keep "prime" mapped to executive to avoid accidentally charging legacy links at enterprise price.
   if (p === "all" || p === "all3" || p === "all_markets" || p === "prime") return "executive";
   if (p === "single" || p === "single_market" || p === "basic") return "associate";
 
@@ -57,9 +64,14 @@ function normalizePlan(planRaw) {
 }
 
 function resolvePriceId(plan) {
+  if (plan === "enterprise") {
+    return STRIPE_PRICE_ENTERPRISE || "";
+  }
+
   if (plan === "executive") {
     return STRIPE_PRICE_EXECUTIVE || STRIPE_PRICE_ALL_ID || "";
   }
+
   // associate
   return STRIPE_PRICE_ASSOCIATE || STRIPE_PRICE_SINGLE_ID || STRIPE_PRICE_ID || "";
 }
@@ -117,7 +129,7 @@ async function findCustomer({ customerId, email }) {
  *   {
  *     customerId?: number,
  *     email?: string,
- *     plan?: "associate" | "executive" | "single" | "all"
+ *     plan?: "associate" | "executive" | "enterprise" | "single" | "all"
  *   }
  *
  * IMPORTANT:
@@ -138,12 +150,19 @@ async function createCheckoutSession(req, res) {
     const priceId = resolvePriceId(plan);
 
     if (!priceId) {
+      let missing = "Missing STRIPE price env var on backend.";
+      if (plan === "enterprise") {
+        missing = "Missing STRIPE_PRICE_ENTERPRISE on backend env vars.";
+      } else if (plan === "executive") {
+        missing = "Missing STRIPE_PRICE_EXECUTIVE (or STRIPE_PRICE_ALL_ID) on backend env vars.";
+      } else {
+        missing =
+          "Missing STRIPE_PRICE_ASSOCIATE (or STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
+      }
+
       return res.status(500).json({
         ok: false,
-        error:
-          plan === "executive"
-            ? "Missing STRIPE_PRICE_EXECUTIVE (or STRIPE_PRICE_ALL_ID) on backend env vars."
-            : "Missing STRIPE_PRICE_ASSOCIATE (or STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.",
+        error: missing,
       });
     }
 
