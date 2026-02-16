@@ -3,12 +3,15 @@
 const COLORS = {
   pageBg: "#f3f4f6",
   cardBg: "#ffffff",
-  text: "#111827",
-  muted: "#6b7280",
+  text: "#0f172a",
+  muted: "#64748b",
   border: "#e5e7eb",
-  star: "#f6b800",
-  starEmpty: "#d1d5db",
+  ambitBlue: "#2563eb",
+  ambitBlueHoverSafe: "#1d4ed8",
 };
+
+const FONT_STACK =
+  "Inter, 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
 
 function esc(value = "") {
   return String(value)
@@ -28,39 +31,22 @@ function safeUrl(value, fallback = "#") {
 
 function formatDate(value) {
   if (!value) return "TBD";
-  const d = new Date(value);
-  if (!Number.isNaN(d.getTime())) {
-    return d.toLocaleDateString("en-US", { month: "numeric", day: "numeric", year: "numeric" });
+  const asDate = new Date(value);
+  if (!Number.isNaN(asDate.getTime())) {
+    return asDate.toLocaleDateString("en-US", {
+      month: "numeric",
+      day: "numeric",
+      year: "numeric",
+    });
   }
   return esc(value);
-}
-
-function scoreToStars(rawScore) {
-  let stars = 3;
-
-  if (typeof rawScore === "number" && !Number.isNaN(rawScore)) {
-    stars = rawScore > 5 ? Math.round(rawScore / 20) : Math.round(rawScore);
-  } else if (typeof rawScore === "string" && rawScore.trim() !== "") {
-    const n = Number(rawScore);
-    if (!Number.isNaN(n)) {
-      stars = n > 5 ? Math.round(n / 20) : Math.round(n);
-    }
-  }
-
-  stars = Math.max(1, Math.min(5, stars));
-
-  return {
-    stars,
-    filled: "★".repeat(stars),
-    empty: "★".repeat(5 - stars),
-  };
 }
 
 function renderLogo(logoUrl) {
   const cleaned = safeUrl(logoUrl, "");
   if (!cleaned) {
     return `
-      <div style="font:800 28px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text}; letter-spacing:0.5px;">
+      <div style="font:800 28px/1 ${FONT_STACK}; color:${COLORS.text}; letter-spacing:0.5px;">
         AMBIT
       </div>
     `;
@@ -70,86 +56,79 @@ function renderLogo(logoUrl) {
     <img
       src="${esc(cleaned)}"
       alt="AMBIT"
-      width="140"
-      height="44"
-      style="display:block; width:auto; height:44px; border:0; outline:none; text-decoration:none;"
+      style="display:block; max-height:44px; width:auto; border:0; outline:none; text-decoration:none;"
     />
   `;
 }
 
-function renderTopMatch(match) {
-  if (!match) {
+function renderTopMatchCard(match) {
+  if (!match || typeof match !== "object") {
     return `
-      <div style="padding:18px 0; font:500 16px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.muted};">
-        No top match available yet — we’re still scanning for your best fit.
+      <div style="border:1px solid ${COLORS.border}; border-radius:12px; padding:18px;">
+        <div style="font:700 24px/1.25 ${FONT_STACK}; color:${COLORS.text}; margin:0 0 10px;">
+          No new top match today
+        </div>
+        <div style="font:500 17px/1.6 ${FONT_STACK}; color:${COLORS.muted};">
+          We are still scanning and ranking opportunities for your profile.
+        </div>
       </div>
     `;
   }
 
-  const title = esc(match.title || "Opportunity");
-  const location = esc(match.location || "Location TBD");
-  const naics = esc(match.naics || "N/A");
-  const type = esc(match.noticeType || match.type || "Contract opportunity");
-  const due = formatDate(match.dueDate || match.responseDate);
-  const url = esc(safeUrl(match.url, "#"));
-  const { stars, filled, empty } = scoreToStars(match.score ?? match.matchScore);
+  const title = esc(match?.title || match?.opportunityTitle || match?.name || "Opportunity");
+  const location = esc(match?.location || match?.place || match?.cityState || "Location TBD");
+  const naics = esc(match?.naics || match?.naicsCode || "N/A");
+  const type = esc(match?.noticeType || match?.type || "Contract opportunity");
+  const due = formatDate(match?.dueDate || match?.responseDate || match?.deadline);
 
   return `
-    <div style="padding:18px 0; border-top:1px solid ${COLORS.border};">
-      <div style="font:700 38px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text}; margin:0 0 10px;">
+    <div style="border:1px solid ${COLORS.border}; border-radius:12px; padding:18px;">
+      <div style="font:800 44px/1.1 ${FONT_STACK}; color:${COLORS.text}; margin:0 0 12px; letter-spacing:-0.02em;">
         ${title}
       </div>
 
-      <div style="margin:0 0 10px;">
-        <span style="font:700 20px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.star}; letter-spacing:1px;">
-          ${filled}
-        </span><span style="font:700 20px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.starEmpty}; letter-spacing:1px;">
-          ${empty}
-        </span>
-        <span style="font:500 14px/1 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.muted}; margin-left:6px;">
-          ${stars}
-        </span>
+      <div style="font:500 23px/1.55 ${FONT_STACK}; color:${COLORS.text};">
+        <div><strong style="font-weight:700;">NAICS:</strong> ${naics}</div>
+        <div><strong style="font-weight:700;">Type:</strong> ${type}</div>
+        <div><strong style="font-weight:700;">Location:</strong> ${location}</div>
+        <div><strong style="font-weight:700;">Due:</strong> ${due}</div>
       </div>
-
-      <div style="font:500 18px/1.6 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text}; margin:0 0 14px;">
-        <div>🏷️ ${naics}</div>
-        <div>🧾 ${type}</div>
-        <div>📍 ${location}</div>
-        <div>📅 Due: ${due}</div>
-      </div>
-
-      <a href="${url}" target="_blank" rel="noopener noreferrer"
-         style="display:inline-block; color:#111827; text-decoration:underline; font:700 16px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-        View top match
-      </a>
     </div>
   `;
 }
 
 /**
- * Morning Matches v2 (Top Match Only)
- * Visual-only template. Does NOT change matching logic.
+ * Tech-forward AMBIT morning digest template:
+ * - Only one clickable link in the entire email: "View My Matches"
+ * - No stars, no emojis, no opportunity-level links
  */
 export function renderMorningMatchesV2({
   customerName = "there",
   matches = [],
-  allMatchesUrl = "https://www.ambitco.app/live-opportunities",
-  logoUrl = "https://www.ambitco.app/branding/ambit-logo-email.jpeg",
+  logoUrl = "",
   tagline = "Stop hunting. Start receiving.",
-  unsubscribeUrl = "#",
-  managePrefsUrl = "#",
+  // keep these accepted so existing callers won't break; links are intentionally not used
+  unsubscribeUrl = "",
+  managePrefsUrl = "",
   addressLine = "32071 Campanula Way",
-  previewText = "Your AMBIT top match is ready.",
+  previewText = "Your top AMBIT match is ready.",
+  allMatchesUrl = "",
+  viewMatchesUrl = "https://www.ambitco.app/login",
 } = {}) {
-  // TOP MATCH ONLY
-  const topMatch = Array.isArray(matches) && matches.length ? matches[0] : null;
-
   const safeName = esc(customerName);
   const safeTagline = esc(tagline);
   const safePreview = esc(previewText);
-  const safeAllMatchesUrl = esc(safeUrl(allMatchesUrl, "https://www.ambitco.app/live-opportunities"));
-  const safeUnsub = esc(safeUrl(unsubscribeUrl, "#"));
-  const safePrefs = esc(safeUrl(managePrefsUrl, "#"));
+
+  // hard-limit to top 1 for this template
+  const topMatch = Array.isArray(matches) && matches.length > 0 ? matches[0] : null;
+  const countText = topMatch
+    ? "We identified your top match for today."
+    : "No new top match today. We are still scanning for your next fit.";
+
+  // CTA URL preference: explicit viewMatchesUrl -> allMatchesUrl -> login fallback
+  const ctaUrl = esc(
+    safeUrl(viewMatchesUrl || allMatchesUrl || "https://www.ambitco.app/login", "https://www.ambitco.app/login")
+  );
 
   return `<!doctype html>
 <html lang="en">
@@ -157,9 +136,10 @@ export function renderMorningMatchesV2({
   <meta charset="UTF-8" />
   <meta name="x-apple-disable-message-reformatting" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AMBIT Morning Match</title>
+  <title>AMBIT Morning Matches</title>
 </head>
 <body style="margin:0; padding:0; background:${COLORS.pageBg};">
+  <!-- Hidden preheader -->
   <div style="display:none; max-height:0; overflow:hidden; opacity:0; mso-hide:all; visibility:hidden;">
     ${safePreview}
   </div>
@@ -172,7 +152,7 @@ export function renderMorningMatchesV2({
           <tr>
             <td style="padding:0 4px 16px 4px;">
               ${renderLogo(logoUrl)}
-              <div style="margin-top:10px; font:700 18px/1.35 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text};">
+              <div style="margin-top:10px; font:700 28px/1.35 ${FONT_STACK}; color:${COLORS.text}; letter-spacing:-0.01em;">
                 ${safeTagline}
               </div>
             </td>
@@ -180,11 +160,11 @@ export function renderMorningMatchesV2({
 
           <tr>
             <td style="background:${COLORS.cardBg}; border-radius:12px; padding:24px 28px;">
-              <div style="font:700 42px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text}; margin:0 0 8px;">
+              <div style="font:800 64px/1.1 ${FONT_STACK}; color:${COLORS.text}; margin:0 0 8px; letter-spacing:-0.03em;">
                 Hi ${safeName}
               </div>
-              <div style="font:500 23px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text};">
-                Here is your top match for today.
+              <div style="font:500 34px/1.35 ${FONT_STACK}; color:${COLORS.text}; letter-spacing:-0.01em;">
+                ${esc(countText)}
               </div>
             </td>
           </tr>
@@ -193,17 +173,24 @@ export function renderMorningMatchesV2({
 
           <tr>
             <td style="background:${COLORS.cardBg}; border-radius:12px; padding:24px 28px;">
-              <div style="font:700 48px/1.15 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.text}; margin:0 0 8px;">
+              <div style="font:800 58px/1.1 ${FONT_STACK}; color:${COLORS.text}; margin:0 0 10px; letter-spacing:-0.02em;">
                 Your top match
               </div>
+              <div style="font:500 30px/1.4 ${FONT_STACK}; color:${COLORS.text}; margin:0 0 16px; letter-spacing:-0.01em;">
+                Matched to your market, location, and profile signals.
+              </div>
 
-              ${renderTopMatch(topMatch)}
+              ${renderTopMatchCard(topMatch)}
 
-              <div style="margin-top:8px;">
-                <a href="${safeAllMatchesUrl}" target="_blank" rel="noopener noreferrer"
-                   style="color:#111827; text-decoration:underline; font:700 17px/1.2 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-                  View all matches
+              <div style="margin-top:16px;">
+                <a href="${ctaUrl}" target="_blank" rel="noopener noreferrer"
+                   style="display:block; text-align:center; background:${COLORS.ambitBlue}; color:#ffffff; text-decoration:none; font:700 24px/1 ${FONT_STACK}; padding:16px 14px; border-radius:10px;">
+                  View My Matches
                 </a>
+              </div>
+
+              <div style="margin-top:14px; font:500 17px/1.6 ${FONT_STACK}; color:${COLORS.muted};">
+                Reach out to ambit@sevrixgov.com to be connected with an AMBIT Associate for next steps.
               </div>
             </td>
           </tr>
@@ -211,11 +198,8 @@ export function renderMorningMatchesV2({
           <tr><td style="height:14px;"></td></tr>
 
           <tr>
-            <td style="padding:0 4px; font:500 13px/1.7 -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; color:${COLORS.muted};">
-              You’re receiving this email because you signed up for AMBIT alerts.
-              <a href="${safeUnsub}" style="color:#374151;">Unsubscribe</a>
-              &nbsp;•&nbsp;
-              <a href="${safePrefs}" style="color:#374151;">Manage preferences</a><br />
+            <td style="padding:0 4px; font:500 13px/1.7 ${FONT_STACK}; color:${COLORS.muted};">
+              You’re receiving this email because you signed up for AMBIT alerts.<br />
               ${esc(addressLine)}
             </td>
           </tr>
