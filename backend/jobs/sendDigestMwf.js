@@ -14,6 +14,7 @@ import "dotenv/config";
 import crypto from "crypto";
 import { PrismaClient } from "@prisma/client";
 import { Resend } from "resend";
+import { renderMorningMatchesV2 } from "../lib/emailTemplates/morningMatchesV2.js";
 
 const prisma = new PrismaClient();
 
@@ -22,16 +23,6 @@ const NO_MATCHES_TEXT =
 
 function safe(v) {
   return (v ?? "").toString();
-}
-
-function fmtDate(v) {
-  if (!v) return "—";
-  try {
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? safe(v) : d.toLocaleDateString("en-US");
-  } catch {
-    return safe(v);
-  }
 }
 
 function pick(obj, keys) {
@@ -75,7 +66,27 @@ function buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEma
   `;
 }
 
-// Existing digest HTML (top match or no match)
+function mapMatchForTemplate(m) {
+  return {
+    title: pick(m, ["title", "opportunityTitle", "name"]) || "Untitled",
+    location: pick(m, ["location", "place", "cityState"]) || "—",
+    naics: pick(m, ["naics", "naicsCode"]) || "—",
+    noticeType: pick(m, ["noticeType", "type", "solicitationType"]) || "Contract opportunity",
+    dueDate: pick(m, ["dueDate", "responseDueDate", "deadline"]),
+    url: pick(m, ["url", "link", "samUrl"]) || "#",
+    score: pick(m, ["matchScore", "score"]) || 3,
+  };
+}
+
+function guessNameFromEmail(email) {
+  const raw = safe(email).split("@")[0] || "";
+  if (!raw) return "there";
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
+// Digest HTML:
+// - If there is a match => use morningMatchesV2 template (TOP MATCH ONLY)
+// - If no match => keep existing plain "no match" body
 function buildHtml({
   customerId,
   email,
@@ -85,90 +96,46 @@ function buildHtml({
   unsubscribeUrl,
   companyAddress,
   supportEmail,
+  logoUrl,
+  tagline,
 }) {
-  const header = `
-    <div style="font-family:Arial,sans-serif;line-height:1.5">
-      <h2 style="margin:0 0 10px">AMBIT Daily Match</h2>
-      <div style="color:#444;margin-bottom:14px">
-        <div><strong>Customer ID:</strong> ${customerId}</div>
-        <div><strong>Registered Email:</strong> ${email}</div>
-      </div>
-  `;
-
-  const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
-
   if (!matches || matches.length === 0) {
+    const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
+
     return `
-      ${header}
-      <p style="margin:0 0 12px">${NO_MATCHES_TEXT}</p>
-      <p style="margin:16px 0 0">
-        <a href="${appUrl}" target="_blank"
-           style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111">
-          Open AMBIT
-        </a>
-      </p>
-      ${footer}
-    </div>
+      <div style="font-family:Arial,sans-serif;line-height:1.5">
+        <h2 style="margin:0 0 10px">AMBIT Daily Match</h2>
+        <div style="color:#444;margin-bottom:14px">
+          <div><strong>Customer ID:</strong> ${customerId}</div>
+          <div><strong>Registered Email:</strong> ${email}</div>
+        </div>
+        <p style="margin:0 0 12px">${NO_MATCHES_TEXT}</p>
+        <p style="margin:16px 0 0">
+          <a href="${appUrl}" target="_blank"
+             style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111">
+            Open AMBIT
+          </a>
+        </p>
+        ${footer}
+      </div>
     `;
   }
 
-  const max = Number(process.env.DIGEST_MAX_MATCHES || 1);
+  // TOP MATCH ONLY
+  const topMatch = matches[0];
+  const mappedTop = [mapMatchForTemplate(topMatch)];
 
-  const cards = matches
-    .slice(0, max)
-    .map((m) => {
-      const title = pick(m, ["title", "opportunityTitle", "name"]) || "Untitled";
-      const location = pick(m, ["location", "place", "cityState"]) || "—";
-      const naics = pick(m, ["naics", "naicsCode"]) || "—";
-      const url = pick(m, ["url", "link", "samUrl"]);
-      const posted = fmtDate(pick(m, ["postedDate", "postedAt", "createdAt"]));
-      const due = fmtDate(pick(m, ["dueDate", "responseDueDate", "deadline"]));
-      const value = pick(m, ["value", "estimatedValue", "amount"]);
-      const summary = pick(m, ["summary", "shortSummary", "description"]);
-
-      return `
-        <div style="padding:12px;border:1px solid #eee;border-radius:12px;margin-bottom:10px">
-          <div style="font-weight:700;margin-bottom:6px">
-            ${
-              url
-                ? `<a href="${url}" target="_blank" style="color:#111;text-decoration:none">${safe(
-                    title
-                  )}</a>`
-                : safe(title)
-            }
-          </div>
-          <div style="color:#444;font-size:14px">
-            <div><strong>Location:</strong> ${safe(location)}</div>
-            <div><strong>NAICS:</strong> ${safe(naics)}</div>
-            <div><strong>Posted:</strong> ${posted}</div>
-            <div><strong>Due:</strong> ${due}</div>
-            ${value ? `<div><strong>Est. Value:</strong> ${safe(value)}</div>` : ``}
-          </div>
-          ${
-            summary
-              ? `<p style="margin:8px 0 0;color:#333">${safe(summary).slice(0, 400)}${
-                  safe(summary).length > 400 ? "…" : ""
-                }</p>`
-              : ``
-          }
-        </div>
-      `;
-    })
-    .join("");
-
-  return `
-    ${header}
-    <p style="margin:0 0 12px">Here is your top match for today:</p>
-    ${cards}
-    <p style="margin:16px 0 0">
-      <a href="${appUrl}" target="_blank"
-         style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111">
-        View all matches
-      </a>
-    </p>
-    ${footer}
-  </div>
-  `;
+  return renderMorningMatchesV2({
+    customerName: guessNameFromEmail(email),
+    matches: mappedTop, // <= exactly one
+    allMatchesUrl: appUrl, // "View all matches" link
+    logoUrl,
+    tagline,
+    unsubscribeUrl,
+    managePrefsUrl: signupUrl,
+    addressLine: companyAddress,
+    previewText: "Your AMBIT top match is ready.",
+  });
 }
 
 // ✅ Trial-ended email (NO match details) — wording changed to “Finish signing up”
@@ -261,6 +228,7 @@ function trialIsActive(trialEndsAt) {
   const t = new Date(trialEndsAt).getTime();
   return Number.isFinite(t) && t > Date.now();
 }
+
 function trialIsEnded(trialEndsAt) {
   if (!trialEndsAt) return false;
   const t = new Date(trialEndsAt).getTime();
@@ -272,7 +240,7 @@ function trialDayNumber(trialEndsAt, totalDays = 7) {
   const end = new Date(trialEndsAt).getTime();
   if (!Number.isFinite(end)) return null;
   const msRemaining = end - Date.now();
-  const remaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000)); // ceil keeps Day 1 clean
+  const remaining = Math.ceil(msRemaining / (24 * 60 * 60 * 1000));
   const day = totalDays - remaining + 1;
   return Math.max(1, Math.min(totalDays, day));
 }
@@ -288,14 +256,20 @@ function isLikelyAnonEmail(email) {
 async function main() {
   const FROM = process.env.EMAIL_FROM; // e.g. "AMBIT <ambit@sevrixgov.com>"
   const BACKEND_URL = process.env.BACKEND_URL; // e.g. https://ambit-0dnp.onrender.com
-  const APP_URL = process.env.FRONTEND_URL || "https://ambitco.app";
+  const APP_URL = (process.env.FRONTEND_URL || "https://ambitco.app").replace(/\/$/, "");
 
   // ✅ Homepage is now the funnel (default)
-  const SIGNUP_URL = process.env.SIGNUP_URL || APP_URL;
+  const SIGNUP_URL = (process.env.SIGNUP_URL || APP_URL).replace(/\/$/, "");
   const UNSUB_BASE = process.env.UNSUBSCRIBE_BASE_URL || `${BACKEND_URL}/public/unsubscribe`;
 
   const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
   const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "ambit@sevrixgov.com";
+
+  // Branding/template controls
+  const MORNING_MATCHES_LOGO_URL =
+    process.env.MORNING_MATCHES_LOGO_URL || `${APP_URL}/branding/ambit-logo-email.jpeg`;
+  const MORNING_MATCHES_TAGLINE =
+    process.env.MORNING_MATCHES_TAGLINE || "Stop hunting. Start receiving.";
 
   const FETCH_LIMIT = Number(process.env.DIGEST_FETCH_LIMIT || 50);
   const DEDUPE_DAYS = Number(process.env.DIGEST_DEDUPE_DAYS || 60);
@@ -420,8 +394,18 @@ async function main() {
           try {
             await prisma.digestLog.createMany({
               data: [
-                { customerId, type: "DAY", key: `DAY:${customerId}:${todayKey}`, meta: { date: todayKey, kind: "TRIAL_ENDED" } },
-                { customerId, type: "UPSELL", key: `UPSELL:${customerId}:${todayKey}`, meta: { date: todayKey, upgradeUrl } },
+                {
+                  customerId,
+                  type: "DAY",
+                  key: `DAY:${customerId}:${todayKey}`,
+                  meta: { date: todayKey, kind: "TRIAL_ENDED" },
+                },
+                {
+                  customerId,
+                  type: "UPSELL",
+                  key: `UPSELL:${customerId}:${todayKey}`,
+                  meta: { date: todayKey, upgradeUrl },
+                },
               ],
             });
           } catch {}
@@ -448,7 +432,7 @@ async function main() {
           const payload = await resp.json();
           allMatches = extractMatches(payload);
         }
-      } catch (e) {
+      } catch {
         if (!isTrial) continue;
         allMatches = [];
       }
@@ -520,7 +504,7 @@ async function main() {
       }
 
       // 7) Send digest (match or allowed no-match)
-      const matchesToSend = picked ? [picked] : [];
+      const matchesToSend = picked ? [picked] : []; // ✅ top-match only
       const titleForSubject =
         picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])).slice(0, 70) : "";
 
@@ -538,7 +522,7 @@ async function main() {
       )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
 
       const text = hasNewMatch
-        ? `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\nYou have 1 new top match.\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\n`
+        ? `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\nYou have 1 new top match.\nView all matches: ${APP_URL}/matches/${customerId}\n\nUnsubscribe: ${unsubscribeUrl}\n`
         : `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\n`;
 
       const html = buildHtml({
@@ -550,6 +534,8 @@ async function main() {
         unsubscribeUrl,
         companyAddress: COMPANY_ADDRESS,
         supportEmail: SUPPORT_EMAIL,
+        logoUrl: MORNING_MATCHES_LOGO_URL,
+        tagline: MORNING_MATCHES_TAGLINE,
       });
 
       const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
@@ -584,13 +570,13 @@ async function main() {
 
       await prisma.digestEmail.update({
         where: { customerId_digestDate: { customerId, digestDate: todayKey } },
-          data: {
-            status: "sent",
-            resendId: data?.id || null,
-            matchKey: pickedKey,
-            matchTitle: picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])) : null,
-            matchUrl: picked ? safe(pick(picked, ["url", "link", "samUrl"])) : null,
-          },
+        data: {
+          status: "sent",
+          resendId: data?.id || null,
+          matchKey: pickedKey,
+          matchTitle: picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])) : null,
+          matchUrl: picked ? safe(pick(picked, ["url", "link", "samUrl"])) : null,
+        },
       });
 
       if (hasDigestLog) {
