@@ -45,27 +45,6 @@ function signUnsub(email, ts, secret) {
   return crypto.createHmac("sha256", secret).update(base).digest("hex");
 }
 
-function buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail }) {
-  return `
-    <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
-    <div style="color:#666;font-size:12px;line-height:1.5">
-      <div style="margin-bottom:6px">
-        You’re receiving this email because you signed up for AMBIT alerts at
-        <a href="${signupUrl}" target="_blank" style="color:#111">${signupUrl}</a>.
-      </div>
-      <div style="margin-bottom:6px">
-        To improve delivery: add <strong>${supportEmail}</strong> to your contacts and mark this email as “Not spam”.
-      </div>
-      <div style="margin-bottom:6px">
-        <a href="${unsubscribeUrl}" target="_blank" style="color:#111">Unsubscribe</a>
-        &nbsp;•&nbsp;
-        <a href="${signupUrl}" target="_blank" style="color:#111">Manage preferences</a>
-      </div>
-      <div>${safe(companyAddress)}</div>
-    </div>
-  `;
-}
-
 function mapMatchForTemplate(m) {
   return {
     title: pick(m, ["title", "opportunityTitle", "name"]) || "Untitled",
@@ -73,7 +52,8 @@ function mapMatchForTemplate(m) {
     naics: pick(m, ["naics", "naicsCode"]) || "—",
     noticeType: pick(m, ["noticeType", "type", "solicitationType"]) || "Contract opportunity",
     dueDate: pick(m, ["dueDate", "responseDueDate", "deadline"]),
-    url: pick(m, ["url", "link", "samUrl"]) || "#",
+    // Intentionally not used as clickable opportunity link in template flow
+    url: pick(m, ["url", "link", "samUrl"]) || "",
     score: pick(m, ["matchScore", "score"]) || 3,
   };
 }
@@ -84,39 +64,55 @@ function guessNameFromEmail(email) {
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 }
 
+function buildFooterHtml({ companyAddress, supportEmail }) {
+  return `
+    <hr style="border:none;border-top:1px solid #eee;margin:18px 0" />
+    <div style="color:#666;font-size:12px;line-height:1.5">
+      <div style="margin-bottom:6px">
+        You’re receiving this email because you signed up for AMBIT alerts.
+      </div>
+      <div style="margin-bottom:6px">
+        To improve delivery: add <strong>${safe(supportEmail)}</strong> to your contacts and mark this email as “Not spam”.
+      </div>
+      <div>${safe(companyAddress)}</div>
+    </div>
+  `;
+}
+
 // Digest HTML:
 // - If there is a match => use morningMatchesV2 template (TOP MATCH ONLY)
-// - If no match => keep existing plain "no match" body
+// - If no match => simple no-match body with only one CTA link
 function buildHtml({
-  customerId,
   email,
   matches,
-  appUrl,
-  signupUrl,
-  unsubscribeUrl,
+  viewMatchesUrl,
   companyAddress,
   supportEmail,
   logoUrl,
   tagline,
 }) {
   if (!matches || matches.length === 0) {
-    const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
+    const footer = buildFooterHtml({ companyAddress, supportEmail });
 
     return `
-      <div style="font-family:Arial,sans-serif;line-height:1.5">
-        <h2 style="margin:0 0 10px">AMBIT Daily Match</h2>
-        <div style="color:#444;margin-bottom:14px">
-          <div><strong>Customer ID:</strong> ${customerId}</div>
-          <div><strong>Registered Email:</strong> ${email}</div>
+      <div style="font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.5;background:#f3f4f6;padding:24px">
+        <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:12px;padding:24px">
+          <h2 style="margin:0 0 10px;color:#0f172a">AMBIT Daily Match</h2>
+          <div style="color:#334155;margin-bottom:14px">
+            <div><strong>Registered Email:</strong> ${safe(email)}</div>
+          </div>
+          <p style="margin:0 0 14px;color:#0f172a">${NO_MATCHES_TEXT}</p>
+          <p style="margin:18px 0 0">
+            <a href="${safe(viewMatchesUrl)}" target="_blank"
+               style="display:inline-block;background:#2563eb;color:#fff;padding:11px 16px;border-radius:10px;text-decoration:none;font-weight:700">
+              View My Matches
+            </a>
+          </p>
+          <p style="margin:12px 0 0;color:#64748b;font-size:14px">
+            Reach out to ambit@sevrixgov.com to be connected with an AMBIT Associate for next steps.
+          </p>
+          ${footer}
         </div>
-        <p style="margin:0 0 12px">${NO_MATCHES_TEXT}</p>
-        <p style="margin:16px 0 0">
-          <a href="${appUrl}" target="_blank"
-             style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111">
-            Open AMBIT
-          </a>
-        </p>
-        ${footer}
       </div>
     `;
   }
@@ -128,58 +124,52 @@ function buildHtml({
   return renderMorningMatchesV2({
     customerName: guessNameFromEmail(email),
     matches: mappedTop, // <= exactly one
-    allMatchesUrl: appUrl, // "View all matches" link
+    viewMatchesUrl, // <= only CTA link in template
     logoUrl,
     tagline,
-    unsubscribeUrl,
-    managePrefsUrl: signupUrl,
     addressLine: companyAddress,
     previewText: "Your AMBIT top match is ready.",
   });
 }
 
-// ✅ Trial-ended email (NO match details) — wording changed to “Finish signing up”
+// Trial-ended email (NO match details) with one CTA
 function buildUpsellHtml({
-  customerId,
   email,
-  portalUrl,
-  upgradeUrl,
-  signupUrl,
-  unsubscribeUrl,
+  viewMatchesUrl,
   companyAddress,
   supportEmail,
 }) {
-  const footer = buildFooterHtml({ signupUrl, unsubscribeUrl, companyAddress, supportEmail });
+  const footer = buildFooterHtml({ companyAddress, supportEmail });
 
   return `
-    <div style="font-family:Arial,sans-serif;line-height:1.5">
-      <h2 style="margin:0 0 10px">Finish signing up to receive more matches</h2>
-      <div style="color:#444;margin-bottom:14px">
-        <div><strong>Customer ID:</strong> ${customerId}</div>
-        <div><strong>Registered Email:</strong> ${email}</div>
+    <div style="font-family:Inter,Segoe UI,Arial,sans-serif;line-height:1.5;background:#f3f4f6;padding:24px">
+      <div style="max-width:640px;margin:0 auto;background:#fff;border-radius:12px;padding:24px">
+        <h2 style="margin:0 0 10px;color:#0f172a">Finish signing up to receive more matches</h2>
+        <div style="color:#334155;margin-bottom:14px">
+          <div><strong>Registered Email:</strong> ${safe(email)}</div>
+        </div>
+
+        <p style="margin:0 0 12px;color:#0f172a">
+          Your trial period ended, so daily match delivery is paused.
+        </p>
+
+        <p style="margin:0 0 14px;color:#0f172a">
+          Finish signing up to resume daily matched opportunities in your inbox.
+        </p>
+
+        <p style="margin:18px 0 0">
+          <a href="${safe(viewMatchesUrl)}" target="_blank"
+             style="display:inline-block;background:#2563eb;color:#fff;padding:11px 16px;border-radius:10px;text-decoration:none;font-weight:700">
+            View My Matches
+          </a>
+        </p>
+
+        <p style="margin:12px 0 0;color:#64748b;font-size:14px">
+          Reach out to ambit@sevrixgov.com to be connected with an AMBIT Associate for next steps.
+        </p>
+
+        ${footer}
       </div>
-
-      <p style="margin:0 0 12px">
-        Your Subscription required ended, so daily match delivery is paused.
-      </p>
-
-      <p style="margin:0 0 12px">
-        Finish signing up to resume <strong>daily matched opportunities</strong> in your inbox.
-      </p>
-
-      <p style="margin:16px 0 0">
-        <a href="${upgradeUrl}" target="_blank"
-           style="display:inline-block;background:#2563eb;color:white;padding:10px 14px;border-radius:10px;text-decoration:none;font-weight:700">
-          Finish signing up
-        </a>
-        <span style="display:inline-block;width:10px"></span>
-        <a href="${portalUrl}" target="_blank"
-           style="display:inline-block;padding:10px 14px;border-radius:10px;text-decoration:none;border:1px solid #111;color:#111">
-          Open AMBIT
-        </a>
-      </p>
-
-      ${footer}
     </div>
   `;
 }
@@ -257,11 +247,10 @@ async function main() {
   const FROM = process.env.EMAIL_FROM; // e.g. "AMBIT <ambit@sevrixgov.com>"
   const BACKEND_URL = process.env.BACKEND_URL; // e.g. https://ambit-0dnp.onrender.com
   const APP_URL = (process.env.FRONTEND_URL || "https://ambitco.app").replace(/\/$/, "");
+  const VIEW_MATCHES_URL =
+    (process.env.MORNING_MATCHES_VIEW_URL || "https://www.ambitco.app/login").replace(/\/$/, "");
 
-  // ✅ Homepage is now the funnel (default)
-  const SIGNUP_URL = (process.env.SIGNUP_URL || APP_URL).replace(/\/$/, "");
   const UNSUB_BASE = process.env.UNSUBSCRIBE_BASE_URL || `${BACKEND_URL}/public/unsubscribe`;
-
   const COMPANY_ADDRESS = process.env.COMPANY_ADDRESS || "Sevrix LLC";
   const SUPPORT_EMAIL = process.env.SUPPORT_EMAIL || "ambit@sevrixgov.com";
 
@@ -286,7 +275,7 @@ async function main() {
   // DigestLog exists in your schema; this is still safe.
   const hasDigestLog = !!prisma.digestLog;
 
-  // ✅ Include trial customers too
+  // Include trial customers too
   const customers = await prisma.customer.findMany({
     where: { digestEnabled: true },
     select: { id: true, email: true, isActive: true, trialEndsAt: true },
@@ -332,22 +321,15 @@ async function main() {
           c.email
         )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
 
-        const portalUrl = `${APP_URL}/matches/${customerId}`;
-        const upgradeUrl = `${APP_URL}/matches/${customerId}?upgrade=1`;
-
         const subject = "Finish signing up to receive more matches";
         const html = buildUpsellHtml({
-          customerId,
           email: c.email,
-          portalUrl,
-          upgradeUrl,
-          signupUrl: SIGNUP_URL,
-          unsubscribeUrl,
+          viewMatchesUrl: VIEW_MATCHES_URL,
           companyAddress: COMPANY_ADDRESS,
           supportEmail: SUPPORT_EMAIL,
         });
 
-        const text = `Your Subscription required ended, so daily match delivery is paused.\nFinish signing up: ${upgradeUrl}\n\nUnsubscribe: ${unsubscribeUrl}`;
+        const text = `Finish signing up to resume daily matched opportunities.\nView My Matches: ${VIEW_MATCHES_URL}`;
 
         const listUnsubscribeMailto = `mailto:${SUPPORT_EMAIL}?subject=unsubscribe`;
         const listUnsubscribeHttp = unsubscribeUrl;
@@ -386,7 +368,7 @@ async function main() {
             resendId: data?.id || null,
             matchKey: "TRIAL_ENDED_NUDGE",
             matchTitle: null,
-            matchUrl: upgradeUrl,
+            matchUrl: VIEW_MATCHES_URL,
           },
         });
 
@@ -404,7 +386,7 @@ async function main() {
                   customerId,
                   type: "UPSELL",
                   key: `UPSELL:${customerId}:${todayKey}`,
-                  meta: { date: todayKey, upgradeUrl },
+                  meta: { date: todayKey, viewMatchesUrl: VIEW_MATCHES_URL },
                 },
               ],
             });
@@ -422,7 +404,7 @@ async function main() {
       try {
         const resp = await fetch(`${BACKEND_URL}/engine/matches/${customerId}?limit=${FETCH_LIMIT}`);
 
-        // ✅ If matches endpoint fails:
+        // If matches endpoint fails:
         // - ACTIVE: skip (avoid noise)
         // - TRIAL: still send a daily email (no-match content)
         if (!resp.ok) {
@@ -477,7 +459,7 @@ async function main() {
       const hasNewMatch = !!picked;
 
       // 6) If no new match: enforce cooldown (ACTIVE ONLY)
-      // ✅ Trial users get a DAILY email during the 7-day trial.
+      // Trial users get a DAILY email during the 7-day trial.
       if (!hasNewMatch && !isTrial) {
         let lastNoMatchAt = null;
 
@@ -504,7 +486,7 @@ async function main() {
       }
 
       // 7) Send digest (match or allowed no-match)
-      const matchesToSend = picked ? [picked] : []; // ✅ top-match only
+      const matchesToSend = picked ? [picked] : []; // top-match only
       const titleForSubject =
         picked ? safe(pick(picked, ["title", "opportunityTitle", "name"])).slice(0, 70) : "";
 
@@ -522,16 +504,13 @@ async function main() {
       )}&ts=${encodeURIComponent(ts)}&sig=${encodeURIComponent(sig)}`;
 
       const text = hasNewMatch
-        ? `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\nYou have 1 new top match.\nView all matches: ${APP_URL}/matches/${customerId}\n\nUnsubscribe: ${unsubscribeUrl}\n`
-        : `AMBIT Daily Match\n\nCustomer ID: ${customerId}\nRegistered Email: ${c.email}\n\n${NO_MATCHES_TEXT}\nOpen AMBIT: ${APP_URL}\n\nUnsubscribe: ${unsubscribeUrl}\n`;
+        ? `AMBIT Daily Match\n\nYou have 1 new top match.\nView My Matches: ${VIEW_MATCHES_URL}`
+        : `AMBIT Daily Match\n\n${NO_MATCHES_TEXT}\nView My Matches: ${VIEW_MATCHES_URL}`;
 
       const html = buildHtml({
-        customerId,
         email: c.email,
         matches: matchesToSend,
-        appUrl: `${APP_URL}/matches/${customerId}`,
-        signupUrl: SIGNUP_URL,
-        unsubscribeUrl,
+        viewMatchesUrl: VIEW_MATCHES_URL,
         companyAddress: COMPANY_ADDRESS,
         supportEmail: SUPPORT_EMAIL,
         logoUrl: MORNING_MATCHES_LOGO_URL,
