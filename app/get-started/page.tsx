@@ -3,12 +3,7 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
 
-const TRUST_BADGES = [
-  "Subscription required",
-  "$49.99/mo - Associate",
-  "$299.99/mo - Executive",
-  "$899.99/mo - Enterprise",
-];
+const TRUST_BADGES = ["Subscription required", "$79.99/mo - Pro", "$899.99/mo - Enterprise"];
 
 function LockIcon() {
   return (
@@ -73,8 +68,8 @@ function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
 
 function MicroTrustRow() {
   const items = [
-    { k: "Active subscription", v: "required" },
     { k: "Setup time", v: "~60 seconds" },
+    { k: "Delivery", v: "Daily matches" },
     { k: "Edit anytime", v: "keywords + NAICS" },
   ];
 
@@ -199,9 +194,9 @@ export default function Page() {
           </h1>
 
           <p className="mt-3 max-w-3xl text-black/65">
-            Create your profile in about 60 seconds. We’ll deliver ranked matches daily across{" "}
-            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>, with
-            optional high-touch coordination for growth-focused teams.
+            Build your profile in about a minute. AMBIT sends <span className="font-semibold text-black/80">ranked</span>{" "}
+            opportunities daily across{" "}
+            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -216,17 +211,16 @@ export default function Page() {
           </div>
         </div>
 
-        {/* High-conversion enterprise tagline block */}
+        {/* Enterprise teaser */}
         <div className="mt-6 rounded-3xl border border-[#1A4FA3]/25 bg-[linear-gradient(135deg,rgba(26,79,163,0.12),rgba(99,167,255,0.06))] p-5 shadow-[0_18px_55px_rgba(26,79,163,0.14)]">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="max-w-3xl">
               <div className="text-xs font-bold uppercase tracking-wide text-[#1A4FA3]">Enterprise</div>
               <h2 className="mt-1 text-xl font-black tracking-tight text-black sm:text-2xl">
-                Win higher-value contracts with less wasted estimator time.
+                Priority sourcing and fast triage when timing matters.
               </h2>
               <p className="mt-2 text-sm text-black/70">
-                Ambit Enterprise turns your pipeline into a revenue engine with priority sourcing, faster
-                decision support, and direct leadership access when deals are on the line.
+                Enterprise is built for serious operators who want speed, accountability, and a priority execution lane.
               </p>
             </div>
 
@@ -234,7 +228,7 @@ export default function Page() {
               href="/prime"
               className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/35 bg-white/80 px-5 py-2.5 text-xs font-bold text-[#1A4FA3] transition hover:bg-white"
             >
-              Activate Enterprise
+              Learn more
             </Link>
           </div>
         </div>
@@ -276,59 +270,43 @@ export default function Page() {
             </span>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+          <div className="mt-5 grid gap-5 lg:grid-cols-2">
             <PlanReferenceCard
-              name="Associate"
-              price="$49.99/mo"
-              subtitle="Daily matched opportunities"
+              featured
+              name="Pro"
+              price="$79.99/mo"
+              subtitle="Matches + summaries + templates"
               bullets={[
                 "Residential, Commercial, and Government matches",
                 "Ranked opportunities delivered daily",
-                "AMBIT-built proposal support",
-                "Project breakdown and summary",
-                "Fast setup and simple dashboard access",
-                "24/7 support lane",
+                "Clean project summaries (skim in minutes)",
+                "Ready-to-send templates (interest / intent-to-quote)",
+                "Fast setup — edit keywords/NAICS anytime",
+                "Support lane for questions + guidance",
               ]}
-              note="Great fit for operators who want consistent opportunity flow and fast execution."
+              note="Best for contractors who want consistent opportunities with clear next steps."
             />
 
             <PlanReferenceCard
-              name="Executive"
-              price="$299.99/mo"
-              subtitle="Higher-touch bid-readiness support"
-              bullets={[
-                "Everything in Associate",
-                "Priority support path",
-                "Higher-touch bid coordination",
-                "Faster commercial/government support workflows",
-                "AMBIT Prime/priority lane access",
-                "Enhanced response speed for active pursuits",
-              ]}
-              note="Built for teams targeting bigger contracts with tighter coordination."
-            />
-
-            <PlanReferenceCard
-              featured
               name="Enterprise"
               price="$899.99/mo"
-              subtitle="Executive-grade sourcing + founder access"
+              subtitle="Priority lane + founder access"
               bullets={[
-                "Everything in Executive",
-                "24/7 direct CEO/Founder access",
-                "Dedicated enterprise sourcing desk (AI + analyst)",
-                "Weekly executive pipeline review cadence",
+                "Everything in Pro",
+                "Priority triage + faster turnaround on active pursuits",
+                "Dedicated sourcing desk (AI + analyst)",
+                "Weekly pipeline review cadence",
                 "Same-day opportunity triage SLA (priority queue)",
-                "White-glove onboarding + escalation support",
+                "24/7 founder/leadership access",
               ]}
-              note="Built for serious operators who need speed, accountability, and enterprise-level execution support."
+              note="Built for operators who want speed, accountability, and priority execution support."
             />
           </div>
 
           <div className="mt-6">
             <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
             <p className="mt-2 text-sm text-black/62">
-              We help organize and guide the process, but these are the key items most service companies should
-              have ready for contract work:
+              AMBIT helps organize and guide the process — these are the core items most service companies should have ready:
             </p>
 
             <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -348,139 +326,24 @@ export default function Page() {
               </div>
 
               <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
-                <div className="font-bold text-black/85">Bid & pricing readiness</div>
+                <div className="font-bold text-black/85">Bid readiness</div>
                 <ul className="mt-3 space-y-2 text-sm">
                   <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Pricing sheet (labor, materials, markups)</span>
+                    <BlueCheck /> <span>Basic pricing sheet (labor, materials, markup)</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Project timeline + staffing assumptions</span>
+                    <BlueCheck /> <span>Staffing/timeline assumptions</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Past project references/examples when available</span>
+                    <BlueCheck /> <span>Past performance examples (if available)</span>
                   </li>
                 </ul>
               </div>
             </div>
 
             <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a
-              dedicated sourcing desk.
+              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a dedicated sourcing desk.
             </div>
-          </div>
-
-          <div className="mt-6 overflow-x-auto">
-            <h3 className="mb-3 text-xl font-black">Side-by-side comparison</h3>
-            <table className="w-full min-w-[980px] text-sm">
-              <thead>
-                <tr className="border-b border-black/10 text-left">
-                  <th className="py-3 pr-4 font-semibold text-black/65">Feature</th>
-                  <th className="py-3 px-4 font-semibold text-black/65">Associate</th>
-                  <th className="py-3 px-4 font-semibold text-black/65">Executive</th>
-                  <th className="py-3 px-4 font-semibold text-black/65">Enterprise</th>
-                </tr>
-              </thead>
-              <tbody className="text-black/82">
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Residential + Commercial + Government matches</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Ranked opportunities delivered daily</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">AMBIT-built proposal support</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Priority support path</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Higher-touch bid execution coordination</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">No-wait commercial/government support workflow</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Dedicated enterprise sourcing desk (AI + analyst)</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">24/7 direct CEO/Founder access</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr className="border-b border-black/10">
-                  <td className="py-3 pr-4">Weekly executive pipeline review</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-                <tr>
-                  <td className="py-3 pr-4">Same-day opportunity triage SLA (priority queue)</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4 text-black/45">—</td>
-                  <td className="py-3 px-4">
-                    <BlueCheck /> Included
-                  </td>
-                </tr>
-              </tbody>
-            </table>
           </div>
 
           <div className="mt-4 text-sm text-black/62">
@@ -497,26 +360,13 @@ export default function Page() {
             <div className="text-lg font-black">What happens next</div>
 
             <div className="mt-4 space-y-4">
-              <Step
-                n={1}
-                title="We build your profile"
-                desc="Service area + keywords + NAICS → improved match accuracy."
-              />
-              <Step
-                n={2}
-                title="Matches begin daily"
-                desc="Ranked opportunities are delivered every morning."
-              />
-              <Step
-                n={3}
-                title="Execution lane activates"
-                desc="Associate/Executive/Enterprise support cadence starts based on your selected plan."
-              />
+              <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → better match accuracy." />
+              <Step n={2} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
+              <Step n={3} title="You act fast" desc="Use summaries + templates to move quickly on the right jobs." />
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to
-              match and deliver opportunities. No spam.
+              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
             </div>
           </div>
 
@@ -524,16 +374,7 @@ export default function Page() {
             <div className="text-lg font-black">Perfect for</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                "Landscaping",
-                "HVAC",
-                "Plumbing",
-                "Junk removal",
-                "Concrete",
-                "Janitorial",
-                "Multi-crew operators",
-                "Regional contractors",
-              ].map((t) => (
+              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial", "Multi-crew operators", "Regional contractors"].map((t) => (
                 <span
                   key={t}
                   className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
@@ -543,9 +384,7 @@ export default function Page() {
               ))}
             </div>
 
-            <div className="mt-4 text-sm text-black/55">
-              You can update keywords/NAICS anytime to refine match quality.
-            </div>
+            <div className="mt-4 text-sm text-black/55">You can update keywords/NAICS anytime to refine match quality.</div>
 
             <div className="mt-3 text-xs text-black/50">
               Popular keywords:{" "}

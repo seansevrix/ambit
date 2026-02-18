@@ -18,10 +18,19 @@ const API_BASE = (
 const REQUEST_TIMEOUT_MS = 15000;
 
 type Market = "residential" | "commercial" | "government";
-type Plan = "associate" | "executive" | "enterprise";
+
+/**
+ * Public plans:
+ *  - pro ($79.99/mo)
+ *  - enterprise ($899.99/mo)
+ *
+ * Legacy (grandfathered):
+ *  - associate ($49.99/mo)  <-- supported to avoid breaking existing customers
+ */
+type Plan = "associate" | "pro" | "enterprise";
 
 const ONBOARDING_MESSAGE =
-  "To receive ongoing matches, RFQ alerts, and bid support, an active subscription is required.";
+  "Paid-first secure checkout. After activation, you’ll start receiving matched opportunities daily.";
 
 function normalizeMarket(m: string | null): Market {
   if (m === "commercial" || m === "government" || m === "residential") return m;
@@ -31,19 +40,22 @@ function normalizeMarket(m: string | null): Market {
 function normalizePlan(p: string | null): Plan {
   const v = String(p || "").trim().toLowerCase();
 
+  // New plans
+  if (v === "pro") return "pro";
   if (v === "enterprise") return "enterprise";
-  if (v === "executive") return "executive";
+
+  // Legacy (grandfathered)
   if (v === "associate") return "associate";
+
+  // Old aliases/back-compat
+  if (v === "executive" || v === "prime" || v === "all" || v === "all3" || v === "all_markets") {
+    return "pro"; // Executive is removed; map old links to Pro
+  }
 
   // Enterprise aliases
   if (v === "corp" || v === "corporate" || v === "enterprise_plus") return "enterprise";
 
-  // Back-compat aliases
-  // Keep prime => executive for legacy links. New enterprise pages should use ?plan=enterprise.
-  if (v === "all" || v === "all3" || v === "all_markets" || v === "prime") return "executive";
-  if (v === "single" || v === "single_market" || v === "basic") return "associate";
-
-  return "associate";
+  return "pro";
 }
 
 async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
@@ -71,13 +83,72 @@ async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
   }
 }
 
+function Pill({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-semibold text-black/65 backdrop-blur">
+      <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
+      {children}
+    </span>
+  );
+}
+
+function PlanButton({
+  active,
+  title,
+  priceLine,
+  desc,
+  onClick,
+  featured,
+}: {
+  active: boolean;
+  title: string;
+  priceLine: string;
+  desc: string;
+  onClick: () => void;
+  featured?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={[
+        "group relative rounded-2xl border p-4 text-left transition",
+        active
+          ? "border-[#1A4FA3]/40 bg-[linear-gradient(135deg,rgba(26,79,163,0.12),rgba(99,167,255,0.06))] ring-2 ring-[#1A4FA3]/20"
+          : "border-black/10 bg-white/75 hover:border-black/20",
+        featured ? "shadow-[0_18px_55px_rgba(26,79,163,0.12)]" : "shadow-[0_14px_40px_rgba(0,0,0,0.06)]",
+      ].join(" ")}
+    >
+      {featured ? (
+        <div className="mb-2 flex items-center justify-between">
+          <span className="rounded-full border border-[#1A4FA3]/25 bg-white/70 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#1A4FA3]">
+            Most popular
+          </span>
+          <span className="text-[10px] font-semibold text-black/45">Secure checkout</span>
+        </div>
+      ) : (
+        <div className="mb-2 text-[10px] font-semibold text-black/45">Secure checkout</div>
+      )}
+
+      <div className="text-base font-black text-black">{title}</div>
+      <div className="mt-1 text-sm font-semibold text-black/70">{priceLine}</div>
+      <div className="mt-2 text-sm text-black/60">{desc}</div>
+
+      <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 transition group-hover:opacity-100">
+        <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(700px_250px_at_0%_0%,rgba(92,116,255,0.10),transparent_60%)]" />
+      </div>
+    </button>
+  );
+}
+
 export default function GetStartedClient() {
   const sp = useSearchParams();
 
   const intent = useMemo(() => normalizeMarket(sp.get("intent")), [sp]);
   const initialPlan = useMemo(() => normalizePlan(sp.get("plan")), [sp]);
 
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(initialPlan);
+  // Default to Pro for new signups
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(initialPlan || "pro");
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
@@ -88,6 +159,8 @@ export default function GetStartedClient() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const isLegacyAssociate = selectedPlan === "associate";
 
   async function onContinue() {
     if (loading) return;
@@ -136,7 +209,7 @@ export default function GetStartedClient() {
         customerJson?.customer?.customerId ??
         null;
 
-      // 2) Immediately create Stripe checkout session
+      // 2) Create Stripe checkout session
       const { res: checkoutRes, json: checkoutJson } = await postJson(
         `${API_BASE}/engine/billing/create-checkout-session`,
         {
@@ -161,7 +234,6 @@ export default function GetStartedClient() {
         return;
       }
 
-      // 3) Redirect to Stripe (payment required)
       window.location.href = checkoutUrl;
     } catch (e: any) {
       setErr(e?.message || "Something went wrong. Please try again.");
@@ -171,56 +243,47 @@ export default function GetStartedClient() {
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-5">
+      {/* Plan select */}
       <div>
-        <div className="text-xs font-semibold text-black/55">Choose plan *</div>
-        <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-3">
-          <button
-            type="button"
-            onClick={() => setSelectedPlan("associate")}
-            className={[
-              "rounded-xl border px-4 py-3 text-left transition",
-              selectedPlan === "associate"
-                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
-                : "border-black/10 bg-white hover:border-black/20",
-            ].join(" ")}
-          >
-            <div className="text-sm font-semibold text-black">Associate</div>
-            <div className="text-xs text-black/55">$49.99/mo • Matches + alerts</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedPlan("executive")}
-            className={[
-              "rounded-xl border px-4 py-3 text-left transition",
-              selectedPlan === "executive"
-                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
-                : "border-black/10 bg-white hover:border-black/20",
-            ].join(" ")}
-          >
-            <div className="text-sm font-semibold text-black">Executive</div>
-            <div className="text-xs text-black/55">$299/mo • Bid-readiness support</div>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setSelectedPlan("enterprise")}
-            className={[
-              "rounded-xl border px-4 py-3 text-left transition",
-              selectedPlan === "enterprise"
-                ? "border-[#63A7FF] bg-[#63A7FF]/10 ring-2 ring-[#63A7FF]/25"
-                : "border-black/10 bg-white hover:border-black/20",
-            ].join(" ")}
-          >
-            <div className="text-sm font-semibold text-black">Enterprise</div>
-            <div className="text-xs text-black/55">
-              $899.99/mo • 24/7 founder access + priority sourcing desk
-            </div>
-          </button>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="text-xs font-semibold text-black/55">Choose plan *</div>
+          <div className="flex flex-wrap gap-2">
+            <Pill>Daily matches</Pill>
+            <Pill>Ranked by fit</Pill>
+            <Pill>Cancel anytime</Pill>
+          </div>
         </div>
+
+        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <PlanButton
+            active={selectedPlan === "pro"}
+            title="Pro"
+            priceLine="$79.99/mo • Matches + summaries + templates"
+            desc="Daily matched opportunities with clean breakdowns and ready-to-send templates."
+            onClick={() => setSelectedPlan("pro")}
+            featured
+          />
+
+          <PlanButton
+            active={selectedPlan === "enterprise"}
+            title="Enterprise"
+            priceLine="$899.99/mo • Priority sourcing + founder access"
+            desc="For teams that want speed, priority triage, and direct leadership support."
+            onClick={() => setSelectedPlan("enterprise")}
+          />
+        </div>
+
+        {/* Legacy plan support (hidden, non-marketing) */}
+        {isLegacyAssociate ? (
+          <div className="mt-3 rounded-2xl border border-black/10 bg-white/70 px-4 py-3 text-xs text-black/60">
+            Legacy plan detected: <span className="font-semibold text-black/75">Associate ($49.99/mo)</span>{" "}
+            is grandfathered for early customers.
+          </div>
+        ) : null}
       </div>
 
+      {/* Inputs */}
       <div>
         <div className="text-xs font-semibold text-black/55">Work email *</div>
         <input
@@ -229,7 +292,7 @@ export default function GetStartedClient() {
           inputMode="email"
           autoComplete="email"
           placeholder="you@company.com"
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
       </div>
 
@@ -242,7 +305,7 @@ export default function GetStartedClient() {
           inputMode="tel"
           autoComplete="tel"
           placeholder="(555) 123-4567"
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
       </div>
 
@@ -252,7 +315,7 @@ export default function GetStartedClient() {
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
           placeholder="Your Company"
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
       </div>
 
@@ -262,7 +325,7 @@ export default function GetStartedClient() {
           value={serviceArea}
           onChange={(e) => setServiceArea(e.target.value)}
           placeholder="City, county, or state"
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
       </div>
 
@@ -272,7 +335,7 @@ export default function GetStartedClient() {
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
           placeholder="landscaping, HVAC, concrete, hauling..."
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
         <div className="mt-2 text-xs text-black/45">Services, equipment, materials, job types.</div>
       </div>
@@ -283,22 +346,23 @@ export default function GetStartedClient() {
           value={naics}
           onChange={(e) => setNaics(e.target.value)}
           placeholder="561730, 238220, 236220..."
-          className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
+          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
         <div className="mt-2 text-xs text-black/45">Comma-separated is fine.</div>
       </div>
 
       {err ? (
-        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {err}
         </div>
       ) : null}
 
-      <div className="mt-2 flex items-center justify-end">
+      {/* CTA */}
+      <div className="mt-1 flex items-center justify-end">
         <button
           onClick={onContinue}
           disabled={loading}
-          className="inline-flex items-center justify-center rounded-full bg-[#63A7FF] px-10 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(99,167,255,0.35)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-10 py-3.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(26,79,163,0.28)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {loading ? "Working…" : "Continue to Secure Checkout"}
         </button>
