@@ -8,18 +8,49 @@ const router = express.Router();
 // ---- Stripe setup ----
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || "";
 
-// New preferred env vars
-const STRIPE_PRICE_ASSOCIATE = process.env.STRIPE_PRICE_ASSOCIATE || "";
-const STRIPE_PRICE_EXECUTIVE = process.env.STRIPE_PRICE_EXECUTIVE || "";
-const STRIPE_PRICE_ENTERPRISE =
-  process.env.STRIPE_PRICE_ENTERPRISE || process.env.STRIPE_PRICE_ENTERPRISE_ID || "";
+/**
+ * ✅ Price IDs (support BOTH old + new env var names)
+ * New standard we want:
+ *  - STRIPE_PRICE_ID_ASSOCIATE (legacy/grandfathered)
+ *  - STRIPE_PRICE_ID_PRO
+ *  - STRIPE_PRICE_ID_ENTERPRISE
+ *
+ * Back-compat supported:
+ *  - STRIPE_PRICE_ASSOCIATE, STRIPE_PRICE_SINGLE_ID, STRIPE_PRICE_ID
+ *  - STRIPE_PRICE_PRO
+ *  - STRIPE_PRICE_ENTERPRISE, STRIPE_PRICE_ENTERPRISE_ID
+ *  - (legacy) STRIPE_PRICE_EXECUTIVE, STRIPE_PRICE_ALL_ID
+ */
 
-// Back-compat env vars (older naming)
-const STRIPE_PRICE_SINGLE_ID =
-  process.env.STRIPE_PRICE_SINGLE_ID || process.env.STRIPE_PRICE_SINGLE || "";
-const STRIPE_PRICE_ALL_ID =
-  process.env.STRIPE_PRICE_ALL_ID || process.env.STRIPE_PRICE_ALL || "";
-const STRIPE_PRICE_ID = process.env.STRIPE_PRICE_ID || ""; // legacy single fallback
+// Legacy / Associate (grandfathered)
+const STRIPE_PRICE_ID_ASSOCIATE =
+  process.env.STRIPE_PRICE_ID_ASSOCIATE ||
+  process.env.STRIPE_PRICE_ASSOCIATE ||
+  process.env.STRIPE_PRICE_SINGLE_ID ||
+  process.env.STRIPE_PRICE_SINGLE ||
+  process.env.STRIPE_PRICE_ID ||
+  "";
+
+// Pro (new)
+const STRIPE_PRICE_ID_PRO =
+  process.env.STRIPE_PRICE_ID_PRO ||
+  process.env.STRIPE_PRICE_PRO ||
+  "";
+
+// Enterprise (same)
+const STRIPE_PRICE_ID_ENTERPRISE =
+  process.env.STRIPE_PRICE_ID_ENTERPRISE ||
+  process.env.STRIPE_PRICE_ENTERPRISE ||
+  process.env.STRIPE_PRICE_ENTERPRISE_ID ||
+  "";
+
+// (Optional) legacy Executive fallbacks (if anything still references it)
+const STRIPE_PRICE_ID_EXECUTIVE =
+  process.env.STRIPE_PRICE_ID_EXECUTIVE ||
+  process.env.STRIPE_PRICE_EXECUTIVE ||
+  process.env.STRIPE_PRICE_ALL_ID ||
+  process.env.STRIPE_PRICE_ALL ||
+  "";
 
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
@@ -43,37 +74,44 @@ function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
 }
 
+/**
+ * Plans:
+ *  - pro (public)
+ *  - enterprise (public)
+ *  - associate (legacy/grandfathered)
+ *
+ * Back-compat:
+ *  - executive/prime/all/all3/all_markets => pro
+ */
 function normalizePlan(planRaw) {
   const p = String(planRaw || "").trim().toLowerCase();
 
-  // New names
+  // New public plans
+  if (p === "pro") return "pro";
   if (p === "enterprise") return "enterprise";
-  if (p === "executive") return "executive";
+
+  // Legacy/grandfathered
   if (p === "associate") return "associate";
 
-  // Enterprise aliases (safe additions)
+  // Enterprise aliases
   if (p === "corp" || p === "corporate" || p === "enterprise_plus") return "enterprise";
 
-  // Back-compat names
-  // NOTE: keep "prime" mapped to executive to avoid accidentally charging legacy links at enterprise price.
-  if (p === "all" || p === "all3" || p === "all_markets" || p === "prime") return "executive";
+  // Old names -> Pro
+  if (p === "executive" || p === "prime" || p === "all" || p === "all3" || p === "all_markets")
+    return "pro";
+
+  // Old single/basic -> Associate (legacy)
   if (p === "single" || p === "single_market" || p === "basic") return "associate";
 
-  // Default safe fallback
-  return "associate";
+  // Default for new traffic
+  return "pro";
 }
 
 function resolvePriceId(plan) {
-  if (plan === "enterprise") {
-    return STRIPE_PRICE_ENTERPRISE || "";
-  }
-
-  if (plan === "executive") {
-    return STRIPE_PRICE_EXECUTIVE || STRIPE_PRICE_ALL_ID || "";
-  }
-
-  // associate
-  return STRIPE_PRICE_ASSOCIATE || STRIPE_PRICE_SINGLE_ID || STRIPE_PRICE_ID || "";
+  if (plan === "enterprise") return STRIPE_PRICE_ID_ENTERPRISE || "";
+  if (plan === "pro") return STRIPE_PRICE_ID_PRO || "";
+  // associate (legacy)
+  return STRIPE_PRICE_ID_ASSOCIATE || "";
 }
 
 async function ensureStripeCustomer(customer) {
@@ -126,14 +164,9 @@ async function findCustomer({ customerId, email }) {
 /**
  * POST /engine/billing/create-checkout-session
  * Body:
- *   {
- *     customerId?: number,
- *     email?: string,
- *     plan?: "associate" | "executive" | "enterprise" | "single" | "all"
- *   }
+ *   { customerId?: number, email?: string, plan?: "associate" | "pro" | "enterprise" | legacy strings }
  *
- * IMPORTANT:
- * - Paid-first flow (no free trial)
+ * Paid-first flow (no trial)
  */
 async function createCheckoutSession(req, res) {
   try {
@@ -150,20 +183,19 @@ async function createCheckoutSession(req, res) {
     const priceId = resolvePriceId(plan);
 
     if (!priceId) {
-      let missing = "Missing STRIPE price env var on backend.";
+      let missing = "Missing Stripe price env var on backend.";
+
       if (plan === "enterprise") {
-        missing = "Missing STRIPE_PRICE_ENTERPRISE on backend env vars.";
-      } else if (plan === "executive") {
-        missing = "Missing STRIPE_PRICE_EXECUTIVE (or STRIPE_PRICE_ALL_ID) on backend env vars.";
+        missing =
+          "Missing STRIPE_PRICE_ID_ENTERPRISE (or STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID) on backend env vars.";
+      } else if (plan === "pro") {
+        missing = "Missing STRIPE_PRICE_ID_PRO (or STRIPE_PRICE_PRO) on backend env vars.";
       } else {
         missing =
-          "Missing STRIPE_PRICE_ASSOCIATE (or STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
+          "Missing STRIPE_PRICE_ID_ASSOCIATE (or STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
       }
 
-      return res.status(500).json({
-        ok: false,
-        error: missing,
-      });
+      return res.status(500).json({ ok: false, error: missing });
     }
 
     const customer = await findCustomer({ customerId, email });
@@ -191,18 +223,9 @@ async function createCheckoutSession(req, res) {
       success_url: successUrl,
       cancel_url: cancelUrl,
       client_reference_id: String(customer.id),
-      metadata: {
-        customerId: String(customer.id),
-        plan,
-        tier: plan,
-      },
-      // No trial_period_days in paid-first model
+      metadata: { customerId: String(customer.id), plan, tier: plan },
       subscription_data: {
-        metadata: {
-          customerId: String(customer.id),
-          plan,
-          tier: plan,
-        },
+        metadata: { customerId: String(customer.id), plan, tier: plan },
       },
     });
 
@@ -239,9 +262,7 @@ async function createPortalSession(req, res) {
     const { customerId, email } = req.body || {};
     const customer = await findCustomer({ customerId, email });
 
-    if (!customer) {
-      return res.status(404).json({ ok: false, error: "Customer not found." });
-    }
+    if (!customer) return res.status(404).json({ ok: false, error: "Customer not found." });
 
     const stripeCustomerId = await ensureStripeCustomer(customer);
     const frontendBase = getFrontendBaseUrl(req);
