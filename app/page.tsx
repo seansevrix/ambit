@@ -325,7 +325,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
-              Matched opportunities, emailed daily.
+              We Search & Send, You Bid & Win.
             </p>
 
             <p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
@@ -364,7 +364,7 @@ export default function HomePage() {
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
               <h2 className="text-3xl font-black">
-                Trusted by the most ambitious operators.
+                What we do?
               </h2>
               <div className="mt-7 grid gap-6 sm:grid-cols-2">
                 <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
@@ -381,8 +381,7 @@ export default function HomePage() {
             </div>
 
             <div className="text-black/70">
-              AMBIT is built for speed, clarity, and momentum—so you’re not guessing
-              where to focus. See what’s relevant, understand it fast, and act with
+              We identify contract opportunities aligned with your business and notify you with the key details. See what’s relevant, understand it fast, and act with
               confidence.
             </div>
           </div>
@@ -401,7 +400,7 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated positions that align
+              Stop searching and start selecting. Access curated contracts that align
               your specific background with the sectors you actually care about.
             </div>
           </div>
@@ -409,7 +408,7 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black text-black">Move With Purpose.</div>
             <div className="mt-3 text-black/80">
-              Strategically aligning your business with the jobs in your chosen
+              Strategically aligning your business with the projects in your chosen
               industry.
             </div>
           </div>
