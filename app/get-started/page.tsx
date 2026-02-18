@@ -196,7 +196,7 @@ export default function Page() {
           <p className="mt-3 max-w-3xl text-black/65">
             Build your profile in about a minute. AMBIT sends <span className="font-semibold text-black/80">ranked</span>{" "}
             opportunities daily across{" "}
-            <span className="font-semibold text-black/80">Residential • Commercial • Government</span>.
+            <span className="font-semibold text-black/80">Commercial + Government</span>.
           </p>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -277,7 +277,7 @@ export default function Page() {
               price="$79.99/mo"
               subtitle="Matches + summaries + templates"
               bullets={[
-                "Residential, Commercial, and Government matches",
+                "Commercial + Government matches",
                 "Ranked opportunities delivered daily",
                 "Clean project summaries (skim in minutes)",
                 "Ready-to-send templates (interest / intent-to-quote)",

@@ -17,7 +17,7 @@ const API_BASE = (
 
 const REQUEST_TIMEOUT_MS = 15000;
 
-type Market = "residential" | "commercial" | "government";
+type Market = "commercial" | "government";
 
 /**
  * Public plans:
@@ -33,8 +33,9 @@ const ONBOARDING_MESSAGE =
   "Paid-first secure checkout. After activation, you’ll start receiving matched opportunities daily.";
 
 function normalizeMarket(m: string | null): Market {
-  if (m === "commercial" || m === "government" || m === "residential") return m;
-  return "residential";
+  const v = String(m || "").trim().toLowerCase();
+  if (v === "commercial" || v === "government") return v;
+  return "commercial";
 }
 
 function normalizePlan(p: string | null): Plan {
@@ -116,7 +117,9 @@ function PlanButton({
         active
           ? "border-[#1A4FA3]/40 bg-[linear-gradient(135deg,rgba(26,79,163,0.12),rgba(99,167,255,0.06))] ring-2 ring-[#1A4FA3]/20"
           : "border-black/10 bg-white/75 hover:border-black/20",
-        featured ? "shadow-[0_18px_55px_rgba(26,79,163,0.12)]" : "shadow-[0_14px_40px_rgba(0,0,0,0.06)]",
+        featured
+          ? "shadow-[0_18px_55px_rgba(26,79,163,0.12)]"
+          : "shadow-[0_14px_40px_rgba(0,0,0,0.06)]",
       ].join(" ")}
     >
       {featured ? (
@@ -189,7 +192,7 @@ export default function GetStartedClient() {
         naics: naics.trim() || null,
         intent,
         plan: selectedPlan,
-        segments: ["residential", "commercial", "government"],
+        segments: ["commercial", "government"],
       };
 
       const { res: customerRes, json: customerJson } = await postJson(
@@ -334,7 +337,7 @@ export default function GetStartedClient() {
         <input
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
-          placeholder="landscaping, HVAC, concrete, hauling..."
+          placeholder="HVAC, electrical, fire alarm, concrete..."
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
         <div className="mt-2 text-xs text-black/45">Services, equipment, materials, job types.</div>
@@ -345,7 +348,7 @@ export default function GetStartedClient() {
         <input
           value={naics}
           onChange={(e) => setNaics(e.target.value)}
-          placeholder="561730, 238220, 236220..."
+          placeholder="541330, 238220, 561210..."
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
         <div className="mt-2 text-xs text-black/45">Comma-separated is fine.</div>
