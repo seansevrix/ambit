@@ -313,11 +313,10 @@ export default function HomePage() {
       <section className={`${CONTAINER} pt-14 pb-10`}>
         <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
           <div className="text-center">
-            {/* LOUDER: Offer badge */}
+            {/* Offer badge */}
             <div className="mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/20 bg-[#F4FAFF] px-5 py-2.5 text-sm font-black tracking-tight text-black/85 shadow-[0_10px_30px_rgba(92,116,255,0.18)]">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.20)]" />
               Live Tracking
-            
             </div>
 
             <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl">
@@ -325,7 +324,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
-              We Search & Send, You Bid & Win.
+              We Search &amp; Send, You Bid &amp; Win.
             </p>
 
             <p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
@@ -353,24 +352,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TOP MATCH PREVIEW */}
-      <section className={`${CONTAINER} pb-16`}>
-        <LandingEmailPreview market={market} />
-      </section>
-
-      {/* TRUST */}
+      {/* TRUST (WHAT WE DO) */}
       <section className={`${CONTAINER} pb-20`}>
         <div className="rounded-3xl border border-black/10 bg-white/92 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
           <div className="grid gap-10 lg:grid-cols-2">
             <div>
-              <h2 className="text-3xl font-black">
-                What we do?
-              </h2>
+              <h2 className="text-3xl font-black">What we do</h2>
+
               <div className="mt-7 grid gap-6 sm:grid-cols-2">
                 <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
                   <div className="text-4xl font-black text-[#34D399]">3</div>
-                  <div className="mt-1 text-sm text-black/65">Markets covered</div>
+                  <div className="mt-1 text-sm text-black/65">
+                    Markets covered
+                  </div>
                 </div>
+
                 <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
                   <div className="text-4xl font-black text-[#34D399]">Daily</div>
                   <div className="mt-1 text-sm text-black/65">
@@ -381,11 +377,17 @@ export default function HomePage() {
             </div>
 
             <div className="text-black/70">
-              We identify contract opportunities aligned with your business and notify you with the key details. See what’s relevant, understand it fast, and act with
-              confidence.
+              We identify contract opportunities aligned with your business and
+              notify you with the key details. See what’s relevant, understand it
+              fast, and act with confidence.
             </div>
           </div>
         </div>
+      </section>
+
+      {/* TOP MATCH PREVIEW (MOVED BELOW "WHAT WE DO") */}
+      <section className={`${CONTAINER} pb-16`}>
+        <LandingEmailPreview market={market} />
       </section>
 
       {/* FEATURE BLOCKS */}
@@ -400,8 +402,9 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black">Your Expertise. Our Network.</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated contracts that align
-              your specific background with the sectors you actually care about.
+              Stop searching and start selecting. Access curated contracts that
+              align your specific background with the sectors you actually care
+              about.
             </div>
           </div>
 
