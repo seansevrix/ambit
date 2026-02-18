@@ -398,22 +398,6 @@ export default function HomePage() {
             </div>
           </div>
 
-          <div className="mt-10 flex items-center justify-center">
-            <div className="relative inline-flex">
-              <span
-                aria-hidden
-                className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.16),transparent_70%)]"
-              />
-              <Link
-                href={`/get-started?intent=${market}`}
-                className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
-              >
-                <ArrowBadge />
-                Choose plan
-              </Link>
-            </div>
-          </div>
-
           <div className="mt-3 text-center text-xs font-semibold text-black/55">
             Set up in minutes • Matches emailed daily
           </div>
