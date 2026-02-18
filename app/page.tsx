@@ -352,34 +352,159 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* TRUST (WHAT WE DO) */}
+            {/* WHAT WE DO (CONVERSION READY) */}
       <section className={`${CONTAINER} pb-20`}>
         <div className="rounded-3xl border border-black/10 bg-white/92 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
-          <div className="grid gap-10 lg:grid-cols-2">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            {/* LEFT: Clear promise + bullets */}
             <div>
-              <h2 className="text-3xl font-black">What we do</h2>
+              <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                Built for contractors
+              </div>
 
-              <div className="mt-7 grid gap-6 sm:grid-cols-2">
-                <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
-                  <div className="text-4xl font-black text-[#34D399]">3</div>
-                  <div className="mt-1 text-sm text-black/65">
+              <h2 className="mt-4 text-3xl font-black tracking-tight">
+                What AMBIT does
+              </h2>
+
+              <p className="mt-3 text-base text-black/70">
+                We find contract opportunities that fit your business and email you a
+                ranked digest with the exact details you need to take action.
+              </p>
+
+              <div className="mt-5 flex flex-wrap gap-2">
+                <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
+                  Government
+                </span>
+                <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
+                  Commercial
+                </span>
+                <span className="rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
+                  Residential
+                </span>
+              </div>
+
+              <ul className="mt-6 space-y-3 text-sm text-black/70">
+                <li className="flex gap-3">
+                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-black">
+                    ✓
+                  </span>
+                  <span>
+                    <span className="font-semibold text-black/80">
+                      Right-fit matches
+                    </span>{" "}
+                    — no giant lists, just opportunities aligned to your trade and
+                    service area.
+                  </span>
+                </li>
+
+                <li className="flex gap-3">
+                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-black">
+                    ✓
+                  </span>
+                  <span>
+                    <span className="font-semibold text-black/80">
+                      Clear deal details
+                    </span>{" "}
+                    — scope, buyer/agency, location, due date, and estimated value
+                    when available.
+                  </span>
+                </li>
+
+                <li className="flex gap-3">
+                  <span className="mt-0.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-black">
+                    ✓
+                  </span>
+                  <span>
+                    <span className="font-semibold text-black/80">
+                      Ranked by fit
+                    </span>{" "}
+                    — start with the best shot first, then work down.
+                  </span>
+                </li>
+              </ul>
+
+              <div className="mt-6 text-xs font-semibold text-black/55">
+                Quick setup • Email-first • Built for speed
+              </div>
+            </div>
+
+            {/* RIGHT: Simple “how it works” + stats */}
+            <div className="rounded-3xl border border-black/10 bg-white p-8 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
+              <div className="text-xs font-semibold text-black/60">
+                How it works
+              </div>
+
+              <div className="mt-4 space-y-4">
+                <div className="flex gap-3">
+                  <div className="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full border border-black/10 bg-[#F4FAFF] text-sm font-black">
+                    1
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-black/80">
+                      Tell us what you do + where you work
+                    </div>
+                    <div className="text-sm text-black/60">
+                      Trade, service area, and what you want to pursue.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full border border-black/10 bg-[#F4FAFF] text-sm font-black">
+                    2
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-black/80">
+                      We search, filter, and score opportunities
+                    </div>
+                    <div className="text-sm text-black/60">
+                      We cut noise and prioritize what fits.
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <div className="mt-0.5 inline-flex h-8 w-8 flex-none items-center justify-center rounded-full border border-black/10 bg-[#F4FAFF] text-sm font-black">
+                    3
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-black/80">
+                      You get a daily digest you can act on
+                    </div>
+                    <div className="text-sm text-black/60">
+                      See what’s relevant, understand it fast, then bid.
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-7 grid gap-4 sm:grid-cols-3">
+                <div className="rounded-2xl border border-black/10 bg-white px-4 py-4">
+                  <div className="text-3xl font-black text-[#34D399]">3</div>
+                  <div className="mt-1 text-xs font-semibold text-black/60">
                     Markets covered
                   </div>
                 </div>
 
-                <div className="rounded-2xl border border-black/10 bg-white px-5 py-4">
-                  <div className="text-4xl font-black text-[#34D399]">Daily</div>
-                  <div className="mt-1 text-sm text-black/65">
+                <div className="rounded-2xl border border-black/10 bg-white px-4 py-4">
+                  <div className="text-3xl font-black text-[#34D399]">Daily</div>
+                  <div className="mt-1 text-xs font-semibold text-black/60">
                     Updated opportunities
                   </div>
                 </div>
-              </div>
-            </div>
 
-            <div className="text-black/70">
-              We identify contract opportunities aligned with your business and
-              notify you with the key details. See what’s relevant, understand it
-              fast, and act with confidence.
+                <div className="rounded-2xl border border-black/10 bg-white px-4 py-4">
+                  <div className="text-3xl font-black text-[#34D399]">Ranked</div>
+                  <div className="mt-1 text-xs font-semibold text-black/60">
+                    By fit
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4 text-xs text-black/55">
+                No clutter — just the opportunities worth your time.
+              </div>
             </div>
           </div>
         </div>
