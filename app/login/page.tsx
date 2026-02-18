@@ -261,7 +261,7 @@ export default function LoginPage() {
                   onClick={onChoosePlan}
                   disabled={!canSubmit || loadingLogin || loadingChoosePlan || isActive}
                   className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-8 py-3 text-sm font-semibold text-black shadow-[0_10px_28px_rgba(0,0,0,0.08)] transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  title={isActive ? "You’re already subscribed." : "Choose Associate or Executive plan."}
+                  title={isActive ? "You’re already subscribed." : "Choose Pro or Enterprise plan."}
                 >
                   {loadingChoosePlan
                     ? "Opening Plans…"
@@ -272,7 +272,7 @@ export default function LoginPage() {
               </div>
 
               <div className="pt-1 text-center text-xs text-black/45">
-                Choose Plan lets you pick Associate ($49.99) or Executive ($299) in secure checkout.
+                Choose Plan lets you pick Pro ($79.99) or Enterprise ($899) in secure checkout.
               </div>
 
               {customerId ? (
