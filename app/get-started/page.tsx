@@ -3,8 +3,6 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
 
-const TRUST_BADGES = ["Subscription required", "$79.99/mo - Pro", "$899.99/mo - Enterprise"];
-
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
@@ -193,44 +191,10 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-         <p className="mt-3 max-w-3xl text-black/65">
-  Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving matched
-  contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
-</p>
-
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {TRUST_BADGES.map((t) => (
-              <span
-                key={t}
-                className="rounded-full border border-black/10 bg-white/60 px-3 py-1 text-xs font-semibold text-black/70 backdrop-blur"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        {/* Enterprise teaser */}
-        <div className="mt-6 rounded-3xl border border-[#1A4FA3]/25 bg-[linear-gradient(135deg,rgba(26,79,163,0.12),rgba(99,167,255,0.06))] p-5 shadow-[0_18px_55px_rgba(26,79,163,0.14)]">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="max-w-3xl">
-              <div className="text-xs font-bold uppercase tracking-wide text-[#1A4FA3]">Enterprise</div>
-              <h2 className="mt-1 text-xl font-black tracking-tight text-black sm:text-2xl">
-                Priority sourcing and fast triage when timing matters.
-              </h2>
-              <p className="mt-2 text-sm text-black/70">
-                Enterprise is built for serious operators who want speed, accountability, and a priority execution lane.
-              </p>
-            </div>
-
-            <Link
-              href="/prime"
-              className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/35 bg-white/80 px-5 py-2.5 text-xs font-bold text-[#1A4FA3] transition hover:bg-white"
-            >
-              Learn more
-            </Link>
-          </div>
+          <p className="mt-3 max-w-3xl text-black/65">
+            Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving
+            matched contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
+          </p>
         </div>
 
         {/* Signup card */}
