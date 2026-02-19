@@ -191,9 +191,9 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 max-w-3xl text-black/65">
-            Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving
-            matched contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
+          <p className="mt-3 w-full text-black/65 sm:whitespace-nowrap">
+            Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving matched
+            contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
           </p>
         </div>
 
@@ -201,9 +201,7 @@ export default function Page() {
         <GlowFrame className="mt-10">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">
-                A
-              </div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">A</div>
               <div>
                 <div className="text-sm font-black">AMBIT</div>
                 <div className="text-xs text-black/55">Secure signup • Encrypted</div>
@@ -338,7 +336,16 @@ export default function Page() {
             <div className="text-lg font-black">Perfect for</div>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              {["Landscaping", "HVAC", "Plumbing", "Junk removal", "Concrete", "Janitorial", "Multi-crew operators", "Regional contractors"].map((t) => (
+              {[
+                "Landscaping",
+                "HVAC",
+                "Plumbing",
+                "Junk removal",
+                "Concrete",
+                "Janitorial",
+                "Multi-crew operators",
+                "Regional contractors",
+              ].map((t) => (
                 <span
                   key={t}
                   className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
@@ -352,9 +359,7 @@ export default function Page() {
 
             <div className="mt-3 text-xs text-black/50">
               Popular keywords:{" "}
-              <span className="font-semibold text-black/60">
-                emergency, preventive maintenance, install, repair, demo, cleanup
-              </span>
+              <span className="font-semibold text-black/60">emergency, preventive maintenance, install, repair, demo, cleanup</span>
             </div>
           </div>
         </div>
