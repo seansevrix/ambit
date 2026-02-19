@@ -193,11 +193,11 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 max-w-3xl text-black/65">
-            Build your profile in about a minute. AMBIT sends <span className="font-semibold text-black/80">ranked</span>{" "}
-            opportunities daily across{" "}
-            <span className="font-semibold text-black/80">Commercial + Government</span>.
-          </p>
+         <p className="mt-3 max-w-3xl text-black/65">
+  Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving matched
+  contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
+</p>
+
 
           <div className="mt-4 flex flex-wrap gap-2">
             {TRUST_BADGES.map((t) => (
@@ -277,10 +277,10 @@ export default function Page() {
               price="$79.99/mo"
               subtitle="Matches + summaries + templates"
               bullets={[
+                "Dedicated 1:1 Sourcing Analyst",
                 "Commercial + Government matches",
                 "Ranked opportunities delivered daily",
                 "Clean project summaries (skim in minutes)",
-                "Ready-to-send templates (interest / intent-to-quote)",
                 "Fast setup — edit keywords/NAICS anytime",
                 "Support lane for questions + guidance",
               ]}
@@ -294,7 +294,7 @@ export default function Page() {
               bullets={[
                 "Everything in Pro",
                 "Priority triage + faster turnaround on active pursuits",
-                "Dedicated sourcing desk (AI + analyst)",
+                "Dedicated 1:1 Sourcing Analyst",
                 "Weekly pipeline review cadence",
                 "Same-day opportunity triage SLA (priority queue)",
                 "24/7 founder/leadership access",
