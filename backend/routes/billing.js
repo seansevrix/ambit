@@ -6,20 +6,29 @@ import prisma from "../lib/prismaClient.js";
 const router = express.Router();
 
 // ---- Stripe setup ----
-const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || "";
+const STRIPE_SECRET_KEY =
+  process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET || "";
+
+const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 /**
- * ✅ Price IDs (support BOTH old + new env var names)
- * New standard we want:
- *  - STRIPE_PRICE_ID_ASSOCIATE (legacy/grandfathered)
+ * ✅ Plans (CURRENT)
+ *  - associate   (LEGACY / grandfathered only)  old price stays forever for existing customers
+ *  - starter     ($49.99/mo)  morning matches only
+ *  - pro         ($129.99/mo) 1:1 analyst + summaries + templates
+ *  - enterprise  ($1499.99/mo) priority lane + execution support
+ *
+ * ✅ Env var standard (recommended)
+ *  - STRIPE_PRICE_ID_ASSOCIATE   (legacy)
+ *  - STRIPE_PRICE_ID_STARTER
  *  - STRIPE_PRICE_ID_PRO
  *  - STRIPE_PRICE_ID_ENTERPRISE
  *
- * Back-compat supported:
- *  - STRIPE_PRICE_ASSOCIATE, STRIPE_PRICE_SINGLE_ID, STRIPE_PRICE_ID
- *  - STRIPE_PRICE_PRO
- *  - STRIPE_PRICE_ENTERPRISE, STRIPE_PRICE_ENTERPRISE_ID
- *  - (legacy) STRIPE_PRICE_EXECUTIVE, STRIPE_PRICE_ALL_ID
+ * ✅ Back-compat supported (old names)
+ *  - associate: STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID
+ *  - pro: STRIPE_PRICE_PRO
+ *  - enterprise: STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID
+ *  - (optional old): STRIPE_PRICE_EXECUTIVE / STRIPE_PRICE_ALL_ID / STRIPE_PRICE_ALL
  */
 
 // Legacy / Associate (grandfathered)
@@ -31,28 +40,32 @@ const STRIPE_PRICE_ID_ASSOCIATE =
   process.env.STRIPE_PRICE_ID ||
   "";
 
+// Starter (new)
+const STRIPE_PRICE_ID_STARTER =
+  process.env.STRIPE_PRICE_ID_STARTER ||
+  process.env.STRIPE_PRICE_STARTER ||
+  "";
+
 // Pro (new)
 const STRIPE_PRICE_ID_PRO =
   process.env.STRIPE_PRICE_ID_PRO ||
   process.env.STRIPE_PRICE_PRO ||
   "";
 
-// Enterprise (same)
+// Enterprise (new)
 const STRIPE_PRICE_ID_ENTERPRISE =
   process.env.STRIPE_PRICE_ID_ENTERPRISE ||
   process.env.STRIPE_PRICE_ENTERPRISE ||
   process.env.STRIPE_PRICE_ENTERPRISE_ID ||
   "";
 
-// (Optional) legacy Executive fallbacks (if anything still references it)
+// Optional: old executive fallbacks (kept only to avoid breaking ancient env setups)
 const STRIPE_PRICE_ID_EXECUTIVE =
   process.env.STRIPE_PRICE_ID_EXECUTIVE ||
   process.env.STRIPE_PRICE_EXECUTIVE ||
   process.env.STRIPE_PRICE_ALL_ID ||
   process.env.STRIPE_PRICE_ALL ||
   "";
-
-const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 function getFrontendBaseUrl(req) {
   const isProd = process.env.NODE_ENV === "production";
@@ -76,42 +89,60 @@ function normalizeEmail(email) {
 
 /**
  * Plans:
+ *  - starter (public)
  *  - pro (public)
  *  - enterprise (public)
  *  - associate (legacy/grandfathered)
  *
  * Back-compat:
- *  - executive/prime/all/all3/all_markets => pro
+ *  - associate/single/basic => associate
+ *  - executive/prime/all/all3/all_markets => pro (default) OR enterprise if you want
  */
 function normalizePlan(planRaw) {
   const p = String(planRaw || "").trim().toLowerCase();
 
   // New public plans
+  if (p === "starter") return "starter";
   if (p === "pro") return "pro";
   if (p === "enterprise") return "enterprise";
 
-  // Legacy/grandfathered
+  // Legacy/grandfathered (keep distinct)
   if (p === "associate") return "associate";
+  if (p === "single" || p === "single_market" || p === "basic") return "associate";
 
   // Enterprise aliases
   if (p === "corp" || p === "corporate" || p === "enterprise_plus") return "enterprise";
 
-  // Old names -> Pro
+  // Old names -> Pro (keep old links working)
   if (p === "executive" || p === "prime" || p === "all" || p === "all3" || p === "all_markets")
     return "pro";
-
-  // Old single/basic -> Associate (legacy)
-  if (p === "single" || p === "single_market" || p === "basic") return "associate";
 
   // Default for new traffic
   return "pro";
 }
 
 function resolvePriceId(plan) {
-  if (plan === "enterprise") return STRIPE_PRICE_ID_ENTERPRISE || "";
+  if (plan === "starter") return STRIPE_PRICE_ID_STARTER || "";
   if (plan === "pro") return STRIPE_PRICE_ID_PRO || "";
-  // associate (legacy)
-  return STRIPE_PRICE_ID_ASSOCIATE || "";
+  if (plan === "enterprise") return STRIPE_PRICE_ID_ENTERPRISE || "";
+  if (plan === "associate") return STRIPE_PRICE_ID_ASSOCIATE || "";
+  return "";
+}
+
+function missingPriceMessage(plan) {
+  if (plan === "starter") {
+    return "Missing STRIPE_PRICE_ID_STARTER (or STRIPE_PRICE_STARTER) on backend env vars.";
+  }
+  if (plan === "pro") {
+    return "Missing STRIPE_PRICE_ID_PRO (or STRIPE_PRICE_PRO) on backend env vars.";
+  }
+  if (plan === "enterprise") {
+    return "Missing STRIPE_PRICE_ID_ENTERPRISE (or STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID) on backend env vars.";
+  }
+  if (plan === "associate") {
+    return "Missing STRIPE_PRICE_ID_ASSOCIATE (or STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
+  }
+  return "Missing Stripe price env var on backend.";
 }
 
 async function ensureStripeCustomer(customer) {
@@ -164,7 +195,7 @@ async function findCustomer({ customerId, email }) {
 /**
  * POST /engine/billing/create-checkout-session
  * Body:
- *   { customerId?: number, email?: string, plan?: "associate" | "pro" | "enterprise" | legacy strings }
+ *   { customerId?: number, email?: string, plan?: "associate" | "starter" | "pro" | "enterprise" | legacy strings }
  *
  * Paid-first flow (no trial)
  */
@@ -179,24 +210,6 @@ async function createCheckoutSession(req, res) {
     }
 
     const { customerId, email, plan: planRaw } = req.body || {};
-    const plan = normalizePlan(planRaw);
-    const priceId = resolvePriceId(plan);
-
-    if (!priceId) {
-      let missing = "Missing Stripe price env var on backend.";
-
-      if (plan === "enterprise") {
-        missing =
-          "Missing STRIPE_PRICE_ID_ENTERPRISE (or STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID) on backend env vars.";
-      } else if (plan === "pro") {
-        missing = "Missing STRIPE_PRICE_ID_PRO (or STRIPE_PRICE_PRO) on backend env vars.";
-      } else {
-        missing =
-          "Missing STRIPE_PRICE_ID_ASSOCIATE (or STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
-      }
-
-      return res.status(500).json({ ok: false, error: missing });
-    }
 
     const customer = await findCustomer({ customerId, email });
     if (!customer) {
@@ -204,6 +217,25 @@ async function createCheckoutSession(req, res) {
         ok: false,
         error: "Customer not found. Please finish signup first.",
       });
+    }
+
+    // If customer is grandfathered on associate and caller didn't specify a plan,
+    // default them to associate (prevents accidental upgrades in internal calls).
+    const planRequested = String(planRaw || "").trim().toLowerCase();
+    let plan = normalizePlan(planRaw);
+
+    if (!planRequested && String(customer?.plan || "").toLowerCase() === "associate") {
+      plan = "associate";
+    }
+
+    // Optional: keep honoring "executive" if you STILL have that env configured
+    const allowExecutive =
+      (planRequested === "executive" || planRequested === "prime") && STRIPE_PRICE_ID_EXECUTIVE;
+
+    const priceId = allowExecutive ? STRIPE_PRICE_ID_EXECUTIVE : resolvePriceId(plan);
+
+    if (!priceId) {
+      return res.status(500).json({ ok: false, error: missingPriceMessage(plan) });
     }
 
     const stripeCustomerId = await ensureStripeCustomer(customer);
