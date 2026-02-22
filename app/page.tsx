@@ -258,7 +258,7 @@ function HowItWorksSection() {
                 step="Step 1"
                 accent="blue"
                 title="Tell us your trade"
-                desc="Service area + optional keywords."
+                desc="Service area + keywords."
                 bullets={["Trade + where you work", "What you want more of"]}
                 icon={<IconTarget />}
               />
