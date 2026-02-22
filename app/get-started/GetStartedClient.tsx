@@ -21,16 +21,14 @@ type Market = "commercial" | "government";
 
 /**
  * Public plans:
- *  - pro ($79.99/mo)
- *  - enterprise ($899.99/mo)
- *
- * Legacy (grandfathered):
- *  - associate ($49.99/mo)  <-- supported to avoid breaking existing customers
+ *  - starter ($49.99/mo)    morning matches only
+ *  - pro ($129.99/mo)       1:1 analyst + summaries + templates
+ *  - enterprise ($1,499.99) priority lane + execution support
  */
-type Plan = "associate" | "pro" | "enterprise";
+type Plan = "starter" | "pro" | "enterprise";
 
 const ONBOARDING_MESSAGE =
-  "Paid-first secure checkout. After activation, you’ll start receiving matched opportunities daily.";
+  "Paid-first secure checkout. After activation, Starter begins daily matches. Pro/Enterprise adds 1:1 analyst support.";
 
 function normalizeMarket(m: string | null): Market {
   const v = String(m || "").trim().toLowerCase();
@@ -41,21 +39,23 @@ function normalizeMarket(m: string | null): Market {
 function normalizePlan(p: string | null): Plan {
   const v = String(p || "").trim().toLowerCase();
 
-  // New plans
+  // Primary
+  if (v === "starter") return "starter";
   if (v === "pro") return "pro";
   if (v === "enterprise") return "enterprise";
 
-  // Legacy (grandfathered)
-  if (v === "associate") return "associate";
+  // Friendly aliases
+  if (v === "basic" || v === "matches" || v === "lead" || v === "leads") return "starter";
 
-  // Old aliases/back-compat
-  if (v === "executive" || v === "prime" || v === "all" || v === "all3" || v === "all_markets") {
-    return "pro"; // Executive is removed; map old links to Pro
-  }
+  // Legacy/back-compat (old naming)
+  if (v === "associate") return "starter";
+  if (v === "executive" || v === "elite" || v === "prime") return "enterprise";
+  if (v === "all" || v === "all3" || v === "all_markets") return "pro";
 
   // Enterprise aliases
   if (v === "corp" || v === "corporate" || v === "enterprise_plus") return "enterprise";
 
+  // Default
   return "pro";
 }
 
@@ -163,8 +163,6 @@ export default function GetStartedClient() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
-  const isLegacyAssociate = selectedPlan === "associate";
-
   async function onContinue() {
     if (loading) return;
     setErr(null);
@@ -258,12 +256,20 @@ export default function GetStartedClient() {
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+          <PlanButton
+            active={selectedPlan === "starter"}
+            title="Starter"
+            priceLine="$49.99/mo • Morning matches"
+            desc="Daily matched opportunities. Simple and clean."
+            onClick={() => setSelectedPlan("starter")}
+          />
+
           <PlanButton
             active={selectedPlan === "pro"}
             title="Pro"
-            priceLine="$79.99/mo • Matches + summaries + templates"
-            desc="Daily matched opportunities with clean breakdowns and ready-to-send templates."
+            priceLine="$129.99/mo • 1:1 analyst + tools"
+            desc="Matches + summaries + templates with a 1:1 analyst lane."
             onClick={() => setSelectedPlan("pro")}
             featured
           />
@@ -271,19 +277,11 @@ export default function GetStartedClient() {
           <PlanButton
             active={selectedPlan === "enterprise"}
             title="Enterprise"
-            priceLine="$899.99/mo • Priority sourcing + founder access"
-            desc="For teams that want speed, priority triage, and direct leadership support."
+            priceLine="$1,499.99/mo • Priority lane"
+            desc="Priority triage, execution support, and leadership access."
             onClick={() => setSelectedPlan("enterprise")}
           />
         </div>
-
-        {/* Legacy plan support (hidden, non-marketing) */}
-        {isLegacyAssociate ? (
-          <div className="mt-3 rounded-2xl border border-black/10 bg-white/70 px-4 py-3 text-xs text-black/60">
-            Legacy plan detected: <span className="font-semibold text-black/75">Associate ($49.99/mo)</span>{" "}
-            is grandfathered for early customers.
-          </div>
-        ) : null}
       </div>
 
       {/* Inputs */}

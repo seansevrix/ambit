@@ -35,8 +35,12 @@ function LoadingFallback() {
           </div>
 
           <div className="min-w-0">
-            <div className="text-base font-semibold text-black">Getting your setup ready…</div>
-            <div className="mt-0.5 text-sm text-black/60">Loading your profile builder.</div>
+            <div className="text-base font-semibold text-black">
+              Getting your setup ready…
+            </div>
+            <div className="mt-0.5 text-sm text-black/60">
+              Loading your profile builder.
+            </div>
           </div>
         </div>
 
@@ -44,7 +48,9 @@ function LoadingFallback() {
           <div className="h-full w-[55%] bg-black/30" />
         </div>
 
-        <div className="mt-4 text-xs text-black/50">One moment — this usually takes a second.</div>
+        <div className="mt-4 text-xs text-black/50">
+          One moment — this usually takes a second.
+        </div>
       </div>
     </div>
   );
@@ -136,7 +142,13 @@ function PlanReferenceCard({
   );
 }
 
-function GlowFrame({ children, className = "" }: { children: ReactNode; className?: string }) {
+function GlowFrame({
+  children,
+  className = "",
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
     <div
       className={[
@@ -146,7 +158,9 @@ function GlowFrame({ children, className = "" }: { children: ReactNode; classNam
         "shadow-[0_28px_90px_rgba(26,79,163,0.20)]",
       ].join(" ")}
     >
-      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">{children}</div>
+      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">
+        {children}
+      </div>
     </div>
   );
 }
@@ -191,9 +205,22 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 w-full text-black/65 sm:whitespace-nowrap">
-            Build your profile in <span className="font-semibold text-black/80">60 seconds</span>, then start receiving matched
-            contracts from your <span className="font-semibold text-black/80">dedicated 1:1 Contract Analyst</span>.
+          <p className="mt-3 text-black/65">
+            Build your profile in{" "}
+            <span className="font-semibold text-black/80">~60 seconds</span>.
+            <span className="font-semibold text-black/80">
+              {" "}
+              Starter
+            </span>{" "}
+            gives you daily matches.{" "}
+            <span className="font-semibold text-black/80">
+              Pro / Enterprise
+            </span>{" "}
+            adds a{" "}
+            <span className="font-semibold text-black/80">
+              1:1 contract analyst
+            </span>{" "}
+            with summaries + templates.
           </p>
         </div>
 
@@ -201,7 +228,9 @@ export default function Page() {
         <GlowFrame className="mt-10">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">A</div>
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">
+                A
+              </div>
               <div>
                 <div className="text-sm font-black">AMBIT</div>
                 <div className="text-xs text-black/55">Secure signup • Encrypted</div>
@@ -232,36 +261,47 @@ export default function Page() {
             </span>
           </div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-2">
+          <div className="mt-5 grid gap-5 lg:grid-cols-3">
+            <PlanReferenceCard
+              name="Starter"
+              price="$49.99/mo"
+              subtitle="Morning matches only"
+              bullets={[
+                "Daily matched opportunities (morning email)",
+                "Ranked shortlist (best fits first)",
+                "Edit keywords + NAICS anytime",
+                "Cancel anytime",
+              ]}
+              note="Best for contractors who just want daily matches, clean and simple."
+            />
+
             <PlanReferenceCard
               featured
               name="Pro"
-              price="$79.99/mo"
-              subtitle="Matches + summaries + templates"
+              price="$129.99/mo"
+              subtitle="1:1 analyst + summaries + templates"
               bullets={[
-                "Dedicated 1:1 Sourcing Analyst",
-                "Commercial + Government matches",
-                "Ranked opportunities delivered daily",
-                "Clean project summaries (skim in minutes)",
-                "Fast setup — edit keywords/NAICS anytime",
+                "Everything in Starter",
+                "Dedicated 1:1 contract analyst (light lane)",
+                "Skimmable summaries + next steps",
+                "Ready-to-send templates (LOI, emails, checklists)",
                 "Support lane for questions + guidance",
               ]}
-              note="Best for contractors who want consistent opportunities with clear next steps."
+              note="Best for contractors who want a human helping them move faster."
             />
 
             <PlanReferenceCard
               name="Enterprise"
-              price="$899.99/mo"
-              subtitle="Priority lane + founder access"
+              price="$1,499.99/mo"
+              subtitle="Priority lane + execution support"
               bullets={[
                 "Everything in Pro",
                 "Priority triage + faster turnaround on active pursuits",
-                "Dedicated 1:1 Sourcing Analyst",
                 "Weekly pipeline review cadence",
-                "Same-day opportunity triage SLA (priority queue)",
-                "24/7 founder/leadership access",
+                "Same-day opportunity triage (priority queue)",
+                "Founder/leadership access",
               ]}
-              note="Built for operators who want speed, accountability, and priority execution support."
+              note="Built for operators who want speed, accountability, and a true priority lane."
             />
           </div>
 
@@ -304,7 +344,7 @@ export default function Page() {
             </div>
 
             <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-              Enterprise includes AMBIT’s highest-priority execution lane, with 24/7 founder access and a dedicated sourcing desk.
+              Pro and Enterprise include a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
             </div>
           </div>
 
@@ -324,7 +364,11 @@ export default function Page() {
             <div className="mt-4 space-y-4">
               <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → better match accuracy." />
               <Step n={2} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
-              <Step n={3} title="You act fast" desc="Use summaries + templates to move quickly on the right jobs." />
+              <Step
+                n={3}
+                title="Move faster (optional)"
+                desc="Pro/Enterprise adds summaries, templates, and 1:1 analyst help."
+              />
             </div>
 
             <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
@@ -355,11 +399,15 @@ export default function Page() {
               ))}
             </div>
 
-            <div className="mt-4 text-sm text-black/55">You can update keywords/NAICS anytime to refine match quality.</div>
+            <div className="mt-4 text-sm text-black/55">
+              You can update keywords/NAICS anytime to refine match quality.
+            </div>
 
             <div className="mt-3 text-xs text-black/50">
               Popular keywords:{" "}
-              <span className="font-semibold text-black/60">emergency, preventive maintenance, install, repair, demo, cleanup</span>
+              <span className="font-semibold text-black/60">
+                emergency, preventive maintenance, install, repair, demo, cleanup
+              </span>
             </div>
           </div>
         </div>
