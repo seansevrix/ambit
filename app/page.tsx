@@ -80,6 +80,295 @@ function SignupSocialProof() {
   );
 }
 
+/* ---------- ICONS (INLINE) ---------- */
+
+function IconTarget() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M12 21a9 9 0 1 0-9-9 9 9 0 0 0 9 9Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 16a4 4 0 1 0-4-4 4 4 0 0 0 4 4Z"
+        stroke="currentColor"
+        strokeWidth="2"
+      />
+      <path
+        d="M12 12h.01"
+        stroke="currentColor"
+        strokeWidth="4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconInbox() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M4 13V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4 13l4 6h8l4-6"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M9 13a3 3 0 0 0 6 0"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconChecklist() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
+      <path
+        d="M9 6h11M9 12h11M9 18h11"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M4.5 6.5l1.2 1.2L8 5.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.5 12.5l1.2 1.2L8 11.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M4.5 18.5l1.2 1.2L8 17.4"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+/* ---------- HOW IT WORKS ---------- */
+
+function StepCard({
+  step,
+  title,
+  desc,
+  bullets,
+  icon,
+  accent = "blue",
+}: {
+  step: string;
+  title: string;
+  desc: string;
+  bullets: string[];
+  icon: React.ReactNode;
+  accent?: "blue" | "emerald" | "black";
+}) {
+  const accentMap: Record<string, string> = {
+    blue: "bg-[#5C74FF] text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)]",
+    emerald:
+      "bg-emerald-500 text-black shadow-[0_18px_40px_rgba(16,185,129,0.22)]",
+    black: "bg-black text-white shadow-[0_18px_40px_rgba(0,0,0,0.18)]",
+  };
+
+  const softRingMap: Record<string, string> = {
+    blue: "ring-[#5C74FF]/15",
+    emerald: "ring-emerald-500/15",
+    black: "ring-black/10",
+  };
+
+  return (
+    <div className="group relative overflow-hidden rounded-3xl border border-black/10 bg-white p-7 shadow-[0_14px_40px_rgba(0,0,0,0.06)] transition hover:-translate-y-[2px] hover:shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      {/* soft glow */}
+      <div
+        aria-hidden
+        className={[
+          "pointer-events-none absolute -left-20 -top-20 h-56 w-56 rounded-full blur-2xl opacity-60",
+          "bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.22),transparent_65%)]",
+        ].join(" ")}
+      />
+
+      <div className="relative flex items-start justify-between gap-4">
+        <div>
+          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/65">
+            <span className="text-black/45">{step}</span>
+            <span className="h-1 w-1 rounded-full bg-black/20" />
+            <span className="font-black text-black/75">How it works</span>
+          </div>
+
+          <div className="mt-3 text-xl font-black tracking-tight">{title}</div>
+          <div className="mt-2 text-sm font-medium text-black/65">{desc}</div>
+        </div>
+
+        <div
+          className={[
+            "shrink-0 rounded-2xl border border-black/10 bg-white p-3 text-black/80 ring-8",
+            softRingMap[accent],
+          ].join(" ")}
+          aria-hidden="true"
+        >
+          {icon}
+        </div>
+      </div>
+
+      <div className="relative mt-5">
+        <div className="grid gap-2">
+          {bullets.map((b) => (
+            <div key={b} className="flex items-start gap-2 text-sm">
+              <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-black/35" />
+              <span className="text-black/70">{b}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-between">
+          <div className="text-xs font-semibold text-black/45">
+            Built for trades • Built to move fast
+          </div>
+
+          <span
+            className={[
+              "inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold",
+              accentMap[accent],
+            ].join(" ")}
+            aria-hidden="true"
+          >
+            {step}
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HowItWorksSection({ market }: { market: Market }) {
+  return (
+    <section className={`${CONTAINER} pb-20`} id="how-it-works">
+      <div className="relative overflow-hidden rounded-[36px] border border-black/10 bg-white/92 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+        {/* top gradient + hairline */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(92,116,255,0.20),transparent_60%)]"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-10 top-16 h-px bg-black/10"
+        />
+
+        <div className="relative px-8 py-12 sm:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-4 py-1.5 text-xs font-semibold text-black/70 shadow-[0_10px_30px_rgba(92,116,255,0.12)]">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.18)]" />
+              How it works
+            </div>
+
+            <h2 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
+              Tell us what you do.
+              <br />
+              We send bid-ready opportunities.
+            </h2>
+
+            <p className="mt-4 text-base font-medium text-black/70 sm:text-lg">
+              Less scrolling. Less guessing. More “this one’s a fit.”
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-2">
+              <span className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-black/70">
+                Set up in minutes
+              </span>
+              <span className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-black/70">
+                Daily match emails
+              </span>
+              <span className="rounded-full border border-black/10 bg-white px-4 py-2 text-xs font-semibold text-black/70">
+                Clear next steps
+              </span>
+            </div>
+
+            <div className="mt-7">
+              <Link
+                href={`/get-started?intent=${market}`}
+                className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-5 py-2.5 text-sm font-semibold text-black/80 shadow-sm hover:bg-white/70"
+              >
+                See plans →
+              </Link>
+            </div>
+          </div>
+
+          {/* steps */}
+          <div className="relative mt-12">
+            {/* timeline line on desktop */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute left-8 right-8 top-10 hidden h-px bg-black/10 md:block"
+            />
+            <div className="grid gap-6 md:grid-cols-3">
+              <StepCard
+                step="Step 1"
+                accent="blue"
+                title="Build your profile"
+                desc="Trade, service area, keywords — what you actually want."
+                bullets={[
+                  "Tell us your trade + where you work",
+                  "Pick what you want more of (type + size)",
+                  "Optional keywords to tighten fit",
+                ]}
+                icon={<IconTarget />}
+              />
+
+              <StepCard
+                step="Step 2"
+                accent="emerald"
+                title="We filter the noise"
+                desc="We search, score, and shortlist only strong matches."
+                bullets={[
+                  "We scan public sources for opportunities",
+                  "We filter out junk and mismatches",
+                  "You receive a clean daily shortlist",
+                ]}
+                icon={<IconInbox />}
+              />
+
+              <StepCard
+                step="Step 3"
+                accent="black"
+                title="You move with confidence"
+                desc="Skimmable summaries + next steps so you can act fast."
+                bullets={[
+                  "Plain-English breakdowns (not walls of text)",
+                  "Requirements + what to do next",
+                  "Bid support available when you need it",
+                ]}
+                icon={<IconChecklist />}
+              />
+            </div>
+
+            <div className="mt-6 text-center text-xs font-semibold text-black/55">
+              Simple on purpose • Built to convert time into wins
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- TESTIMONIALS ---------- */
 
 type QuotePart = { t: string; strong?: boolean };
@@ -268,7 +557,7 @@ function TestimonialsSection({ market }: { market: Market }) {
           Plug into AMBIT to keep growing your business
         </div>
         <div className="mt-4 text-lg text-black/70">
-          Join the platform where who you are is just as important as what you do.
+          Stop wasting hours hunting—spend that time bidding on the right work.
         </div>
 
         <div className="mt-10 flex items-center justify-center">
@@ -313,7 +602,6 @@ export default function HomePage() {
       <section className={`${CONTAINER} pt-14 pb-10`}>
         <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
           <div className="text-center">
-            {/* Offer badge */}
             <div className="mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/20 bg-[#F4FAFF] px-5 py-2.5 text-sm font-black tracking-tight text-black/85 shadow-[0_10px_30px_rgba(92,116,255,0.18)]">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.20)]" />
               Live Tracking
@@ -324,7 +612,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
-              We Search &amp; Send, You Bid &amp; Win.
+              Bid-ready opportunities, delivered daily.
             </p>
 
             <p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
@@ -352,104 +640,73 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* WHAT WE DO (SUPER SIMPLE) */}
-      <section className={`${CONTAINER} pb-20`}>
-        <div className="rounded-3xl border border-black/10 bg-white/92 px-10 py-12 shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Simple process
-            </div>
+      {/* HOW IT WORKS (HIGH CONVERSION) */}
+      <HowItWorksSection market={market} />
 
-            <h2 className="mt-4 text-3xl font-black tracking-tight">
-              You tell us about your business.
-              <br />
-              We find contracts — and help you bid.
-            </h2>
-
-            <p className="mt-3 text-base text-black/70">
-              No hunting. No noise. Just opportunities you can act on.
-            </p>
-          </div>
-
-          <div className="mt-10 grid gap-5 md:grid-cols-3">
-            <div className="rounded-2xl border border-black/10 bg-white px-6 py-6">
-              <div className="text-xs font-semibold text-black/50">Step 1</div>
-              <div className="mt-2 text-lg font-black">Tell us what you do</div>
-              <div className="mt-1 text-sm text-black/65">
-                Trade, service area, and what you want to pursue.
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-white px-6 py-6">
-              <div className="text-xs font-semibold text-black/50">Step 2</div>
-              <div className="mt-2 text-lg font-black">We find the contracts</div>
-              <div className="mt-1 text-sm text-black/65">
-                We search and filter to send you the best fits.
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-white px-6 py-6">
-              <div className="text-xs font-semibold text-black/50">Step 3</div>
-              <div className="mt-2 text-lg font-black">We help you bid</div>
-              <div className="mt-1 text-sm text-black/65">
-                Clear summaries + next steps so you can move fast.
-              </div>
-            </div>
-          </div>
-
-          <div className="mt-3 text-center text-xs font-semibold text-black/55">
-            Set up in minutes • Matches emailed daily
-          </div>
-        </div>
-      </section>
-
-      {/* TOP MATCH PREVIEW (BELOW WHAT WE DO) */}
+      {/* TOP MATCH PREVIEW */}
       <section className={`${CONTAINER} pb-16`}>
+        <div className="mb-5 flex items-end justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/90 px-3 py-1 text-xs font-semibold text-black/70">
+              <span className="h-2 w-2 rounded-full bg-[#5C74FF]" />
+              What you’ll receive
+            </div>
+            <div className="mt-2 text-3xl font-black tracking-tight">
+              A clean daily shortlist (not a dumpster fire)
+            </div>
+            <div className="mt-1 text-sm font-medium text-black/60">
+              Skimmable. Actionable. Built to help you decide fast.
+            </div>
+          </div>
+
+          <Link
+            href={`/get-started?intent=${market}`}
+            className="hidden rounded-full border border-black/15 bg-white px-5 py-2.5 text-sm font-semibold text-black/80 shadow-sm hover:bg-white/70 sm:inline-flex"
+          >
+            Get started →
+          </Link>
+        </div>
+
         <LandingEmailPreview market={market} />
       </section>
 
       {/* FEATURE BLOCKS */}
       <section className={`${CONTAINER} pb-20`}>
         <h2 className="text-5xl font-black tracking-tight">
-          Ambit makes finding contracts effortless.
+          Everything you need to move faster
           <br />
-          Stop hunting, start receiving.
+          (without adding headcount)
         </h2>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
-            <div className="text-2xl font-black">Your Expertise. Our Network.</div>
+            <div className="text-2xl font-black">Precision matching</div>
             <div className="mt-3 text-black/70">
-              Stop searching and start selecting. Access curated contracts that
-              align your specific background with the sectors you actually care
-              about.
+              We match by trade, location, scope, and keywords so you’re not
+              chasing work you’ll never bid.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
-            <div className="text-2xl font-black text-black">Move With Purpose.</div>
+            <div className="text-2xl font-black text-black">Daily momentum</div>
             <div className="mt-3 text-black/80">
-              Strategically aligning your business with the projects in your chosen
-              industry.
+              Wake up to a shortlist. Pick your shots. Keep your calendar full.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
-            <div className="text-2xl font-black">
-              A Command Center for Your Company.
-            </div>
+            <div className="text-2xl font-black">Clarity + next steps</div>
             <div className="mt-3 text-white/90">
-              Use precision matching to find the right jobs and simple summaries to
-              decide fast.
+              Plain-English summaries, requirements, and “what to do next” so you
+              don’t waste time decoding.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
-            <div className="text-2xl font-black">Visibility Without Guesswork.</div>
+            <div className="text-2xl font-black">Support when it matters</div>
             <div className="mt-3 text-black/70">
-              Built to prioritize transparency—so your status is clear at every
-              stage.
+              Need help? Upgrade for bid support and associate help so you can
+              move with confidence.
             </div>
           </div>
         </div>
