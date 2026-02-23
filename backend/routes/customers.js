@@ -24,19 +24,65 @@ const APP_URL = process.env.FRONTEND_URL || process.env.APP_URL || "https://www.
 const RESEND_TIMEOUT_MS = Number(process.env.RESEND_TIMEOUT_MS || 2500);
 
 /**
- * Paid-first plan mapping.
- * Supports multiple env var naming styles for flexibility.
+ * ✅ Plans (CURRENT)
+ *  - associate   (LEGACY / grandfathered only)  existing subs keep old $49.99 forever
+ *  - starter     ($49.99/mo)  morning matches only
+ *  - pro         ($129.99/mo) 1:1 analyst + summaries + templates
+ *  - enterprise  ($1499.99/mo) priority lane + execution support
+ *
+ * ✅ Env var standard (recommended)
+ *  - STRIPE_PRICE_ID_ASSOCIATE   (legacy)
+ *  - STRIPE_PRICE_ID_STARTER
+ *  - STRIPE_PRICE_ID_PRO
+ *  - STRIPE_PRICE_ID_ENTERPRISE
+ *
+ * ✅ Back-compat supported (old names)
+ *  - associate: STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID
+ *  - starter: STRIPE_PRICE_STARTER
+ *  - pro: STRIPE_PRICE_PRO
+ *  - enterprise: STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID
+ *  - optional legacy: STRIPE_PRICE_ID_EXECUTIVE / STRIPE_PRICE_EXECUTIVE / STRIPE_PRICE_ALL_ID / STRIPE_PRICE_ALL
  */
+
+// Legacy / Associate (grandfathered)
 const PRICE_ID_ASSOCIATE =
   process.env.STRIPE_PRICE_ID_ASSOCIATE ||
   process.env.STRIPE_ASSOCIATE_PRICE_ID ||
   process.env.STRIPE_PRICE_ASSOCIATE ||
+  process.env.STRIPE_PRICE_SINGLE_ID ||
+  process.env.STRIPE_PRICE_SINGLE ||
+  process.env.STRIPE_PRICE_ID ||
   "";
 
+// Starter (new)
+const PRICE_ID_STARTER =
+  process.env.STRIPE_PRICE_ID_STARTER ||
+  process.env.STRIPE_STARTER_PRICE_ID ||
+  process.env.STRIPE_PRICE_STARTER ||
+  "";
+
+// Pro (new)
+const PRICE_ID_PRO =
+  process.env.STRIPE_PRICE_ID_PRO ||
+  process.env.STRIPE_PRO_PRICE_ID ||
+  process.env.STRIPE_PRICE_PRO ||
+  "";
+
+// Enterprise (new)
+const PRICE_ID_ENTERPRISE =
+  process.env.STRIPE_PRICE_ID_ENTERPRISE ||
+  process.env.STRIPE_ENTERPRISE_PRICE_ID ||
+  process.env.STRIPE_PRICE_ENTERPRISE ||
+  process.env.STRIPE_PRICE_ENTERPRISE_ID ||
+  "";
+
+// Optional: old executive fallbacks (kept only so ancient env setups / old links won't break)
 const PRICE_ID_EXECUTIVE =
   process.env.STRIPE_PRICE_ID_EXECUTIVE ||
   process.env.STRIPE_EXECUTIVE_PRICE_ID ||
   process.env.STRIPE_PRICE_EXECUTIVE ||
+  process.env.STRIPE_PRICE_ALL_ID ||
+  process.env.STRIPE_PRICE_ALL ||
   "";
 
 /**
@@ -271,26 +317,83 @@ function normalizeSources(v) {
   return uniq.length ? uniq : undefined;
 }
 
+/**
+ * Plans:
+ *  - starter (public)
+ *  - pro (public)
+ *  - enterprise (public)
+ *  - associate (legacy/grandfathered)
+ *
+ * Back-compat:
+ *  - associate/single/basic => associate
+ *  - executive/prime/all/all3/all_markets => pro (default)
+ */
 function normalizePlan(v) {
   const p = String(v || "").trim().toLowerCase();
-  if (["executive", "exec", "pro", "299", "299/mo"].includes(p)) return "executive";
-  return "associate";
+
+  // New public plans
+  if (p === "starter" || p === "49.99" || p === "49" || p === "starter_monthly") return "starter";
+  if (
+    p === "pro" ||
+    p === "129.99" ||
+    p === "129" ||
+    p === "pro_monthly" ||
+    p === "executive" ||
+    p === "exec" ||
+    p === "prime" ||
+    p === "all" ||
+    p === "all3" ||
+    p === "all_markets"
+  )
+    return "pro";
+  if (p === "enterprise" || p === "1499" || p === "1499.99" || p === "elite" || p === "enterprise_monthly")
+    return "enterprise";
+
+  // Legacy/grandfathered
+  if (p === "associate" || p === "single" || p === "single_market" || p === "basic") return "associate";
+
+  // Default for new traffic
+  return "pro";
 }
 
-function resolvePriceId(plan) {
-  if (plan === "executive") return PRICE_ID_EXECUTIVE;
-  return PRICE_ID_ASSOCIATE;
+function resolvePriceId(plan, planRaw) {
+  // If someone hits old "executive" AND you still have legacy env configured, honor it.
+  const raw = String(planRaw || "").trim().toLowerCase();
+  const wantsLegacyExecutive = raw === "executive" || raw === "prime";
+  if (wantsLegacyExecutive && PRICE_ID_EXECUTIVE) return PRICE_ID_EXECUTIVE;
+
+  if (plan === "starter") return PRICE_ID_STARTER;
+  if (plan === "pro") return PRICE_ID_PRO;
+  if (plan === "enterprise") return PRICE_ID_ENTERPRISE;
+  if (plan === "associate") return PRICE_ID_ASSOCIATE;
+
+  return "";
 }
 
-function getSuccessUrl(customerId) {
-  // change to your real post-checkout route if needed
-  return `${APP_URL}/matches/${customerId}?checkout=success`;
+function missingPriceMessage(plan) {
+  if (plan === "starter") {
+    return "Stripe price ID is missing. Set STRIPE_PRICE_ID_STARTER (or STRIPE_PRICE_STARTER) in backend env.";
+  }
+  if (plan === "pro") {
+    return "Stripe price ID is missing. Set STRIPE_PRICE_ID_PRO (or STRIPE_PRICE_PRO) in backend env.";
+  }
+  if (plan === "enterprise") {
+    return "Stripe price ID is missing. Set STRIPE_PRICE_ID_ENTERPRISE (or STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID) in backend env.";
+  }
+  if (plan === "associate") {
+    return "Stripe price ID is missing. Set STRIPE_PRICE_ID_ASSOCIATE (or STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) in backend env.";
+  }
+  return "Stripe price ID is missing. Set the appropriate STRIPE_PRICE_ID_* env var in backend env.";
 }
 
-function getCancelUrl(customerId, email) {
+function getSuccessUrl(customerId, plan) {
+  return `${APP_URL}/matches/${customerId}?checkout=success&plan=${encodeURIComponent(plan || "")}`;
+}
+
+function getCancelUrl(customerId, email, plan) {
   return `${APP_URL}/get-started?customerId=${customerId}&email=${encodeURIComponent(
     email || ""
-  )}&checkout=canceled`;
+  )}&checkout=canceled&plan=${encodeURIComponent(plan || "")}`;
 }
 
 /**
@@ -492,6 +595,10 @@ router.get("/customers/:id", async (req, res) => {
  * - New customers are created as INACTIVE.
  * - Checkout session is created immediately.
  * - Account becomes active only after Stripe webhook confirms payment/subscription.
+ *
+ * ✅ IMPORTANT FIX:
+ * Do NOT deactivate paid/active customers if they submit this endpoint again.
+ * That preserves grandfathered "associate" customers and prevents accidental re-checkout.
  */
 router.post("/customers", async (req, res) => {
   try {
@@ -520,16 +627,15 @@ router.post("/customers", async (req, res) => {
     const sourcesForCreate = sources ?? ["sam", "opengov"];
     const naicsCodesForCreate = naicsCodes ?? [];
 
-    const plan = normalizePlan(body.plan);
-    const priceId = resolvePriceId(plan);
+    // Plan can come in under a few keys (don’t break old clients/frontends)
+    const planRaw =
+      body.plan ||
+      body.tier ||
+      body.subscription ||
+      body.priceTier ||
+      "";
 
-    if (!priceId) {
-      return res.status(500).json({
-        ok: false,
-        error:
-          "Stripe price ID is missing. Set STRIPE_PRICE_ID_ASSOCIATE and/or STRIPE_PRICE_ID_EXECUTIVE in backend env.",
-      });
-    }
+    const plan = normalizePlan(planRaw);
 
     const existing = await prisma.customer.findUnique({
       where: { email },
@@ -538,10 +644,15 @@ router.post("/customers", async (req, res) => {
         isActive: true,
         subscriptionStatus: true,
         stripeCustomerId: true,
+        stripeSubscriptionId: true,
       },
     });
 
     const isNewSignup = !existing;
+
+    // ✅ If they are already paid (per webhook sync), do NOT force checkout or deactivate them.
+    const existingStatusUpper = String(existing?.subscriptionStatus || "").toUpperCase();
+    const existingPaid = Boolean(existing) && PAID_ACTIVE_STATUSES.has(existingStatusUpper);
 
     const updateData = {};
     if (providedName !== undefined) updateData.name = providedName;
@@ -556,9 +667,9 @@ router.post("/customers", async (req, res) => {
     if (sources !== undefined) updateData.sources = sources;
     if (naicsCodes !== undefined) updateData.naicsCodes = naicsCodes;
 
-    // Ensure unpaid accounts remain inactive until webhook confirms paid subscription.
-    updateData.isActive = false;
-    if (!PAID_ACTIVE_STATUSES.has(String(existing?.subscriptionStatus || "").toUpperCase())) {
+    // ✅ Only force INACTIVE for unpaid flows (new signups or unpaid repeats)
+    if (!existingPaid) {
+      updateData.isActive = false;
       updateData.subscriptionStatus = "INACTIVE";
     }
 
@@ -585,12 +696,21 @@ router.post("/customers", async (req, res) => {
 
     // If already paid/active, no need to force another checkout.
     const statusUpper = String(customer.subscriptionStatus || "").toUpperCase();
-    const alreadyPaid = PAID_ACTIVE_STATUSES.has(statusUpper) && Boolean(customer.isActive);
+    const alreadyPaid = PAID_ACTIVE_STATUSES.has(statusUpper) && (customer.isActive || existingPaid);
 
     let checkoutUrl = null;
     let checkoutSessionId = null;
 
     if (!alreadyPaid) {
+      const priceId = resolvePriceId(plan, planRaw);
+
+      if (!priceId) {
+        return res.status(500).json({
+          ok: false,
+          error: missingPriceMessage(plan),
+        });
+      }
+
       // Ensure Stripe customer exists (re-use if present)
       let stripeCustomerId = customer.stripeCustomerId || existing?.stripeCustomerId || null;
 
@@ -611,8 +731,8 @@ router.post("/customers", async (req, res) => {
         mode: "subscription",
         customer: stripeCustomerId,
         line_items: [{ price: priceId, quantity: 1 }],
-        success_url: getSuccessUrl(customer.id),
-        cancel_url: getCancelUrl(customer.id, customer.email),
+        success_url: getSuccessUrl(customer.id, plan),
+        cancel_url: getCancelUrl(customer.id, customer.email, plan),
         payment_method_collection: "always",
         allow_promotion_codes: true,
         client_reference_id: String(customer.id),
