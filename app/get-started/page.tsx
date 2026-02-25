@@ -205,23 +205,20 @@ export default function Page() {
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 text-black/65">
+          <p className="mt-3 max-w-4xl text-black/65">
             Build your profile in{" "}
             <span className="font-semibold text-black/80">~60 seconds</span>.
-            <span className="font-semibold text-black/80">
-              {" "}
-              Starter
-            </span>{" "}
-            gives you daily matches.{" "}
-            <span className="font-semibold text-black/80">
-              Pro / Enterprise
-            </span>{" "}
+            AMBIT sends ranked opportunities daily, and{" "}
+            <span className="font-semibold text-black/80">Pro / Enterprise</span>{" "}
             adds a{" "}
-            <span className="font-semibold text-black/80">
-              1:1 contract analyst
-            </span>{" "}
+            <span className="font-semibold text-black/80">1:1 contract analyst</span>{" "}
             with summaries + templates.
           </p>
+
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/65 px-3 py-1.5 text-xs font-semibold text-black/65 backdrop-blur">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
+            Only work email is required to start
+          </div>
         </div>
 
         {/* Signup card */}
@@ -241,8 +238,14 @@ export default function Page() {
               <span className="text-black/70">
                 <LockIcon />
               </span>
-              Subscription required
+              Secure checkout
             </span>
+          </div>
+
+          <div className="border-b border-black/10 px-6 py-3 sm:px-8">
+            <div className="text-xs text-black/55">
+              Choose a plan, add your basic profile, and continue to checkout.
+            </div>
           </div>
 
           <div className="px-6 py-6 sm:px-8 sm:py-8">
@@ -252,100 +255,22 @@ export default function Page() {
           </div>
         </GlowFrame>
 
-        {/* Plan details */}
+        {/* What happens next */}
         <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-2xl font-black tracking-tight">Plan details (reference)</h2>
-            <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
-              Paid-first secure checkout flow
-            </span>
-          </div>
+          <div className="text-lg font-black">What happens next</div>
 
-          <div className="mt-5 grid gap-5 lg:grid-cols-3">
-            <PlanReferenceCard
-              name="Starter"
-              price="$49.99/mo"
-              subtitle="Morning matches only"
-              bullets={[
-                "Daily matched opportunities (morning email)",
-                "Ranked shortlist (best fits first)",
-                "Edit keywords + NAICS anytime",
-                "Cancel anytime",
-              ]}
-              note="Best for contractors who just want daily matches, clean and simple."
-            />
-
-            <PlanReferenceCard
-              featured
-              name="Pro"
-              price="$129.99/mo"
-              subtitle="1:1 analyst + summaries + templates"
-              bullets={[
-                "Everything in Starter",
-                "Dedicated 1:1 contract analyst (light lane)",
-                "Skimmable summaries + next steps",
-                "Ready-to-send templates (LOI, emails, checklists)",
-                "Support lane for questions + guidance",
-              ]}
-              note="Best for contractors who want a human helping them move faster."
-            />
-
-            <PlanReferenceCard
-              name="Enterprise"
-              price="$1,499.99/mo"
-              subtitle="Priority lane + execution support"
-              bullets={[
-                "Everything in Pro",
-                "Priority triage + faster turnaround on active pursuits",
-                "Weekly pipeline review cadence",
-                "Same-day opportunity triage (priority queue)",
-                "Founder/leadership access",
-              ]}
-              note="Built for operators who want speed, accountability, and a true priority lane."
+          <div className="mt-4 space-y-4">
+            <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → better match accuracy." />
+            <Step n={2} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
+            <Step
+              n={3}
+              title="Move faster (optional)"
+              desc="Pro/Enterprise adds summaries, templates, and 1:1 analyst help."
             />
           </div>
 
-          <div className="mt-6">
-            <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
-            <p className="mt-2 text-sm text-black/62">
-              AMBIT helps organize and guide the process — these are the core items most service companies should have ready:
-            </p>
-
-            <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
-                <div className="font-bold text-black/85">Core business docs</div>
-                <ul className="mt-3 space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Active business license(s)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Certificate of Insurance (COI)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Service area + scope of work details</span>
-                  </li>
-                </ul>
-              </div>
-
-              <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
-                <div className="font-bold text-black/85">Bid readiness</div>
-                <ul className="mt-3 space-y-2 text-sm">
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Basic pricing sheet (labor, materials, markup)</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Staffing/timeline assumptions</span>
-                  </li>
-                  <li className="flex items-start gap-2">
-                    <BlueCheck /> <span>Past performance examples (if available)</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-              Pro and Enterprise include a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
-            </div>
+          <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
+            <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
           </div>
 
           <div className="mt-4 text-sm text-black/62">
@@ -356,59 +281,144 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Below */}
-        <div className="mt-8 space-y-4">
-          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
-            <div className="text-lg font-black">What happens next</div>
+        {/* Plan details (collapsed by default to reduce friction) */}
+        <details className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+          <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
+            <div>
+              <h2 className="text-2xl font-black tracking-tight">Plan details + what’s included</h2>
+              <div className="mt-1 text-sm text-black/55">
+                Compare Starter, Pro, and Enterprise before checkout.
+              </div>
+            </div>
 
-            <div className="mt-4 space-y-4">
-              <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → better match accuracy." />
-              <Step n={2} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
-              <Step
-                n={3}
-                title="Move faster (optional)"
-                desc="Pro/Enterprise adds summaries, templates, and 1:1 analyst help."
+            <span className="rounded-full border border-[#1A4FA3]/25 bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3]">
+              Expand
+            </span>
+          </summary>
+
+          <div className="mt-5 border-t border-black/10 pt-5">
+            <div className="grid gap-5 lg:grid-cols-3">
+              <PlanReferenceCard
+                name="Starter"
+                price="$49.99/mo"
+                subtitle="Morning matches only"
+                bullets={[
+                  "Daily matched opportunities (morning email)",
+                  "Ranked shortlist (best fits first)",
+                  "Edit keywords + NAICS anytime",
+                  "Cancel anytime",
+                ]}
+                note="Best for contractors who just want daily matches, clean and simple."
+              />
+
+              <PlanReferenceCard
+                featured
+                name="Pro"
+                price="$129.99/mo"
+                subtitle="1:1 analyst + summaries + templates"
+                bullets={[
+                  "Everything in Starter",
+                  "Dedicated 1:1 contract analyst (light lane)",
+                  "Skimmable summaries + next steps",
+                  "Ready-to-send templates (LOI, emails, checklists)",
+                  "Support lane for questions + guidance",
+                ]}
+                note="Best for contractors who want a human helping them move faster."
+              />
+
+              <PlanReferenceCard
+                name="Enterprise"
+                price="$1,499.99/mo"
+                subtitle="Priority lane + execution support"
+                bullets={[
+                  "Everything in Pro",
+                  "Priority triage + faster turnaround on active pursuits",
+                  "Weekly pipeline review cadence",
+                  "Same-day opportunity triage (priority queue)",
+                  "Founder/leadership access",
+                ]}
+                note="Built for operators who want speed, accountability, and a true priority lane."
               />
             </div>
 
-            <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-              <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
+            <div className="mt-6">
+              <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
+              <p className="mt-2 text-sm text-black/62">
+                AMBIT helps organize and guide the process — these are the core items most service companies should have ready:
+              </p>
+
+              <div className="mt-4 grid gap-4 md:grid-cols-2">
+                <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                  <div className="font-bold text-black/85">Core business docs</div>
+                  <ul className="mt-3 space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Active business license(s)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Certificate of Insurance (COI)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Service area + scope of work details</span>
+                    </li>
+                  </ul>
+                </div>
+
+                <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                  <div className="font-bold text-black/85">Bid readiness</div>
+                  <ul className="mt-3 space-y-2 text-sm">
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Basic pricing sheet (labor, materials, markup)</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Staffing/timeline assumptions</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <BlueCheck /> <span>Past performance examples (if available)</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
+                Pro and Enterprise include a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
+              </div>
             </div>
           </div>
+        </details>
 
-          <div className="rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
-            <div className="text-lg font-black">Perfect for</div>
+        {/* Perfect for */}
+        <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+          <div className="text-lg font-black">Perfect for</div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {[
-                "Landscaping",
-                "HVAC",
-                "Plumbing",
-                "Junk removal",
-                "Concrete",
-                "Janitorial",
-                "Multi-crew operators",
-                "Regional contractors",
-              ].map((t) => (
-                <span
-                  key={t}
-                  className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
-                >
-                  {t}
-                </span>
-              ))}
-            </div>
-
-            <div className="mt-4 text-sm text-black/55">
-              You can update keywords/NAICS anytime to refine match quality.
-            </div>
-
-            <div className="mt-3 text-xs text-black/50">
-              Popular keywords:{" "}
-              <span className="font-semibold text-black/60">
-                emergency, preventive maintenance, install, repair, demo, cleanup
+          <div className="mt-4 flex flex-wrap gap-2">
+            {[
+              "Landscaping",
+              "HVAC",
+              "Plumbing",
+              "Junk removal",
+              "Concrete",
+              "Janitorial",
+              "Multi-crew operators",
+              "Regional contractors",
+            ].map((t) => (
+              <span
+                key={t}
+                className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
+              >
+                {t}
               </span>
-            </div>
+            ))}
+          </div>
+
+          <div className="mt-4 text-sm text-black/55">
+            You can update keywords/NAICS anytime to refine match quality.
+          </div>
+
+          <div className="mt-3 text-xs text-black/50">
+            Popular keywords:{" "}
+            <span className="font-semibold text-black/60">
+              emergency, preventive maintenance, install, repair, demo, cleanup
+            </span>
           </div>
         </div>
 

@@ -1,7 +1,7 @@
 // app/get-started/GetStartedClient.tsx
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
@@ -28,7 +28,7 @@ type Market = "commercial" | "government";
 type Plan = "starter" | "pro" | "enterprise";
 
 const ONBOARDING_MESSAGE =
-  "Paid-first secure checkout. After activation, Starter begins daily matches. Pro/Enterprise adds 1:1 analyst support.";
+  "Secure checkout first. After activation, AMBIT starts sending ranked matches, and you can update your profile anytime.";
 
 function normalizeMarket(m: string | null): Market {
   const v = String(m || "").trim().toLowerCase();
@@ -84,7 +84,7 @@ async function postJson(url: string, body: any, ms = REQUEST_TIMEOUT_MS) {
   }
 }
 
-function Pill({ children }: { children: React.ReactNode }) {
+function Pill({ children }: { children: ReactNode }) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/70 px-3 py-1 text-[11px] font-semibold text-black/65 backdrop-blur">
       <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
@@ -141,6 +141,21 @@ function PlanButton({
         <div className="absolute inset-0 rounded-2xl bg-[radial-gradient(700px_250px_at_0%_0%,rgba(92,116,255,0.10),transparent_60%)]" />
       </div>
     </button>
+  );
+}
+
+function FieldLabel({
+  children,
+  required = false,
+}: {
+  children: ReactNode;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-1 text-xs font-semibold text-black/55">
+      <span>{children}</span>
+      {required ? <span className="text-black/60">*</span> : null}
+    </div>
   );
 }
 
@@ -248,7 +263,13 @@ export default function GetStartedClient() {
       {/* Plan select */}
       <div>
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="text-xs font-semibold text-black/55">Choose plan *</div>
+          <div>
+            <div className="text-xs font-semibold text-black/55">Choose plan *</div>
+            <div className="mt-1 text-xs text-black/45">
+              Start with Starter or Pro — you can switch later.
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <Pill>Daily matches</Pill>
             <Pill>Ranked by fit</Pill>
@@ -284,9 +305,9 @@ export default function GetStartedClient() {
         </div>
       </div>
 
-      {/* Inputs */}
+      {/* Primary fields */}
       <div>
-        <div className="text-xs font-semibold text-black/55">Work email *</div>
+        <FieldLabel required>Work email</FieldLabel>
         <input
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -295,62 +316,90 @@ export default function GetStartedClient() {
           placeholder="you@company.com"
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
+        <div className="mt-2 text-xs text-black/45">
+          Only your work email is required to start checkout.
+        </div>
       </div>
 
       <div>
-        <div className="text-xs font-semibold text-black/55">Phone number</div>
-        <input
-          value={phone}
-          onChange={(e) => setPhone(e.target.value)}
-          type="tel"
-          inputMode="tel"
-          autoComplete="tel"
-          placeholder="(555) 123-4567"
-          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
-        />
-      </div>
-
-      <div>
-        <div className="text-xs font-semibold text-black/55">Company name</div>
-        <input
-          value={companyName}
-          onChange={(e) => setCompanyName(e.target.value)}
-          placeholder="Your Company"
-          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
-        />
-      </div>
-
-      <div>
-        <div className="text-xs font-semibold text-black/55">Service area</div>
+        <FieldLabel>Service area</FieldLabel>
         <input
           value={serviceArea}
           onChange={(e) => setServiceArea(e.target.value)}
           placeholder="City, county, or state"
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
+        <div className="mt-2 text-xs text-black/45">
+          Helps AMBIT send better local matches.
+        </div>
       </div>
 
       <div>
-        <div className="text-xs font-semibold text-black/55">Keywords</div>
+        <FieldLabel>Keywords</FieldLabel>
         <input
           value={keywords}
           onChange={(e) => setKeywords(e.target.value)}
           placeholder="HVAC, electrical, fire alarm, concrete..."
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
-        <div className="mt-2 text-xs text-black/45">Services, equipment, materials, job types.</div>
+        <div className="mt-2 text-xs text-black/45">
+          Services, equipment, materials, job types.
+        </div>
       </div>
 
-      <div>
-        <div className="text-xs font-semibold text-black/55">NAICS codes</div>
-        <input
-          value={naics}
-          onChange={(e) => setNaics(e.target.value)}
-          placeholder="541330, 238220, 561210..."
-          className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
-        />
-        <div className="mt-2 text-xs text-black/45">Comma-separated is fine.</div>
-      </div>
+      {/* Optional details */}
+      <details className="group rounded-2xl border border-black/10 bg-white/55 px-4 py-3">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
+          <div>
+            <div className="text-sm font-semibold text-black/80">
+              Optional profile details
+            </div>
+            <div className="text-xs text-black/50">
+              Add company, phone, and NAICS now — or skip and update later.
+            </div>
+          </div>
+
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-black/10 bg-white/80 text-black/60 transition group-open:rotate-45">
+            +
+          </span>
+        </summary>
+
+        <div className="mt-4 grid gap-4">
+          <div>
+            <FieldLabel>Company name</FieldLabel>
+            <input
+              value={companyName}
+              onChange={(e) => setCompanyName(e.target.value)}
+              placeholder="Your Company"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
+            />
+          </div>
+
+          <div>
+            <FieldLabel>Phone number</FieldLabel>
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              type="tel"
+              inputMode="tel"
+              autoComplete="tel"
+              placeholder="(555) 123-4567"
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
+            />
+          </div>
+
+          <div>
+            <FieldLabel>NAICS codes</FieldLabel>
+            <input
+              value={naics}
+              onChange={(e) => setNaics(e.target.value)}
+              placeholder="541330, 238220, 561210..."
+              className="mt-2 w-full rounded-2xl border border-black/10 bg-white/90 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
+            />
+            <div className="mt-2 text-xs text-black/45">Comma-separated is fine.</div>
+          </div>
+        </div>
+      </details>
 
       {err ? (
         <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -359,7 +408,11 @@ export default function GetStartedClient() {
       ) : null}
 
       {/* CTA */}
-      <div className="mt-1 flex items-center justify-end">
+      <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="text-xs text-black/50">
+          Secure checkout • Cancel anytime • No spam
+        </div>
+
         <button
           onClick={onContinue}
           disabled={loading}
