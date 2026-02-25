@@ -732,46 +732,44 @@ export default function HomePage() {
       <CallRequestWidget />
 
       {/* HERO */}
-      <section className={`${CONTAINER} pt-14 pb-10`}>
-        <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
-          <div className="text-center">
-            <div className="mx-auto inline-flex items-center justify-center gap-2 rounded-full border border-black/20 bg-[#F4FAFF] px-5 py-2.5 text-sm font-black tracking-tight text-black/85 shadow-[0_10px_30px_rgba(92,116,255,0.18)]">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 shadow-[0_0_0_4px_rgba(52,211,153,0.20)]" />
-              Live Tracking
-            </div>
+<section className={`${CONTAINER} pt-14 pb-10`}>
+  <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
+    <div className="text-center">
+      <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
+        Stop hunting. Start receiving.
+      </h1>
 
-            <h1 className="mt-5 text-5xl font-black tracking-tight sm:text-6xl">
-              Stop hunting. Start receiving.
-            </h1>
+      {/* Wider, more breathable subcopy */}
+      <div className="mx-auto mt-5 max-w-4xl">
+        <p className="text-lg font-semibold leading-relaxed tracking-normal text-black/70 sm:text-xl">
+          Bid-ready opportunities, delivered daily.
+        </p>
 
-            <p className="mt-4 text-lg font-semibold tracking-tight text-black/70 sm:text-xl">
-              Bid-ready opportunities, delivered daily.
-            </p>
+        <p className="mt-2 text-sm font-medium leading-relaxed tracking-[0.02em] text-black/55 sm:text-base">
+          For tradespeople. Built by tradespeople.
+        </p>
+      </div>
 
-            <p className="mt-1 text-sm font-medium text-black/55 sm:text-base">
-              For tradespeople. Built by tradespeople.
-            </p>
-
-            <div className="mt-8 flex items-center justify-center">
-              <div className="relative inline-flex">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
-                />
-                <Link
-                  href={`/get-started?intent=${market}`}
-                  className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
-                >
-                  <ArrowBadge />
-                  Choose plan
-                </Link>
-              </div>
-            </div>
-
-            <SignupSocialProof />
-          </div>
+      <div className="mt-8 flex items-center justify-center">
+        <div className="relative inline-flex">
+          <span
+            aria-hidden
+            className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
+          />
+          <Link
+            href={`/get-started?intent=${market}`}
+            className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
+          >
+            <ArrowBadge />
+            Choose plan
+          </Link>
         </div>
-      </section>
+      </div>
+
+      <SignupSocialProof />
+    </div>
+  </div>
+</section>
 
       {/* HOW IT WORKS */}
       <HowItWorksSection />
