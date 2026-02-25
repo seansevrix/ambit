@@ -108,7 +108,7 @@ export default function PrimePage() {
                 Enterprise Pricing
               </p>
               <p className="mt-1 text-4xl font-bold tracking-tight text-black md:text-5xl">
-                $899.99
+                $1499.99
                 <span className="text-base font-medium text-black/60"> / month</span>
               </p>
               <p className="mt-3 max-w-2xl text-[15px] leading-6 text-black/70">
@@ -133,7 +133,7 @@ export default function PrimePage() {
         {/* What's Included */}
         <section className="mt-6 rounded-3xl border border-black/10 bg-white/85 p-7 shadow-[0_8px_24px_rgba(0,0,0,0.05)] md:p-8">
           <h2 className="text-3xl font-bold tracking-tight text-black">
-            What’s included for $899.99/mo
+            What’s included for $1499.99/mo
           </h2>
 
           <ul className="mt-5 grid gap-4 md:grid-cols-2">
