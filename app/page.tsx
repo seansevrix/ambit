@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import LandingBackground from "./components/LandingBackground";
-import LandingEmailPreview from "./components/LandingEmailPreview";
 import CallRequestWidget from "./components/CallRequestWidget";
 
 type Market = "residential" | "commercial" | "government";
@@ -292,6 +291,221 @@ function HowItWorksSection() {
   );
 }
 
+/* ---------- LIVE MATCH PREVIEW (HOMEPAGE) ---------- */
+
+type LivePreviewMatch = {
+  id: number;
+  title: string;
+  location: string;
+  buyer: string;
+  naics: string;
+  market: "government" | "commercial" | "residential";
+  postedDate: string;
+  dueDate: string;
+  sourceUrl: string;
+  noticeType: string;
+  score: number;
+  reasons: string[];
+};
+
+const LIVE_PREVIEW_MATCHES: LivePreviewMatch[] = [
+  {
+    id: 1,
+    title:
+      "Sacramento Valley National Cemetery Grounds Maintenance Services -- S208",
+    location: "Dixon, CA",
+    buyer:
+      "VETERANS AFFAIRS, DEPARTMENT OF VETERANS AFFAIRS, DEPARTMENT OF NATIONAL CEMETERY ADMIN (36C786)",
+    naics: "561730",
+    market: "government",
+    postedDate: "Feb 23, 2026",
+    dueDate: "Feb 28, 2026",
+    sourceUrl:
+      "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=c48d91076e264ba2a12d453093244f1e",
+    noticeType: "Solicitation",
+    score: 89,
+    reasons: ["NAICS exact match (561730) +65", "Location overlap: 2 hit(s) +24"],
+  },
+  {
+    id: 2,
+    title:
+      "PRE-SOLICITATION NOTICE ONLY: Grounds maintenance services for the Los Angeles National Cemetery. -- S208",
+    location: "Los Angeles, CA",
+    buyer:
+      "VETERANS AFFAIRS, DEPARTMENT OF VETERANS AFFAIRS, DEPARTMENT OF NATIONAL CEMETERY ADMIN (36C786)",
+    naics: "561730",
+    market: "government",
+    postedDate: "Feb 22, 2026",
+    dueDate: "May 14, 2027",
+    sourceUrl:
+      "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=cc3e2a176a0440fa9bbe13e145fee7dd",
+    noticeType: "Presolicitation",
+    score: 89,
+    reasons: ["NAICS exact match (561730) +65", "Location overlap: 2 hit(s) +24"],
+  },
+  {
+    id: 3,
+    title:
+      "SOURCES SOUGHT NOTICE ONLY: Grounds maintenance services for Riverside National Cemetery. -- S208",
+    location: "Riverside, CA",
+    buyer:
+      "VETERANS AFFAIRS, DEPARTMENT OF VETERANS AFFAIRS, DEPARTMENT OF NATIONAL CEMETERY ADMIN (36C786)",
+    naics: "561730",
+    market: "government",
+    postedDate: "Feb 22, 2026",
+    dueDate: "Mar 01, 2026",
+    sourceUrl:
+      "https://api.sam.gov/prod/opportunities/v1/noticedesc?noticeid=128590201b9344fab0b2455e8d868244",
+    noticeType: "Sources Sought",
+    score: 89,
+    reasons: ["NAICS exact match (561730) +65", "Location overlap: 2 hit(s) +24"],
+  },
+];
+
+function MatchChip({
+  children,
+  tone = "default",
+}: {
+  children: ReactNode;
+  tone?: "default" | "score" | "market";
+}) {
+  const toneClass =
+    tone === "score"
+      ? "bg-[#EDF2FF] border-[#C9D4FF] text-[#3E59E8]"
+      : tone === "market"
+      ? "bg-[#F3F5F9] border-[#DDE3EE] text-black/70"
+      : "bg-[#EEF1F6] border-[#DDE3EE] text-black/70";
+
+  return (
+    <span
+      className={`inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold ${toneClass}`}
+    >
+      {children}
+    </span>
+  );
+}
+
+function IconStarOutline() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      aria-hidden="true"
+    >
+      <path d="M12 3.8l2.53 5.12 5.65.82-4.09 3.99.97 5.63L12 16.68l-5.06 2.66.97-5.63L3.82 9.74l5.65-.82L12 3.8Z" />
+    </svg>
+  );
+}
+
+function LiveMatchCard({ item }: { item: LivePreviewMatch }) {
+  return (
+    <div className="rounded-3xl border border-black/10 bg-white/95 p-5 shadow-[0_10px_24px_rgba(0,0,0,0.04)]">
+      <div className="flex items-start justify-between gap-4">
+        <h3 className="min-w-0 text-[17px] font-black leading-snug tracking-tight text-black/90">
+          {item.title}
+        </h3>
+
+        <div className="shrink-0 flex items-center gap-2">
+          <button
+            type="button"
+            aria-label="Save"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-black/10 bg-white text-black/55"
+          >
+            <IconStarOutline />
+          </button>
+
+          <span className="inline-flex h-10 min-w-[46px] items-center justify-center rounded-full border border-[#C9D4FF] bg-[#EDF2FF] px-3 text-sm font-black text-[#3E59E8]">
+            {item.score}
+          </span>
+
+          <a
+            href={item.sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex h-10 items-center justify-center rounded-full border border-black/10 bg-white px-4 text-sm font-semibold text-black/80 hover:bg-black/[0.02]"
+          >
+            Source
+          </a>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        <MatchChip>{item.location}</MatchChip>
+        <MatchChip>{item.buyer}</MatchChip>
+      </div>
+
+      <div className="mt-2 flex flex-wrap gap-2">
+        <MatchChip>NAICS {item.naics}</MatchChip>
+        <MatchChip tone="market">{item.market}</MatchChip>
+      </div>
+
+      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm font-medium text-black/55">
+        <span>Posted {item.postedDate}</span>
+        <span>Due {item.dueDate}</span>
+      </div>
+
+      <div className="mt-3 break-all text-sm font-medium text-black/70">
+        {item.sourceUrl} | Notice Type: {item.noticeType}
+      </div>
+
+      <div className="mt-4 flex flex-wrap gap-2">
+        {item.reasons.map((reason) => (
+          <MatchChip key={reason}>{reason}</MatchChip>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function LiveMatchesPreviewSection() {
+  return (
+    <section className={`${CONTAINER} pb-16`}>
+      <div className="mb-5">
+        <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          Live-style preview
+        </div>
+
+        <div className="mt-2 text-3xl font-black tracking-tight">
+          See exactly what your matches look like
+        </div>
+
+        <div className="mt-1 text-sm font-medium text-black/60">
+          Same card style as the dashboard: score, source, dates, NAICS, and
+          match reasons — simple and skimmable.
+        </div>
+      </div>
+
+      <div className="rounded-[28px] border border-black/10 bg-white/90 p-4 shadow-[0_16px_40px_rgba(0,0,0,0.06)] sm:p-5">
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/70">
+            <span className="h-2 w-2 rounded-full bg-[#5C74FF]" />
+            Sample daily matches
+          </div>
+
+          <div className="text-xs font-semibold text-black/50">
+            Updated daily • Ranked by fit
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {LIVE_PREVIEW_MATCHES.map((m) => (
+            <LiveMatchCard key={m.id} item={m} />
+          ))}
+        </div>
+
+        <div className="mt-4 text-center text-xs font-semibold text-black/50">
+          This preview mirrors the real match card layout customers see inside
+          AMBIT.
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /* ---------- TESTIMONIALS ---------- */
 
 type QuotePart = { t: string; strong?: boolean };
@@ -563,22 +777,7 @@ export default function HomePage() {
       <HowItWorksSection />
 
       {/* TOP MATCH PREVIEW */}
-      <section className={`${CONTAINER} pb-16`}>
-        <div className="mb-5">
-          <div className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/90 px-3 py-1 text-xs font-semibold text-black/70">
-            <span className="h-2 w-2 rounded-full bg-[#5C74FF]" />
-            What you’ll receive
-          </div>
-          <div className="mt-2 text-3xl font-black tracking-tight">
-            A clean daily shortlist
-          </div>
-          <div className="mt-1 text-sm font-medium text-black/60">
-            Skimmable. Actionable. Built to help you decide fast.
-          </div>
-        </div>
-
-        <LandingEmailPreview market={market} />
-      </section>
+      <LiveMatchesPreviewSection />
 
       {/* FEATURE BLOCKS */}
       <section className={`${CONTAINER} pb-20`}>
@@ -607,8 +806,8 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
             <div className="text-2xl font-black">Clarity + next steps</div>
             <div className="mt-3 text-white/90">
-              Plain-English summaries, requirements, and “what to do next” so you
-              don’t waste time decoding.
+              Plain-English summaries, requirements, and “what to do next” so
+              you don’t waste time decoding.
             </div>
           </div>
 
