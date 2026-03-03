@@ -207,17 +207,15 @@ export default function Page() {
 
           <p className="mt-3 max-w-4xl text-black/65">
             Build your profile in{" "}
-            <span className="font-semibold text-black/80">~60 seconds</span>.
-            AMBIT sends ranked opportunities daily, and{" "}
-            <span className="font-semibold text-black/80">Pro / Enterprise</span>{" "}
-            adds a{" "}
+            <span className="font-semibold text-black/80">~60 seconds</span>. AMBIT sends ranked opportunities daily.
+            <span className="font-semibold text-black/80"> Pro</span> adds a{" "}
             <span className="font-semibold text-black/80">1:1 contract analyst</span>{" "}
-            with summaries + templates.
+            with summaries + templates (so you move faster).
           </p>
 
           <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/65 px-3 py-1.5 text-xs font-semibold text-black/65 backdrop-blur">
             <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
-            Only work email is required to start
+            Only work email is required to continue
           </div>
         </div>
 
@@ -238,13 +236,13 @@ export default function Page() {
               <span className="text-black/70">
                 <LockIcon />
               </span>
-              Secure checkout
+              Secure Stripe checkout
             </span>
           </div>
 
           <div className="border-b border-black/10 px-6 py-3 sm:px-8">
             <div className="text-xs text-black/55">
-              Choose a plan, add your basic profile, and continue to checkout.
+              Choose a plan, add your basic profile, and continue.
             </div>
           </div>
 
@@ -265,7 +263,7 @@ export default function Page() {
             <Step
               n={3}
               title="Move faster (optional)"
-              desc="Pro/Enterprise adds summaries, templates, and 1:1 analyst help."
+              desc="Pro adds summaries, templates, and a 1:1 analyst lane."
             />
           </div>
 
@@ -287,7 +285,7 @@ export default function Page() {
             <div>
               <h2 className="text-2xl font-black tracking-tight">Plan details + what’s included</h2>
               <div className="mt-1 text-sm text-black/55">
-                Compare Starter, Pro, and Enterprise before checkout.
+                Compare Starter vs Pro. (Enterprise is request-based below.)
               </div>
             </div>
 
@@ -297,7 +295,7 @@ export default function Page() {
           </summary>
 
           <div className="mt-5 border-t border-black/10 pt-5">
-            <div className="grid gap-5 lg:grid-cols-3">
+            <div className="grid gap-5 lg:grid-cols-2">
               <PlanReferenceCard
                 name="Starter"
                 price="$49.99/mo"
@@ -325,20 +323,41 @@ export default function Page() {
                 ]}
                 note="Best for contractors who want a human helping them move faster."
               />
+            </div>
 
-              <PlanReferenceCard
-                name="Enterprise"
-                price="$1,499.99/mo"
-                subtitle="Priority lane + execution support"
-                bullets={[
-                  "Everything in Pro",
+            {/* Enterprise moved lower: request-based */}
+            <div className="mt-6 rounded-3xl border border-[#1A4FA3]/18 bg-white/75 p-6 shadow-[0_18px_55px_rgba(26,79,163,0.10)] backdrop-blur-md">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="text-lg font-black">Need Enterprise?</div>
+                  <div className="mt-1 text-sm text-black/60">
+                    White-glove priority lane + execution support. We set it up with you (request-only).
+                  </div>
+                </div>
+
+                <a
+                  href="mailto:ambit@sevrixgov.com?subject=AMBIT%20Enterprise%20Request&body=Hi%20AMBIT%20team%2C%0A%0AI%27d%20like%20to%20request%20Enterprise.%20Here%27s%20my%20info%3A%0A-%20Company%3A%0A-%20Email%3A%0A-%20Service%20area%3A%0A-%20Keywords%2FNAICS%3A%0A%0AThanks%21"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.25)] transition hover:brightness-110"
+                >
+                  Request Enterprise
+                </a>
+              </div>
+
+              <div className="mt-4 grid gap-3 md:grid-cols-2">
+                {[
                   "Priority triage + faster turnaround on active pursuits",
-                  "Weekly pipeline review cadence",
+                  "Weekly pipeline review cadence + accountability",
                   "Same-day opportunity triage (priority queue)",
                   "Founder/leadership access",
-                ]}
-                note="Built for operators who want speed, accountability, and a true priority lane."
-              />
+                ].map((b) => (
+                  <div key={b} className="flex items-start gap-2 text-sm text-black/75">
+                    <span className="mt-[1px]">
+                      <BlueCheck />
+                    </span>
+                    <span>{b}</span>
+                  </div>
+                ))}
+              </div>
             </div>
 
             <div className="mt-6">
@@ -380,7 +399,7 @@ export default function Page() {
               </div>
 
               <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-                Pro and Enterprise include a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
+                Pro includes a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
               </div>
             </div>
           </div>

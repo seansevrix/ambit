@@ -20,15 +20,16 @@ const REQUEST_TIMEOUT_MS = 15000;
 type Market = "commercial" | "government";
 
 /**
- * Public plans:
- *  - starter ($49.99/mo)    morning matches only
- *  - pro ($129.99/mo)       1:1 analyst + summaries + templates
- *  - enterprise ($1,499.99) priority lane + execution support
+ * Public checkout plans:
+ *  - starter ($49.99/mo) morning matches only
+ *  - pro ($129.99/mo)    1:1 analyst + summaries + templates
+ *
+ * Enterprise is request-based (not self-serve checkout) to reduce friction.
  */
 type Plan = "starter" | "pro" | "enterprise";
 
 const ONBOARDING_MESSAGE =
-  "Secure checkout first. After activation, AMBIT starts sending ranked matches, and you can update your profile anytime.";
+  "Next: confirm securely in Stripe. After activation, AMBIT starts sending ranked matches daily and you can update your profile anytime.";
 
 function normalizeMarket(m: string | null): Market {
   const v = String(m || "").trim().toLowerCase();
@@ -127,10 +128,10 @@ function PlanButton({
           <span className="rounded-full border border-[#1A4FA3]/25 bg-white/70 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide text-[#1A4FA3]">
             Most popular
           </span>
-          <span className="text-[10px] font-semibold text-black/45">Secure checkout</span>
+          <span className="text-[10px] font-semibold text-black/45">Recommended</span>
         </div>
       ) : (
-        <div className="mb-2 text-[10px] font-semibold text-black/45">Secure checkout</div>
+        <div className="mb-2 text-[10px] font-semibold text-black/45">Pick a plan</div>
       )}
 
       <div className="text-base font-black text-black">{title}</div>
@@ -163,10 +164,14 @@ export default function GetStartedClient() {
   const sp = useSearchParams();
 
   const intent = useMemo(() => normalizeMarket(sp.get("intent")), [sp]);
-  const initialPlan = useMemo(() => normalizePlan(sp.get("plan")), [sp]);
 
-  // Default to Pro for new signups
-  const [selectedPlan, setSelectedPlan] = useState<Plan>(initialPlan || "pro");
+  const planFromUrl = useMemo(() => normalizePlan(sp.get("plan")), [sp]);
+  const enterpriseRequested = planFromUrl === "enterprise";
+
+  // Default to Pro for new signups; if someone hits ?plan=enterprise, we keep them on Pro
+  const [selectedPlan, setSelectedPlan] = useState<Plan>(() =>
+    enterpriseRequested ? "pro" : planFromUrl
+  );
 
   const [companyName, setCompanyName] = useState("");
   const [email, setEmail] = useState("");
@@ -177,6 +182,27 @@ export default function GetStartedClient() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | null>(null);
+
+  const enterpriseMailto = useMemo(() => {
+    const subject = "AMBIT Enterprise Request";
+    const bodyLines = [
+      "Hi AMBIT team,",
+      "",
+      "I'd like to request Enterprise.",
+      "",
+      `Company: ${companyName.trim() || ""}`,
+      `Email: ${email.trim() || ""}`,
+      `Service area: ${serviceArea.trim() || ""}`,
+      `Keywords: ${keywords.trim() || ""}`,
+      `NAICS: ${naics.trim() || ""}`,
+      "",
+      "Thanks!",
+    ];
+    const body = bodyLines.join("\n");
+    return `mailto:ambit@sevrixgov.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(
+      body
+    )}`;
+  }, [companyName, email, serviceArea, keywords, naics]);
 
   async function onContinue() {
     if (loading) return;
@@ -266,7 +292,7 @@ export default function GetStartedClient() {
           <div>
             <div className="text-xs font-semibold text-black/55">Choose plan *</div>
             <div className="mt-1 text-xs text-black/45">
-              Start with Starter or Pro — you can switch later.
+              Start with Starter or Pro — you can upgrade anytime.
             </div>
           </div>
 
@@ -277,11 +303,21 @@ export default function GetStartedClient() {
           </div>
         </div>
 
-        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
+        {enterpriseRequested ? (
+          <div className="mt-3 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 px-4 py-3 text-sm text-black/70">
+            Enterprise is request-based (so there’s no checkout friction). Use{" "}
+            <a href={enterpriseMailto} className="font-semibold text-[#1A4FA3] hover:underline">
+              Request Enterprise
+            </a>{" "}
+            below.
+          </div>
+        ) : null}
+
+        <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-2">
           <PlanButton
             active={selectedPlan === "starter"}
             title="Starter"
-            priceLine="$49.99/mo • Morning matches"
+            priceLine="$49.99/mo • Daily matches"
             desc="Daily matched opportunities. Simple and clean."
             onClick={() => setSelectedPlan("starter")}
           />
@@ -289,19 +325,30 @@ export default function GetStartedClient() {
           <PlanButton
             active={selectedPlan === "pro"}
             title="Pro"
-            priceLine="$129.99/mo • 1:1 analyst + tools"
+            priceLine="$129.99/mo • 1:1 analyst + summaries"
             desc="Matches + summaries + templates with a 1:1 analyst lane."
             onClick={() => setSelectedPlan("pro")}
             featured
           />
+        </div>
 
-          <PlanButton
-            active={selectedPlan === "enterprise"}
-            title="Enterprise"
-            priceLine="$1,499.99/mo • Priority lane"
-            desc="Priority triage, execution support, and leadership access."
-            onClick={() => setSelectedPlan("enterprise")}
-          />
+        {/* Enterprise moved out of plan grid */}
+        <div className="mt-3 rounded-2xl border border-black/10 bg-white/65 p-4 shadow-[0_14px_40px_rgba(0,0,0,0.06)] backdrop-blur-md">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <div className="text-sm font-black text-black/85">Need Enterprise?</div>
+              <div className="mt-0.5 text-xs text-black/55">
+                White-glove priority lane + execution support (request-only).
+              </div>
+            </div>
+
+            <a
+              href={enterpriseMailto}
+              className="inline-flex items-center justify-center rounded-full border border-[#1A4FA3]/25 bg-white/80 px-4 py-2 text-xs font-semibold text-[#1A4FA3] transition hover:bg-white"
+            >
+              Request Enterprise
+            </a>
+          </div>
         </div>
       </div>
 
@@ -316,9 +363,7 @@ export default function GetStartedClient() {
           placeholder="you@company.com"
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
-        <div className="mt-2 text-xs text-black/45">
-          Only your work email is required to start checkout.
-        </div>
+        <div className="mt-2 text-xs text-black/45">Only your work email is required to continue.</div>
       </div>
 
       <div>
@@ -329,9 +374,7 @@ export default function GetStartedClient() {
           placeholder="City, county, or state"
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
-        <div className="mt-2 text-xs text-black/45">
-          Helps AMBIT send better local matches.
-        </div>
+        <div className="mt-2 text-xs text-black/45">Helps AMBIT send better local matches.</div>
       </div>
 
       <div>
@@ -342,18 +385,14 @@ export default function GetStartedClient() {
           placeholder="HVAC, electrical, fire alarm, concrete..."
           className="mt-2 w-full rounded-2xl border border-black/10 bg-white/80 px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#1A4FA3]/40 focus:ring-2 focus:ring-[#1A4FA3]/15"
         />
-        <div className="mt-2 text-xs text-black/45">
-          Services, equipment, materials, job types.
-        </div>
+        <div className="mt-2 text-xs text-black/45">Services, equipment, materials, job types.</div>
       </div>
 
       {/* Optional details */}
       <details className="group rounded-2xl border border-black/10 bg-white/55 px-4 py-3">
         <summary className="flex cursor-pointer list-none items-center justify-between gap-3">
           <div>
-            <div className="text-sm font-semibold text-black/80">
-              Optional profile details
-            </div>
+            <div className="text-sm font-semibold text-black/80">Optional profile details</div>
             <div className="text-xs text-black/50">
               Add company, phone, and NAICS now — or skip and update later.
             </div>
@@ -409,16 +448,14 @@ export default function GetStartedClient() {
 
       {/* CTA */}
       <div className="mt-1 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-black/50">
-          Secure checkout • Cancel anytime • No spam
-        </div>
+        <div className="text-xs text-black/50">Secure Stripe checkout • Cancel anytime • No spam</div>
 
         <button
           onClick={onContinue}
           disabled={loading}
           className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-10 py-3.5 text-sm font-semibold text-white shadow-[0_18px_45px_rgba(26,79,163,0.28)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
         >
-          {loading ? "Working…" : "Continue to Secure Checkout"}
+          {loading ? "Working…" : "Continue"}
         </button>
       </div>
 
