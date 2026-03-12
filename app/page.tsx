@@ -742,11 +742,11 @@ export default function HomePage() {
       {/* Wider, more breathable subcopy */}
       <div className="mx-auto mt-5 max-w-4xl">
         <p className="text-lg font-semibold leading-relaxed tracking-normal text-black/70 sm:text-xl">
-          Bid-ready opportunities, delivered daily.
+          Matched Opportunities, Delivered Daily
         </p>
 
         <p className="mt-2 text-sm font-medium leading-relaxed tracking-[0.02em] text-black/55 sm:text-base">
-          For tradespeople. Built by tradespeople.
+          built for contractors who want more bids without the search
         </p>
       </div>
 
