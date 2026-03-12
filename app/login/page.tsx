@@ -6,7 +6,8 @@ import { useRouter } from "next/navigation";
 
 const PROD_BACKEND = "https://ambit-0dnp.onrender.com";
 const DEV_BACKEND = "http://localhost:5001";
-const FALLBACK = process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
+const FALLBACK =
+  process.env.NODE_ENV === "development" ? DEV_BACKEND : PROD_BACKEND;
 
 const API_BASE = (
   process.env.NEXT_PUBLIC_BACKEND_URL ||
@@ -51,9 +52,14 @@ function PageBackdrop() {
   );
 }
 
-async function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_TIMEOUT_MS) {
+async function abortableFetch(
+  url: string,
+  init: RequestInit = {},
+  ms = REQUEST_TIMEOUT_MS
+) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
+
   try {
     return await fetch(url, { ...init, signal: ac.signal });
   } finally {
@@ -62,7 +68,9 @@ async function abortableFetch(url: string, init: RequestInit = {}, ms = REQUEST_
 }
 
 function prettyErr(e: any) {
-  if (e?.name === "AbortError") return "Server is waking up — please retry in a few seconds.";
+  if (e?.name === "AbortError") {
+    return "Server is waking up — please retry in a few seconds.";
+  }
   return e?.message || "Something went wrong. Please try again.";
 }
 
@@ -76,28 +84,13 @@ function extractCustomerId(json: any) {
   );
 }
 
-function isActiveFrom(json: any) {
-  return Boolean(
-    json?.access?.isActive ??
-      json?.isActive ??
-      json?.customer?.isActive ??
-      false
-  );
-}
-
 export default function LoginPage() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [remember, setRemember] = useState(true);
-
   const [loadingLogin, setLoadingLogin] = useState(false);
-  const [loadingChoosePlan, setLoadingChoosePlan] = useState(false);
-
   const [err, setErr] = useState<string | null>(null);
-
-  const [customerId, setCustomerId] = useState<number | null>(null);
-  const [isActive, setIsActive] = useState<boolean>(false);
 
   useEffect(() => {
     try {
@@ -108,11 +101,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     const trimmed = email.trim().toLowerCase();
+
     if (remember && trimmed) {
       try {
         localStorage.setItem(EMAIL_KEY, trimmed);
       } catch {}
     }
+
     if (!remember) {
       try {
         localStorage.removeItem(EMAIL_KEY);
@@ -122,66 +117,43 @@ export default function LoginPage() {
 
   const canSubmit = useMemo(() => email.trim().length > 0, [email]);
 
-  async function loginOnly(): Promise<{ id: number | null; active: boolean; cleanEmail: string }> {
-    setErr(null);
-
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) throw new Error("Enter your email.");
-
-    const res = await abortableFetch(`${API_BASE}/engine/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({ email: cleanEmail }),
-    });
-
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) {
-      throw new Error(json?.error || json?.message || `Login failed (${res.status})`);
-    }
-
-    const idRaw = extractCustomerId(json);
-    const id = idRaw ? Number(idRaw) : null;
-    const active = isActiveFrom(json);
-
-    setIsActive(active);
-    setCustomerId(id && Number.isFinite(id) ? id : null);
-
-    return { id: id && Number.isFinite(id) ? id : null, active, cleanEmail };
-  }
-
   async function onShowMatches() {
-    if (!canSubmit || loadingLogin || loadingChoosePlan) return;
+    if (!canSubmit || loadingLogin) return;
 
+    setErr(null);
     setLoadingLogin(true);
+
     try {
-      const { id } = await loginOnly();
-      if (id) router.push(`/matches/${id}`);
-      else router.push(`/matches`);
+      const cleanEmail = email.trim().toLowerCase();
+      if (!cleanEmail) throw new Error("Enter your email.");
+
+      const res = await abortableFetch(`${API_BASE}/engine/auth/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ email: cleanEmail }),
+      });
+
+      const json = await res.json().catch(() => ({}));
+
+      if (!res.ok) {
+        throw new Error(
+          json?.error || json?.message || `Login failed (${res.status})`
+        );
+      }
+
+      const idRaw = extractCustomerId(json);
+      const id = idRaw ? Number(idRaw) : null;
+
+      if (id && Number.isFinite(id)) {
+        router.push(`/matches/${id}`);
+      } else {
+        router.push("/matches");
+      }
     } catch (e: any) {
       setErr(prettyErr(e));
     } finally {
       setLoadingLogin(false);
-    }
-  }
-
-  async function onChoosePlan() {
-    if (!canSubmit || loadingLogin || loadingChoosePlan) return;
-
-    setLoadingChoosePlan(true);
-    try {
-      const { id, active, cleanEmail } = await loginOnly();
-
-      if (active) {
-        router.push(id ? `/matches/${id}` : "/matches");
-        return;
-      }
-
-      router.push(`/choose-plan?email=${encodeURIComponent(cleanEmail)}`);
-    } catch (e: any) {
-      setErr(prettyErr(e));
-    } finally {
-      setLoadingChoosePlan(false);
     }
   }
 
@@ -197,7 +169,7 @@ export default function LoginPage() {
           <span aria-hidden>←</span> Back
         </Link>
 
-        <div className="mx-auto mt-10 w-full max-w-[720px] rounded-[28px] bg-white/75 backdrop-blur-md shadow-[0_30px_90px_rgba(0,0,0,0.12)]">
+        <div className="mx-auto mt-10 w-full max-w-[720px] rounded-[28px] bg-white/75 shadow-[0_30px_90px_rgba(0,0,0,0.12)] backdrop-blur-md">
           <div className="px-8 py-7 sm:px-10 sm:py-9">
             <div className="flex items-center justify-between gap-4">
               <div>
@@ -212,7 +184,7 @@ export default function LoginPage() {
                 </p>
               </div>
 
-              <div className="hidden sm:flex items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/60">
+              <div className="hidden items-center gap-2 rounded-full border border-black/10 bg-white px-3 py-1 text-xs font-semibold text-black/60 sm:flex">
                 Secure login
               </div>
             </div>
@@ -226,6 +198,7 @@ export default function LoginPage() {
                   placeholder="you@company.com"
                   className="mt-2 w-full rounded-xl border border-black/10 bg-white px-4 py-3 text-sm text-black placeholder:text-black/35 outline-none focus:border-[#63A7FF] focus:ring-2 focus:ring-[#63A7FF]/20"
                 />
+
                 <div className="mt-2 flex items-center justify-between text-xs text-black/55">
                   <label className="inline-flex items-center gap-2">
                     <input
@@ -236,7 +209,10 @@ export default function LoginPage() {
                     Remember me
                   </label>
 
-                  <Link href="/get-started" className="font-semibold text-[#1A4FA3] hover:underline">
+                  <Link
+                    href="/get-started"
+                    className="font-semibold text-[#1A4FA3] hover:underline"
+                  >
                     New here? Create your profile →
                   </Link>
                 </div>
@@ -248,38 +224,13 @@ export default function LoginPage() {
                 </div>
               ) : null}
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  onClick={onShowMatches}
-                  disabled={!canSubmit || loadingLogin || loadingChoosePlan}
-                  className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(26,79,163,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {loadingLogin ? "Signing in…" : "Show My Matches"}
-                </button>
-
-                <button
-                  onClick={onChoosePlan}
-                  disabled={!canSubmit || loadingLogin || loadingChoosePlan || isActive}
-                  className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-8 py-3 text-sm font-semibold text-black shadow-[0_10px_28px_rgba(0,0,0,0.08)] transition hover:bg-black hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  title={isActive ? "You’re already subscribed." : "Choose Pro or Enterprise plan."}
-                >
-                  {loadingChoosePlan
-                    ? "Opening Plans…"
-                    : isActive
-                    ? "Subscribed ✓"
-                    : "Choose Plan"}
-                </button>
-              </div>
-
-              <div className="pt-1 text-center text-xs text-black/45">
-                Choose Plan lets you select Starter, Pro, or Enterprise in secure checkout.
-              </div>
-
-              {customerId ? (
-                <div className="text-center text-xs text-black/35">
-                  Account detected: Customer #{customerId}
-                </div>
-              ) : null}
+              <button
+                onClick={onShowMatches}
+                disabled={!canSubmit || loadingLogin}
+                className="inline-flex items-center justify-center rounded-full bg-[#1A4FA3] px-8 py-3 text-sm font-semibold text-white shadow-[0_10px_28px_rgba(26,79,163,0.25)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {loadingLogin ? "Signing in…" : "Show My Matches"}
+              </button>
 
               <div className="pt-1 text-center text-xs text-black/40">
                 Secure login • No spam
