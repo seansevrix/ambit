@@ -28,7 +28,7 @@ function BlueCheck() {
 function LoadingFallback() {
   return (
     <div className="flex h-[360px] items-center justify-center">
-      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/75 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)] backdrop-blur-md">
+      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/90 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)]">
         <div className="flex items-start gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5">
             <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
@@ -63,8 +63,8 @@ function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
         {n}
       </div>
       <div>
-        <div className="font-semibold text-black/85">{title}</div>
-        <div className="text-sm text-black/60">{desc}</div>
+        <div className="font-semibold text-black/90">{title}</div>
+        <div className="text-sm text-black/65">{desc}</div>
       </div>
     </div>
   );
@@ -78,7 +78,7 @@ function MicroTrustRow() {
   ];
 
   return (
-    <div className="mt-6 rounded-3xl border border-black/10 bg-white/70 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)] backdrop-blur-md">
+    <div className="mt-6 rounded-3xl border border-black/12 bg-white/85 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
       <div className="grid gap-3 sm:grid-cols-3">
         {items.map((x) => (
           <div key={x.k} className="flex items-center gap-3">
@@ -87,7 +87,7 @@ function MicroTrustRow() {
             </span>
             <div className="leading-tight">
               <div className="text-xs font-semibold text-black/55">{x.k}</div>
-              <div className="text-sm font-black text-black/80">{x.v}</div>
+              <div className="text-sm font-black text-black/85">{x.v}</div>
             </div>
           </div>
         ))}
@@ -114,10 +114,10 @@ function PlanReferenceCard({
   return (
     <div
       className={[
-        "rounded-3xl border bg-white/75 p-6 backdrop-blur-md",
+        "rounded-3xl border bg-white/90 p-6",
         featured
           ? "border-[#1A4FA3]/35 shadow-[0_20px_55px_rgba(26,79,163,0.16)]"
-          : "border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.10)]",
+          : "border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.08)]",
       ].join(" ")}
     >
       <div>
@@ -128,7 +128,7 @@ function PlanReferenceCard({
 
       <ul className="mt-5 space-y-2.5">
         {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2 text-[15px] text-black/86">
+          <li key={b} className="flex items-start gap-2 text-[15px] text-black/85">
             <span className="mt-[1px]">
               <BlueCheck />
             </span>
@@ -154,11 +154,11 @@ function GlowFrame({
       className={[
         className,
         "rounded-[30px] p-[1.5px]",
-        "bg-[linear-gradient(135deg,rgba(26,79,163,0.46),rgba(99,167,255,0.28),rgba(26,79,163,0.10))]",
-        "shadow-[0_28px_90px_rgba(26,79,163,0.20)]",
+        "bg-[linear-gradient(135deg,rgba(26,79,163,0.42),rgba(99,167,255,0.24),rgba(26,79,163,0.10))]",
+        "shadow-[0_28px_90px_rgba(26,79,163,0.16)]",
       ].join(" ")}
     >
-      <div className="rounded-[28px] border border-white/65 bg-white/78 backdrop-blur-md">
+      <div className="rounded-[28px] border border-white/70 bg-white/88">
         {children}
       </div>
     </div>
@@ -173,25 +173,28 @@ export default function Page() {
 
       {/* Blueprint grid */}
       <div className="pointer-events-none fixed inset-0 -z-[85]">
-        <div className="absolute inset-0 opacity-[0.10] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
+        <div className="absolute inset-0 opacity-[0.11] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(0,0,0,0.20)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.20)_1px,transparent_1px)] [background-size:360px_360px]" />
       </div>
 
       {/* Soft depth */}
       <div className="pointer-events-none fixed inset-0 -z-[80]">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_0%,rgba(92,116,255,0.16),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(700px_420px_at_85%_20%,rgba(52,211,153,0.10),transparent_55%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.18] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_0%,rgba(92,116,255,0.14),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(700px_420px_at_85%_20%,rgba(52,211,153,0.08),transparent_55%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.16] via-transparent to-transparent" />
       </div>
 
-      <div className="mx-auto max-w-[1140px] px-6 py-12 lg:px-10">
+      <div className="mx-auto max-w-[1140px] px-6 pb-12 pt-20 lg:px-10 lg:pt-24">
         {/* Top row */}
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-sm font-semibold text-black/60 hover:text-black">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-black/60 transition hover:text-black"
+          >
             ← Back
           </Link>
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 py-1 text-[11px] font-semibold text-black/70 backdrop-blur">
+          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold text-black/70 shadow-sm">
             <span className="text-black/70">
               <LockIcon />
             </span>
@@ -200,20 +203,21 @@ export default function Page() {
         </div>
 
         {/* Header */}
-        <div className="mt-8">
+        <div className="mt-8 max-w-5xl">
           <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
             Start getting matched opportunities today
           </h1>
 
-          <p className="mt-3 max-w-4xl text-black/65">
+          <p className="mt-3 max-w-4xl text-[17px] leading-8 text-black/72">
             Build your profile in{" "}
-            <span className="font-semibold text-black/80">~60 seconds</span>. AMBIT sends ranked opportunities daily.
-            <span className="font-semibold text-black/80"> Pro</span> adds a{" "}
-            <span className="font-semibold text-black/80">1:1 contract analyst</span>{" "}
-            with summaries + templates (so you move faster).
+            <span className="font-semibold text-black/85">~60 seconds</span>. AMBIT
+            sends ranked opportunities daily.
+            <span className="font-semibold text-black/85"> Pro</span> adds a{" "}
+            <span className="font-semibold text-black/85">1:1 contract analyst</span>{" "}
+            with summaries + templates so you move faster.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/65 px-3 py-1.5 text-xs font-semibold text-black/65 backdrop-blur">
+          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-semibold text-black/68 shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
             Only work email is required to continue
           </div>
@@ -228,11 +232,11 @@ export default function Page() {
               </div>
               <div>
                 <div className="text-sm font-black">AMBIT</div>
-                <div className="text-xs text-black/55">Secure signup • Encrypted</div>
+                <div className="text-xs text-black/58">Secure signup • Encrypted</div>
               </div>
             </div>
 
-            <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/60 px-3 py-1 text-[11px] font-semibold text-black/70 backdrop-blur">
+            <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold text-black/70 shadow-sm">
               <span className="text-black/70">
                 <LockIcon />
               </span>
@@ -241,7 +245,7 @@ export default function Page() {
           </div>
 
           <div className="border-b border-black/10 px-6 py-3 sm:px-8">
-            <div className="text-xs text-black/55">
+            <div className="text-xs text-black/58">
               Choose a plan, add your basic profile, and continue.
             </div>
           </div>
@@ -254,12 +258,20 @@ export default function Page() {
         </GlowFrame>
 
         {/* What happens next */}
-        <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+        <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <div className="text-lg font-black">What happens next</div>
 
           <div className="mt-4 space-y-4">
-            <Step n={1} title="We build your profile" desc="Service area + keywords + NAICS → better match accuracy." />
-            <Step n={2} title="Matches begin daily" desc="Ranked opportunities are delivered every morning." />
+            <Step
+              n={1}
+              title="We build your profile"
+              desc="Service area + keywords + NAICS → better match accuracy."
+            />
+            <Step
+              n={2}
+              title="Matches begin daily"
+              desc="Ranked opportunities are delivered every morning."
+            />
             <Step
               n={3}
               title="Move faster (optional)"
@@ -267,8 +279,9 @@ export default function Page() {
             />
           </div>
 
-          <div className="mt-5 rounded-2xl border border-black/10 bg-white/70 p-4 text-sm text-black/60">
-            <span className="font-semibold text-black/75">Privacy:</span> AMBIT uses your profile only to match and deliver opportunities. No spam.
+          <div className="mt-5 rounded-2xl border border-black/10 bg-white/80 p-4 text-sm text-black/62">
+            <span className="font-semibold text-black/78">Privacy:</span> AMBIT uses
+            your profile only to match and deliver opportunities. No spam.
           </div>
 
           <div className="mt-4 text-sm text-black/62">
@@ -279,12 +292,14 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Plan details (collapsed by default to reduce friction) */}
-        <details className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+        {/* Plan details */}
+        <details className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
             <div>
-              <h2 className="text-2xl font-black tracking-tight">Plan details + what’s included</h2>
-              <div className="mt-1 text-sm text-black/55">
+              <h2 className="text-2xl font-black tracking-tight">
+                Plan details + what’s included
+              </h2>
+              <div className="mt-1 text-sm text-black/58">
                 Compare Starter vs Pro. (Enterprise is request-based below.)
               </div>
             </div>
@@ -325,19 +340,19 @@ export default function Page() {
               />
             </div>
 
-            {/* Enterprise moved lower: request-based */}
-            <div className="mt-6 rounded-3xl border border-[#1A4FA3]/18 bg-white/75 p-6 shadow-[0_18px_55px_rgba(26,79,163,0.10)] backdrop-blur-md">
+            <div className="mt-6 rounded-3xl border border-[#1A4FA3]/18 bg-white/90 p-6 shadow-[0_18px_55px_rgba(26,79,163,0.08)]">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div className="min-w-0">
                   <div className="text-lg font-black">Need Enterprise?</div>
-                  <div className="mt-1 text-sm text-black/60">
-                    White-glove priority lane + execution support. We set it up with you (request-only).
+                  <div className="mt-1 text-sm text-black/62">
+                    White-glove priority lane + execution support. We set it up with
+                    you (request-only).
                   </div>
                 </div>
 
                 <a
                   href="mailto:ambit@sevrixgov.com?subject=AMBIT%20Enterprise%20Request&body=Hi%20AMBIT%20team%2C%0A%0AI%27d%20like%20to%20request%20Enterprise.%20Here%27s%20my%20info%3A%0A-%20Company%3A%0A-%20Email%3A%0A-%20Service%20area%3A%0A-%20Keywords%2FNAICS%3A%0A%0AThanks%21"
-                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.25)] transition hover:brightness-110"
+                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.22)] transition hover:brightness-110"
                 >
                   Request Enterprise
                 </a>
@@ -350,7 +365,7 @@ export default function Page() {
                   "Same-day opportunity triage (priority queue)",
                   "Founder/leadership access",
                 ].map((b) => (
-                  <div key={b} className="flex items-start gap-2 text-sm text-black/75">
+                  <div key={b} className="flex items-start gap-2 text-sm text-black/78">
                     <span className="mt-[1px]">
                       <BlueCheck />
                     </span>
@@ -363,11 +378,12 @@ export default function Page() {
             <div className="mt-6">
               <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
               <p className="mt-2 text-sm text-black/62">
-                AMBIT helps organize and guide the process — these are the core items most service companies should have ready:
+                AMBIT helps organize and guide the process — these are the core items
+                most service companies should have ready:
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
-                <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="rounded-2xl border border-black/10 bg-white/80 p-4">
                   <div className="font-bold text-black/85">Core business docs</div>
                   <ul className="mt-3 space-y-2 text-sm">
                     <li className="flex items-start gap-2">
@@ -382,7 +398,7 @@ export default function Page() {
                   </ul>
                 </div>
 
-                <div className="rounded-2xl border border-black/10 bg-white/70 p-4">
+                <div className="rounded-2xl border border-black/10 bg-white/80 p-4">
                   <div className="font-bold text-black/85">Bid readiness</div>
                   <ul className="mt-3 space-y-2 text-sm">
                     <li className="flex items-start gap-2">
@@ -399,14 +415,15 @@ export default function Page() {
               </div>
 
               <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-                Pro includes a 1:1 analyst lane — ideal if you want help moving fast on the right opportunities.
+                Pro includes a 1:1 analyst lane — ideal if you want help moving fast on
+                the right opportunities.
               </div>
             </div>
           </div>
         </details>
 
         {/* Perfect for */}
-        <div className="mt-8 rounded-3xl border border-black/10 bg-white/70 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.10)] backdrop-blur-md">
+        <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <div className="text-lg font-black">Perfect for</div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -422,20 +439,20 @@ export default function Page() {
             ].map((t) => (
               <span
                 key={t}
-                className="rounded-full border border-black/10 bg-white/70 px-3 py-1 text-xs font-semibold text-black/70 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
+                className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/72 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
               >
                 {t}
               </span>
             ))}
           </div>
 
-          <div className="mt-4 text-sm text-black/55">
+          <div className="mt-4 text-sm text-black/58">
             You can update keywords/NAICS anytime to refine match quality.
           </div>
 
-          <div className="mt-3 text-xs text-black/50">
+          <div className="mt-3 text-xs text-black/52">
             Popular keywords:{" "}
-            <span className="font-semibold text-black/60">
+            <span className="font-semibold text-black/62">
               emergency, preventive maintenance, install, repair, demo, cleanup
             </span>
           </div>
