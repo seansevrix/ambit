@@ -80,8 +80,6 @@ function SignupSocialProof() {
   );
 }
 
-/* ---------- ICONS (INLINE) ---------- */
-
 function IconTarget() {
   return (
     <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" aria-hidden="true">
@@ -746,7 +744,7 @@ export default function HomePage() {
         </p>
 
         <p className="mt-2 text-sm font-medium leading-relaxed tracking-[0.02em] text-black/55 sm:text-base">
-          built for contractors who want more bids without the search
+          Built for contractors who want more bids without the search
         </p>
       </div>
 
