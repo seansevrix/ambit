@@ -272,7 +272,7 @@ export default function LoginPage() {
               </div>
 
               <div className="pt-1 text-center text-xs text-black/45">
-                Choose Plan lets you pick Pro ($79.99) or Enterprise ($899) in secure checkout.
+                Choose Plan lets you select Starter, Pro, or Enterprise in secure checkout.
               </div>
 
               {customerId ? (
