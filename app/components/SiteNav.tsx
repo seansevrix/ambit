@@ -21,10 +21,12 @@ export default function SiteNav() {
 
     sync();
 
-    // Watch for body class changes
     const obs = new MutationObserver(sync);
     try {
-      obs.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+      obs.observe(document.body, {
+        attributes: true,
+        attributeFilter: ["class"],
+      });
     } catch {
       // ignore
     }
@@ -38,25 +40,34 @@ export default function SiteNav() {
       className={cx(
         "sticky top-0 z-[150] w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur",
         "transition-opacity duration-150",
-        hideNav && "opacity-0 pointer-events-none"
+        hideNav && "pointer-events-none opacity-0"
       )}
     >
-      <div className="mx-auto flex max-w-[1180px] items-center justify-between px-6 py-4 lg:px-10">
+      <div className="mx-auto grid max-w-[1180px] grid-cols-[1fr_auto_1fr] items-center px-6 py-4 lg:px-10">
         {/* Left */}
-        <Link href="/" className="flex items-center gap-3">
-          <span
-            aria-label="AMBIT"
-            className="text-lg sm:text-xl font-black tracking-[0.55em] -mr-[0.55em] text-black"
-          >
-            AMBIT
-          </span>
-        </Link>
+        <div className="justify-self-start">
+          <Link href="/" className="flex items-center gap-3">
+            <span
+              aria-label="AMBIT"
+              className="text-lg font-black tracking-[0.55em] -mr-[0.55em] text-black sm:text-xl"
+            >
+              AMBIT
+            </span>
+          </Link>
+        </div>
 
-        {/* Middle intentionally blank */}
-        <div className="hidden md:block" />
+        {/* Middle */}
+        <div className="hidden md:flex justify-self-center">
+          <Link
+            href="/get-started"
+            className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-5 py-2 text-sm font-semibold text-black shadow-sm transition hover:-translate-y-[1px] hover:border-black/25 hover:bg-black/[0.03]"
+          >
+            Try Ambit Free
+          </Link>
+        </div>
 
         {/* Right */}
-        <div className="flex items-center gap-3">
+        <div className="justify-self-end">
           <Link
             href="/login"
             className="inline-flex items-center justify-center rounded-full border-2 border-black px-5 py-2 text-sm font-semibold text-black transition hover:bg-black/[0.04]"
