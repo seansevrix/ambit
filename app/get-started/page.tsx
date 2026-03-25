@@ -1,4 +1,3 @@
-// app/get-started/page.tsx
 import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
@@ -16,6 +15,26 @@ function LockIcon() {
         d="M6.8 10.2h10.4c.9 0 1.6.7 1.6 1.6v7.6c0 .9-.7 1.6-1.6 1.6H6.8c-.9 0-1.6-.7-1.6-1.6v-7.6c0-.9.7-1.6 1.6-1.6Z"
         stroke="currentColor"
         strokeWidth="2"
+      />
+    </svg>
+  );
+}
+
+function ArrowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
+      <path
+        d="M5 12h14"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13 5l7 7-7 7"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );
@@ -68,7 +87,7 @@ function GlowFrame({
       className={[
         className,
         "rounded-[30px] p-[1.5px]",
-        "bg-[linear-gradient(135deg,rgba(26,79,163,0.42),rgba(99,167,255,0.24),rgba(26,79,163,0.10))]",
+        "bg-[linear-gradient(135deg,rgba(26,79,163,0.42),rgba(99,167,255,0.22),rgba(26,79,163,0.10))]",
         "shadow-[0_28px_90px_rgba(26,79,163,0.16)]",
       ].join(" ")}
     >
@@ -86,28 +105,6 @@ function MetricPill({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div className="mt-1 text-sm font-black text-black/88">{value}</div>
-    </div>
-  );
-}
-
-function Step({
-  n,
-  title,
-  desc,
-}: {
-  n: number;
-  title: string;
-  desc: string;
-}) {
-  return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-black text-black/70">
-        {n}
-      </div>
-      <div>
-        <div className="font-semibold text-black/90">{title}</div>
-        <div className="text-sm text-black/65">{desc}</div>
-      </div>
     </div>
   );
 }
@@ -140,11 +137,79 @@ function ValueCard({
   );
 }
 
-function MicroTrustRow() {
+function Step({
+  n,
+  title,
+  desc,
+}: {
+  n: number;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-black text-black/70">
+        {n}
+      </div>
+      <div>
+        <div className="font-semibold text-black/90">{title}</div>
+        <div className="text-sm text-black/65">{desc}</div>
+      </div>
+    </div>
+  );
+}
+
+function OfferCard({
+  eyebrow,
+  title,
+  price,
+  desc,
+  bullets,
+  featured = false,
+}: {
+  eyebrow: string;
+  title: string;
+  price: string;
+  desc: string;
+  bullets: string[];
+  featured?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "rounded-3xl border p-6",
+        featured
+          ? "border-[#1A4FA3]/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(232,240,252,0.92))] shadow-[0_24px_70px_rgba(26,79,163,0.16)]"
+          : "border-black/10 bg-white/88 shadow-[0_16px_45px_rgba(0,0,0,0.08)]",
+      ].join(" ")}
+    >
+      <div className="inline-flex rounded-full border border-black/10 bg-white/82 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-black/60">
+        {eyebrow}
+      </div>
+
+      <div className="mt-4 text-3xl font-black tracking-tight text-black">{title}</div>
+      <div className="mt-2 text-2xl font-black text-black">{price}</div>
+      <p className="mt-3 text-sm leading-7 text-black/65">{desc}</p>
+
+      <ul className="mt-5 space-y-2.5">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2 text-sm text-black/82">
+            <span className="mt-[1px]">
+              <BlueCheck />
+            </span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function TrustRow() {
   const items = [
-    { k: "Primary offer", v: "Managed Capture" },
+    { k: "Main offer", v: "Managed Capture" },
     { k: "Alternative", v: "Morning Matches" },
-    { k: "Checkout", v: "Secure Stripe flow" },
+    { k: "Checkout", v: "Direct Stripe flow" },
   ];
 
   return (
@@ -202,7 +267,7 @@ export default function Page() {
         <div className="mt-8 max-w-5xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-[#1A4FA3]/16 bg-white/85 px-3 py-1.5 text-xs font-semibold text-black/72 shadow-sm">
             <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
-            Managed Capture is the main lane
+            High-touch bid support, built for real operators
           </div>
 
           <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
@@ -210,104 +275,50 @@ export default function Page() {
           </h1>
 
           <p className="mt-4 max-w-4xl text-[17px] leading-8 text-black/72 sm:text-[18px]">
-            This is not just another lead feed.{" "}
-            <span className="font-semibold text-black/88">
-              Managed Capture
-            </span>{" "}
-            is the high-touch lane where AMBIT helps source work, pressure-test
-            fits, organize active pursuits, support proposal development, track
-            amendments, and keep the front-end bid workload moving so your team can
-            stay focused on execution.
+            <span className="font-semibold text-black/88">Managed Capture</span> is
+            the main lane. AMBIT helps source work, pressure-test real fits,
+            support proposal development, track amendments, and keep the front-end
+            bid workload moving so your team can stay focused on execution instead
+            of drowning in admin.
           </p>
 
           <div className="mt-6 grid max-w-4xl gap-3 sm:grid-cols-3">
             <MetricPill label="Main offer" value="Managed Capture" />
-            <MetricPill label="Starting at" value="$1,500/mo" />
-            <MetricPill label="Cheap alternative" value="Morning Matches" />
+            <MetricPill label="Starting at" value="$1,499.99/mo" />
+            <MetricPill label="Alternative" value="Morning Matches" />
           </div>
         </div>
 
-        <GlowFrame className="mt-10">
-          <div className="grid gap-0 lg:grid-cols-[1.15fr_.85fr]">
-            <div className="border-b border-black/10 px-6 py-6 sm:px-8 lg:border-b-0 lg:border-r">
-              <div className="inline-flex rounded-full border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#1A4FA3]">
-                Flagship offer
-              </div>
+        <div className="mt-10 grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
+          <OfferCard
+            featured
+            eyebrow="Flagship offer"
+            title="Managed Capture"
+            price="$1,499.99/mo"
+            desc="For contractors who want a real partner helping manage the front-end bid motion — not just another list of leads."
+            bullets={[
+              "Active opportunity sourcing",
+              "Fit review + bid / no-bid triage",
+              "Proposal support + admin handling",
+              "Amendment + deadline tracking",
+              "Priority handling on active pursuits",
+              "Weekly pipeline accountability",
+            ]}
+          />
 
-              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
-                Managed Capture
-              </h2>
-
-              <div className="mt-2 text-2xl font-black text-black">
-                Starting at $1,500/mo
-              </div>
-
-              <p className="mt-4 max-w-2xl text-[15px] leading-7 text-black/68">
-                For contractors who want real help managing the front-end bid
-                motion, not just opportunities dumped in their inbox.
-              </p>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {[
-                  "Active opportunity sourcing",
-                  "Fit review + bid / no-bid triage",
-                  "Proposal support + admin handling",
-                  "Amendment + deadline tracking",
-                  "Weekly pipeline accountability",
-                  "Priority handling on active pursuits",
-                ].map((item) => (
-                  <div
-                    key={item}
-                    className="flex items-start gap-2 rounded-2xl border border-black/10 bg-white/78 px-4 py-3 text-sm text-black/82"
-                  >
-                    <span className="mt-[1px]">
-                      <BlueCheck />
-                    </span>
-                    <span>{item}</span>
-                  </div>
-                ))}
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-black/10 bg-white/82 p-4 text-sm leading-7 text-black/65">
-                Best for companies actively bidding and needing a real partner in
-                the room. Large or unusually complex full-build proposals can still
-                be scoped separately.
-              </div>
-            </div>
-
-            <div className="px-6 py-6 sm:px-8">
-              <div className="rounded-3xl border border-black/10 bg-white/92 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.08)]">
-                <div className="text-sm font-black uppercase tracking-[0.12em] text-black/45">
-                  High-touch lane
-                </div>
-
-                <div className="mt-2 text-2xl font-black tracking-tight">
-                  Want AMBIT handling the front-end workload?
-                </div>
-
-                <p className="mt-3 text-sm leading-7 text-black/65">
-                  Request Managed Capture and we’ll shape the lane around your
-                  company, service area, trade scope, and bid volume.
-                </p>
-
-                <a
-                  href="mailto:ambit@sevrixgov.com?subject=AMBIT%20Managed%20Capture%20Request&body=Hi%20AMBIT%20team%2C%0A%0AI%E2%80%99m%20interested%20in%20Managed%20Capture.%20Here%E2%80%99s%20my%20info%3A%0A-%20Company%3A%0A-%20Email%3A%0A-%20Service%20area%3A%0A-%20Trade%2Fscope%3A%0A-%20Typical%20bid%20volume%3A%0A%0AThanks."
-                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.22)] transition hover:brightness-110"
-                >
-                  Request Managed Capture
-                </a>
-
-                <div className="mt-4 rounded-2xl border border-[#1A4FA3]/16 bg-[#1A4FA3]/6 p-4 text-sm text-black/68">
-                  Managed Capture is what AMBIT is built to do.
-                </div>
-
-                <div className="mt-4 text-xs text-black/52">
-                  Need something lighter? Morning Matches is still available below.
-                </div>
-              </div>
-            </div>
-          </div>
-        </GlowFrame>
+          <OfferCard
+            eyebrow="Cheap self-serve alternative"
+            title="Morning Matches"
+            price="$49.99/mo"
+            desc="For companies that only want ranked opportunities delivered daily and prefer to handle capture and proposal work internally."
+            bullets={[
+              "Daily matched opportunities",
+              "Ranked by fit",
+              "Low-cost self-serve lane",
+              "Cancel anytime",
+            ]}
+          />
+        </div>
 
         <div className="mt-8 grid gap-5 lg:grid-cols-3">
           <ValueCard
@@ -322,13 +333,13 @@ export default function Page() {
           />
 
           <ValueCard
-            title="What you’re really buying"
-            desc="Not software. Not just a feed. You’re buying speed, clarity, and pressure relief around active pursuits."
+            title="What you’re actually buying"
+            desc="Not software. Not just alerts. You’re buying speed, clarity, and a real lane around active pursuits."
             bullets={[
               "Capture judgment",
               "Proposal support",
               "Deadline visibility",
-              "A real operating rhythm",
+              "A more organized pipeline",
             ]}
           />
 
@@ -348,44 +359,21 @@ export default function Page() {
           <div className="border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <div className="text-xl font-black tracking-tight">
-                  Morning Matches
+                <div className="text-2xl font-black tracking-tight">
+                  Start your lane
                 </div>
                 <div className="mt-1 text-sm text-black/60">
-                  Cheap self-serve alternative for companies that only want ranked
-                  opportunities delivered.
+                  Managed Capture and Morning Matches both go straight into secure
+                  Stripe checkout.
                 </div>
               </div>
 
-              <div className="rounded-full border border-black/10 bg-white/82 px-3 py-1 text-xs font-semibold text-black/68 shadow-sm">
-                $49.99/mo
-              </div>
-            </div>
-          </div>
-
-          <div className="border-b border-black/10 px-6 py-4 sm:px-8">
-            <div className="grid gap-3 md:grid-cols-2">
-              {[
-                "Daily matched opportunities",
-                "Ranked shortlist (best fits first)",
-                "Edit keywords + NAICS anytime",
-                "Low-cost, self-serve lane",
-              ].map((item) => (
-                <div
-                  key={item}
-                  className="flex items-start gap-2 text-sm text-black/78"
-                >
-                  <span className="mt-[1px]">
-                    <BlueCheck />
-                  </span>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="mt-4 rounded-2xl border border-black/10 bg-white/80 p-4 text-sm leading-7 text-black/62">
-              Good fit if you only want daily opportunities sent over and your team
-              handles capture, proposal work, and follow-through internally.
+              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold text-black/70 shadow-sm">
+                <span className="text-black/70">
+                  <LockIcon />
+                </span>
+                Direct checkout
+              </span>
             </div>
           </div>
 
@@ -402,18 +390,18 @@ export default function Page() {
           <div className="mt-4 space-y-4">
             <Step
               n={1}
-              title="You choose your lane"
-              desc="Request Managed Capture for high-touch support, or start with Morning Matches if you only want daily opportunities."
+              title="Choose your lane"
+              desc="Pick Managed Capture if you want AMBIT in the room, or Morning Matches if you only want daily opportunities sent over."
             />
             <Step
               n={2}
-              title="We sharpen the targeting"
-              desc="Service area, trade scope, keywords, and NAICS improve fit quality and reduce noise."
+              title="Complete checkout securely"
+              desc="Signup goes straight into Stripe. Once activated, your profile and targeting can be updated anytime."
             />
             <Step
               n={3}
-              title="You move faster on the right work"
-              desc="Managed Capture adds real front-end bid support. Morning Matches keeps it simple and self-serve."
+              title="Start moving faster"
+              desc="Managed Capture adds real support around active pursuits. Morning Matches keeps it simple and self-serve."
             />
           </div>
 
@@ -424,62 +412,22 @@ export default function Page() {
 
           <div className="mt-4 text-sm text-black/62">
             Already subscribed?{" "}
-            <Link href="/login" className="font-semibold text-[#1A4FA3] hover:underline">
+            <Link
+              href="/login"
+              className="font-semibold text-[#1A4FA3] hover:underline"
+            >
               Log in
             </Link>
           </div>
         </div>
 
         <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="text-lg font-black">What you need to bid confidently</div>
-
-          <p className="mt-2 text-sm text-black/62">
-            Managed Capture helps organize the motion, but the strongest clients are
-            already reasonably bid-ready.
-          </p>
-
-          <div className="mt-4 grid gap-4 md:grid-cols-2">
-            <div className="rounded-2xl border border-black/10 bg-white/80 p-4">
-              <div className="font-bold text-black/85">Core business docs</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <BlueCheck /> <span>Active business license(s)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <BlueCheck /> <span>Certificate of Insurance (COI)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <BlueCheck /> <span>Service area + scope details</span>
-                </li>
-              </ul>
-            </div>
-
-            <div className="rounded-2xl border border-black/10 bg-white/80 p-4">
-              <div className="font-bold text-black/85">Bid readiness</div>
-              <ul className="mt-3 space-y-2 text-sm">
-                <li className="flex items-start gap-2">
-                  <BlueCheck />{" "}
-                  <span>Basic pricing sheet (labor, materials, markup)</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <BlueCheck /> <span>Staffing / timeline assumptions</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <BlueCheck /> <span>Past performance examples, if available</span>
-                </li>
-              </ul>
-            </div>
+          <div className="flex items-center gap-2 text-lg font-black">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-[#1A4FA3]/10 text-[#1A4FA3]">
+              <ArrowIcon />
+            </span>
+            Best fit
           </div>
-
-          <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm leading-7 text-black/75">
-            The value in Managed Capture is not just more opportunities. It is having
-            a real lane around sourcing, qualification, proposal support, and bid
-            admin so the right pursuits actually move.
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="text-lg font-black">Best fit</div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {[
@@ -505,16 +453,9 @@ export default function Page() {
             Best for teams that want more than alerts and need actual help driving
             the front-end bid process.
           </div>
-
-          <div className="mt-3 text-xs text-black/52">
-            Common keywords:{" "}
-            <span className="font-semibold text-black/62">
-              emergency, preventive maintenance, install, repair, demo, cleanup
-            </span>
-          </div>
         </div>
 
-        <MicroTrustRow />
+        <TrustRow />
       </div>
     </main>
   );
