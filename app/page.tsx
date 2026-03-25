@@ -3,7 +3,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import LandingBackground from "./components/LandingBackground";
-import CallRequestWidget from "./components/CallRequestWidget";
 
 type Market = "residential" | "commercial" | "government";
 
@@ -19,6 +18,56 @@ function ArrowBadge({ dark = false }: { dark?: boolean }) {
     >
       <span className="text-lg font-black">→</span>
     </span>
+  );
+}
+
+function SectionPill({
+  children,
+  tone = "default",
+}: {
+  children: ReactNode;
+  tone?: "default" | "emerald" | "blue";
+}) {
+  const toneClass =
+    tone === "emerald"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-700"
+      : tone === "blue"
+      ? "border-[#C9D4FF] bg-[#EDF2FF] text-[#3E59E8]"
+      : "border-black/10 bg-white text-black/70";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold ${toneClass}`}
+    >
+      <span
+        className={[
+          "h-2 w-2 rounded-full",
+          tone === "emerald"
+            ? "bg-emerald-500"
+            : tone === "blue"
+            ? "bg-[#5C74FF]"
+            : "bg-black/30",
+        ].join(" ")}
+      />
+      {children}
+    </span>
+  );
+}
+
+function MetricCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white/78 px-4 py-3 shadow-sm">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-black/45">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-black text-black/88">{value}</div>
+    </div>
   );
 }
 
@@ -104,8 +153,6 @@ function IconChecklist() {
   );
 }
 
-/* ---------- HOW IT WORKS (CLEAN) ---------- */
-
 function StepCard({
   step,
   title,
@@ -169,11 +216,107 @@ function StepCard({
   );
 }
 
+function ManagedCaptureCard({
+  title,
+  desc,
+  bullets,
+  accent = "white",
+}: {
+  title: string;
+  desc: string;
+  bullets: string[];
+  accent?: "white" | "blue";
+}) {
+  const wrapClass =
+    accent === "blue"
+      ? "border-[#C9D4FF] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(237,242,255,0.96))] shadow-[0_20px_55px_rgba(92,116,255,0.14)]"
+      : "border-black/10 bg-white shadow-[0_14px_40px_rgba(040px_rgba(0,0,0,0.06)]";
+
+  return (
+    <div className={`rounded-3xl border p-7 ${wrapClass}`}>
+      <div className="text-xl font-black tracking-tight">{title}</div>
+      <p className="mt-2 text-sm leading-7 text-black/65">{desc}</p>
+
+      <div className="mt-5 space-y-2.5">
+        {bullets.map((b) => (
+          <div key={b} className="flex items-start gap-2 text-sm">
+            <span className="mt-[7px] h-1.5 w-1.5 rounded-full bg-[#5C74FF]" />
+            <span className="text-black/78">{b}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function HeroSection({ market }: { market: Market }) {
+  return (
+    <section className={`${CONTAINER} pb-10 pt-14`}>
+      <div className="rounded-[44px] border border-black/10 bg-white/92 px-8 py-10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] sm:px-12 sm:py-12">
+        <div className="text-center">
+          <div className="flex justify-center">
+            <SectionPill tone="blue">Managed Capture is the main offer</SectionPill>
+          </div>
+
+          <h1 className="mt-6 text-5xl font-black tracking-tight sm:text-6xl">
+            Stop hunting. Start receiving.
+          </h1>
+
+          <div className="mx-auto mt-5 max-w-4xl">
+            <p className="text-lg font-semibold leading-relaxed text-black/78 sm:text-xl">
+              Managed Capture for contractors who want help sourcing,
+              qualifying, and moving bids forward.
+            </p>
+
+            <p className="mt-3 text-sm font-medium leading-relaxed tracking-[0.01em] text-black/58 sm:text-base">
+              Morning Matches is available for teams that only want daily ranked
+              opportunities. But the real value is having AMBIT help manage the
+              front-end bid workload.
+            </p>
+          </div>
+
+          <div className="mx-auto mt-7 grid max-w-3xl gap-3 sm:grid-cols-3">
+            <MetricCard label="Main lane" value="Managed Capture" />
+            <MetricCard label="Starting at" value="$1,499.99/mo" />
+            <MetricCard label="Alternative" value="Morning Matches — $49.99/mo" />
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <div className="relative inline-flex">
+              <span
+                aria-hidden
+                className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
+              />
+              <Link
+                href={`/get-started?intent=${market}&plan=managed_capture`}
+                className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
+              >
+                <ArrowBadge />
+                Start Managed Capture
+              </Link>
+            </div>
+
+            <Link
+              href={`/get-started?intent=${market}&plan=starter`}
+              className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-5 py-4 text-sm font-semibold text-black shadow-sm transition hover:-translate-y-[1px] hover:border-black/25 hover:bg-black/[0.03]"
+            >
+              Morning Matches — $49.99/mo
+            </Link>
+          </div>
+
+          <div className="mt-4 text-xs font-semibold text-black/55">
+            Direct secure signup • No request form • Pick your lane and go
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function HowItWorksSection() {
   return (
     <section className={`${CONTAINER} pb-20`} id="how-it-works">
       <div className="relative overflow-hidden rounded-[36px] border border-black/10 bg-white/92 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-        {/* super subtle top glow */}
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-[radial-gradient(circle_at_top,rgba(92,116,255,0.14),transparent_60%)]"
@@ -181,13 +324,13 @@ function HowItWorksSection() {
 
         <div className="relative px-8 py-12 sm:px-12">
           <div className="mx-auto max-w-3xl text-center">
-            {/* BIG + BOLD so it's instantly obvious */}
             <h2 className="text-5xl font-black tracking-tight sm:text-6xl">
               How it works
             </h2>
 
             <p className="mt-4 text-base font-medium text-black/70 sm:text-lg">
-              3 simple steps. Daily matches. Clear next actions.
+              Strong fits surfaced daily. Clear next actions. A high-touch lane
+              when you want help moving bids forward.
             </p>
           </div>
 
@@ -196,33 +339,33 @@ function HowItWorksSection() {
               <StepCard
                 step="Step 1"
                 accent="blue"
-                title="Tell us your trade"
-                desc="Service area + keywords."
-                bullets={["Trade + where you work", "What you want more of"]}
+                title="We learn your scope"
+                desc="Trade, service area, and keywords."
+                bullets={["What you do", "Where you want more work"]}
                 icon={<IconTarget />}
               />
 
               <StepCard
                 step="Step 2"
                 accent="emerald"
-                title="We find the work"
+                title="We surface strong fits"
                 desc="Scan, score, and filter."
-                bullets={["Daily shortlist", "Only strong fits"]}
+                bullets={["Ranked daily shortlist", "Only worth-looking-at work"]}
                 icon={<IconInbox />}
               />
 
               <StepCard
                 step="Step 3"
                 accent="black"
-                title="You bid faster"
-                desc="Summary + next steps."
-                bullets={["Plain-English breakdown", "Requirements + deadlines"]}
+                title="You choose your lane"
+                desc="Self-serve or managed support."
+                bullets={["Morning Matches or Managed Capture", "Move faster on active bids"]}
                 icon={<IconChecklist />}
               />
             </div>
 
             <div className="mt-6 text-center text-xs font-semibold text-black/55">
-              Set up in minutes • Matches emailed daily
+              Set up in minutes • Direct signup • Matches emailed daily
             </div>
           </div>
         </div>
@@ -231,7 +374,92 @@ function HowItWorksSection() {
   );
 }
 
-/* ---------- LIVE MATCH PREVIEW (HOMEPAGE) ---------- */
+function ManagedCaptureSection({ market }: { market: Market }) {
+  return (
+    <section className={`${CONTAINER} pb-20`}>
+      <div className="overflow-hidden rounded-[36px] border border-black/10 bg-white/92 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+        <div className="px-8 py-12 sm:px-12">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="flex justify-center">
+              <SectionPill tone="blue">Main offer</SectionPill>
+            </div>
+
+            <h2 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl">
+              What Managed Capture actually does
+            </h2>
+
+            <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-relaxed text-black/68 sm:text-lg">
+              This is not just a lead feed. Managed Capture is for contractors
+              who want AMBIT helping organize the front-end bid process so the
+              right opportunities actually move.
+            </p>
+          </div>
+
+          <div className="mt-10 grid gap-6 lg:grid-cols-2">
+            <ManagedCaptureCard
+              accent="blue"
+              title="The core value"
+              desc="AMBIT acts like an outsourced capture desk for companies that want more than alerts."
+              bullets={[
+                "Active opportunity sourcing",
+                "Fit review + bid / no-bid pressure testing",
+                "Proposal support on active pursuits",
+                "Amendment + deadline visibility",
+              ]}
+            />
+
+            <ManagedCaptureCard
+              title="What comes off your team’s desk"
+              desc="Less time buried in search, admin, and moving pieces."
+              bullets={[
+                "Opportunity hunting",
+                "Initial qualification",
+                "Front-end bid organization",
+                "More clarity around next steps",
+              ]}
+            />
+
+            <ManagedCaptureCard
+              title="Best fit"
+              desc="The companies who get the most value usually already want to bid — they just need more structure and support."
+              bullets={[
+                "Owners stretched thin",
+                "Estimators buried in admin",
+                "Teams without proposal bandwidth",
+                "Regional contractors serious about growth",
+              ]}
+            />
+
+            <ManagedCaptureCard
+              title="Alternative"
+              desc="Morning Matches stays available for companies that only want ranked opportunities delivered daily."
+              bullets={[
+                "Self-serve",
+                "Low-cost entry point",
+                "Daily ranked opportunities",
+                "No managed support layer",
+              ]}
+            />
+          </div>
+
+          <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href={`/get-started?intent=${market}&plan=managed_capture`}
+              className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-8 py-4 text-sm font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
+            >
+              <ArrowBadge />
+              Start Managed Capture
+            </Link>
+
+            <div className="rounded-full border border-black/10 bg-white px-4 py-3 text-sm font-semibold text-black/65">
+              Starting at $1,499.99/mo
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 type LivePreviewMatch = {
   id: number;
@@ -348,7 +576,7 @@ function LiveMatchCard({ item }: { item: LivePreviewMatch }) {
           {item.title}
         </h3>
 
-        <div className="shrink-0 flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             type="button"
             aria-label="Save"
@@ -405,17 +633,17 @@ function LiveMatchesPreviewSection() {
     <section className={`${CONTAINER} pb-16`}>
       <div className="mb-5">
         <div className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-500" />
           Live-style preview
         </div>
 
         <div className="mt-2 text-3xl font-black tracking-tight">
-          See exactly what your matches look like
+          See exactly what your opportunities look like
         </div>
 
         <div className="mt-1 text-sm font-medium text-black/60">
           Same card style as the dashboard: score, source, dates, NAICS, and
-          match reasons — simple and skimmable.
+          match reasons — simple, skimmable, and easy to act on.
         </div>
       </div>
 
@@ -446,12 +674,9 @@ function LiveMatchesPreviewSection() {
   );
 }
 
-/* ---------- TESTIMONIALS ---------- */
-
-type QuotePart = { t: string; strong?: boolean };
 type Testimonial = {
   segment: "Commercial" | "Residential";
-  quote: QuotePart[];
+  quote: { t: string; strong?: boolean }[];
   stars: 5;
   name: string;
   role: string;
@@ -544,8 +769,8 @@ function TestimonialsSection({ market }: { market: Market }) {
             </h2>
 
             <p className="mt-4 text-base text-white/70 sm:text-lg">
-              Skimmable reviews from teams using AMBIT to find better-fit
-              opportunities faster.
+              Reviews from teams using AMBIT to find better-fit work and move
+              faster on the right opportunities.
             </p>
 
             <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -617,7 +842,7 @@ function TestimonialsSection({ market }: { market: Market }) {
           <div className="mt-10 flex justify-center">
             <Link
               href="/testimonials"
-              className="text-sm font-semibold text-white/70 hover:text-white underline underline-offset-4 decoration-white/20 hover:decoration-white/40"
+              className="text-sm font-semibold text-white/70 underline decoration-white/20 underline-offset-4 hover:text-white hover:decoration-white/40"
             >
               See more →
             </Link>
@@ -625,40 +850,44 @@ function TestimonialsSection({ market }: { market: Market }) {
         </div>
       </div>
 
-      {/* FINAL CTA */}
       <div className="mt-16 rounded-3xl border border-black/10 bg-white/92 px-10 py-12 text-center shadow-[0_14px_40px_rgba(0,0,0,0.07)]">
         <div className="text-4xl font-black">
-          Plug into AMBIT to keep growing your business
+          Let AMBIT run your capture lane
         </div>
         <div className="mt-4 text-lg text-black/70">
-          Stop wasting hours hunting—spend that time bidding on the right work.
+          Stop wasting hours hunting. Start moving faster on the right work.
         </div>
 
-        <div className="mt-10 flex items-center justify-center">
+        <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <div className="relative inline-flex">
             <span
               aria-hidden
               className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
             />
             <Link
-              href={`/get-started?intent=${market}`}
+              href={`/get-started?intent=${market}&plan=managed_capture`}
               className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
             >
               <ArrowBadge />
-              Choose plan
+              Start Managed Capture
             </Link>
           </div>
+
+          <Link
+            href={`/get-started?intent=${market}&plan=starter`}
+            className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-5 py-4 text-sm font-semibold text-black shadow-sm transition hover:-translate-y-[1px] hover:border-black/25 hover:bg-black/[0.03]"
+          >
+            Morning Matches — $49.99/mo
+          </Link>
         </div>
 
-        <div className="mt-3 text-xs font-semibold text-black/60">
-          Active subscription required • Matches + RFQ alerts + bid support
+        <div className="mt-4 text-xs font-semibold text-black/60">
+          Choose Managed Capture or start lighter with Morning Matches
         </div>
       </div>
     </section>
   );
 }
-
-/* ---------- PAGE ---------- */
 
 export default function HomePage() {
   const market: Market = "government";
@@ -669,69 +898,16 @@ export default function HomePage() {
         <LandingBackground />
       </div>
 
-      <CallRequestWidget />
-
-      {/* HERO */}
-      <section className={`${CONTAINER} pt-14 pb-10`}>
-        <div className="rounded-[44px] bg-white/92 border border-black/10 shadow-[0_18px_55px_rgba(0,0,0,0.08)] px-8 py-10 sm:px-12 sm:py-12">
-          <div className="text-center">
-            <h1 className="text-5xl font-black tracking-tight sm:text-6xl">
-              Stop hunting. Start receiving.
-            </h1>
-
-            {/* Wider, more breathable subcopy */}
-            <div className="mx-auto mt-5 max-w-4xl">
-              <p className="text-lg font-semibold leading-relaxed tracking-normal text-black/70 sm:text-xl">
-                Matched Opportunities, Delivered Daily
-              </p>
-
-              <p className="mt-2 text-sm font-medium leading-relaxed tracking-[0.02em] text-black/55 sm:text-base">
-                Built for contractors who want more bids without the search
-              </p>
-            </div>
-
-            <div className="mt-8 flex items-center justify-center">
-              <div className="relative inline-flex">
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute -inset-10 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(92,116,255,0.20),transparent_70%)]"
-                />
-                <Link
-                  href={`/get-started?intent=${market}`}
-                  className="inline-flex items-center justify-center rounded-full bg-[#5C74FF] px-10 py-4 text-base font-semibold text-white shadow-[0_18px_40px_rgba(92,116,255,0.22)] transition hover:bg-[#465DFF]"
-                >
-                  <ArrowBadge />
-                  Choose plan
-                </Link>
-              </div>
-            </div>
-
-            <div className="mt-5 flex items-center justify-center">
-              <a
-                href={`mailto:ambit@sevrixgov.com?subject=${encodeURIComponent(
-                  "Try Ambit Free"
-                )}&body=${encodeURIComponent("Try Ambit Free")}`}
-                className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-4 py-2 text-sm font-semibold text-black shadow-sm transition hover:-translate-y-[1px] hover:border-black/25 hover:bg-black/[0.03]"
-              >
-                Try Ambit Free
-              </a>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* HOW IT WORKS */}
+      <HeroSection market={market} />
       <HowItWorksSection />
-
-      {/* TOP MATCH PREVIEW */}
+      <ManagedCaptureSection market={market} />
       <LiveMatchesPreviewSection />
 
-      {/* FEATURE BLOCKS */}
       <section className={`${CONTAINER} pb-20`}>
         <h2 className="text-5xl font-black tracking-tight">
           Everything you need to move faster
           <br />
-          (without adding headcount)
+          without adding headcount
         </h2>
 
         <div className="mt-10 grid gap-6 lg:grid-cols-2">
@@ -746,23 +922,23 @@ export default function HomePage() {
           <div className="rounded-3xl bg-[#59C98B] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
             <div className="text-2xl font-black text-black">Daily momentum</div>
             <div className="mt-3 text-black/80">
-              Wake up to a shortlist. Pick your shots. Keep your calendar full.
+              Wake up to a shortlist. Pick your shots. Keep your pipeline moving.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#5C74FF] p-10 text-white shadow-[0_10px_30px_rgba(0,0,0,0.10)]">
             <div className="text-2xl font-black">Clarity + next steps</div>
             <div className="mt-3 text-white/90">
-              Plain-English summaries, requirements, and “what to do next” so
-              you don’t waste time decoding.
+              Plain-English summaries, requirements, and what-to-do-next guidance
+              so you don’t waste time decoding.
             </div>
           </div>
 
           <div className="rounded-3xl bg-[#E8E2D7] p-10 shadow-[0_10px_28px_rgba(0,0,0,0.06)]">
-            <div className="text-2xl font-black">Support when it matters</div>
+            <div className="text-2xl font-black">Managed support when it matters</div>
             <div className="mt-3 text-black/70">
-              Need help? Upgrade for bid support and associate help so you can
-              move with confidence.
+              Managed Capture gives you a high-touch lane around sourcing,
+              organization, and front-end bid support.
             </div>
           </div>
         </div>
