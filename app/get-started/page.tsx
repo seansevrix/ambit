@@ -70,78 +70,6 @@ function Step({ n, title, desc }: { n: number; title: string; desc: string }) {
   );
 }
 
-function MicroTrustRow() {
-  const items = [
-    { k: "Setup time", v: "~60 seconds" },
-    { k: "Delivery", v: "Daily matches" },
-    { k: "Edit anytime", v: "keywords + NAICS" },
-  ];
-
-  return (
-    <div className="mt-6 rounded-3xl border border-black/12 bg-white/85 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {items.map((x) => (
-          <div key={x.k} className="flex items-center gap-3">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
-              <span className="h-2 w-2 rounded-full bg-[#1A4FA3]" />
-            </span>
-            <div className="leading-tight">
-              <div className="text-xs font-semibold text-black/55">{x.k}</div>
-              <div className="text-sm font-black text-black/85">{x.v}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function PlanReferenceCard({
-  name,
-  price,
-  subtitle,
-  bullets,
-  note,
-  featured = false,
-}: {
-  name: string;
-  price: string;
-  subtitle: string;
-  bullets: string[];
-  note: string;
-  featured?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border bg-white/90 p-6",
-        featured
-          ? "border-[#1A4FA3]/35 shadow-[0_20px_55px_rgba(26,79,163,0.16)]"
-          : "border-black/10 shadow-[0_16px_45px_rgba(0,0,0,0.08)]",
-      ].join(" ")}
-    >
-      <div>
-        <div className="text-4xl font-black tracking-tight">{name}</div>
-        <div className="mt-2 text-3xl font-black">{price}</div>
-        <div className="mt-1 text-sm text-black/60">{subtitle}</div>
-      </div>
-
-      <ul className="mt-5 space-y-2.5">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2 text-[15px] text-black/85">
-            <span className="mt-[1px]">
-              <BlueCheck />
-            </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-
-      <p className="mt-5 text-sm text-black/62">{note}</p>
-    </div>
-  );
-}
-
 function GlowFrame({
   children,
   className = "",
@@ -165,19 +93,146 @@ function GlowFrame({
   );
 }
 
+function MicroTrustRow() {
+  const items = [
+    { k: "Setup time", v: "~60 seconds" },
+    { k: "Primary lane", v: "Managed Capture" },
+    { k: "Secondary lane", v: "Daily matches" },
+  ];
+
+  return (
+    <div className="mt-6 rounded-3xl border border-black/12 bg-white/85 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
+      <div className="grid gap-3 sm:grid-cols-3">
+        {items.map((x) => (
+          <div key={x.k} className="flex items-center gap-3">
+            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
+              <span className="h-2 w-2 rounded-full bg-[#1A4FA3]" />
+            </span>
+            <div className="leading-tight">
+              <div className="text-xs font-semibold text-black/55">{x.k}</div>
+              <div className="text-sm font-black text-black/85">{x.v}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function MetricPill({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-black/10 bg-white/80 px-4 py-3 shadow-sm">
+      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-black/45">
+        {label}
+      </div>
+      <div className="mt-1 text-sm font-black text-black/88">{value}</div>
+    </div>
+  );
+}
+
+function FeatureList({ items }: { items: string[] }) {
+  return (
+    <div className="grid gap-3 sm:grid-cols-2">
+      {items.map((item) => (
+        <div key={item} className="flex items-start gap-2 text-sm text-black/80">
+          <span className="mt-[1px]">
+            <BlueCheck />
+          </span>
+          <span>{item}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ValueCard({
+  title,
+  desc,
+  bullets,
+}: {
+  title: string;
+  desc: string;
+  bullets: string[];
+}) {
+  return (
+    <div className="rounded-3xl border border-black/10 bg-white/88 p-6 shadow-[0_16px_45px_rgba(0,0,0,0.08)]">
+      <div className="text-lg font-black tracking-tight text-black">{title}</div>
+      <p className="mt-2 text-sm leading-7 text-black/65">{desc}</p>
+
+      <ul className="mt-4 space-y-2.5">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2 text-sm text-black/82">
+            <span className="mt-[1px]">
+              <BlueCheck />
+            </span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function LaneCard({
+  eyebrow,
+  title,
+  price,
+  subtitle,
+  bullets,
+  note,
+  featured = false,
+}: {
+  eyebrow: string;
+  title: string;
+  price: string;
+  subtitle: string;
+  bullets: string[];
+  note: string;
+  featured?: boolean;
+}) {
+  return (
+    <div
+      className={[
+        "rounded-3xl border p-6",
+        featured
+          ? "border-[#1A4FA3]/30 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(232,240,252,0.92))] shadow-[0_24px_70px_rgba(26,79,163,0.16)]"
+          : "border-black/10 bg-white/88 shadow-[0_16px_45px_rgba(0,0,0,0.08)]",
+      ].join(" ")}
+    >
+      <div className="inline-flex rounded-full border border-black/10 bg-white/85 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-black/60">
+        {eyebrow}
+      </div>
+
+      <div className="mt-4 text-4xl font-black tracking-tight text-black">{title}</div>
+      <div className="mt-2 text-3xl font-black text-black">{price}</div>
+      <div className="mt-1 text-sm text-black/60">{subtitle}</div>
+
+      <ul className="mt-5 space-y-2.5">
+        {bullets.map((b) => (
+          <li key={b} className="flex items-start gap-2 text-[15px] text-black/85">
+            <span className="mt-[1px]">
+              <BlueCheck />
+            </span>
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+
+      <p className="mt-5 text-sm leading-7 text-black/62">{note}</p>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
     <main className="min-h-screen text-black">
-      {/* Base tone */}
       <div className="pointer-events-none fixed inset-0 -z-[90] bg-[#DEDEDE]" />
 
-      {/* Blueprint grid */}
       <div className="pointer-events-none fixed inset-0 -z-[85]">
         <div className="absolute inset-0 opacity-[0.11] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(0,0,0,0.20)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.20)_1px,transparent_1px)] [background-size:360px_360px]" />
       </div>
 
-      {/* Soft depth */}
       <div className="pointer-events-none fixed inset-0 -z-[80]">
         <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_0%,rgba(92,116,255,0.14),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(700px_420px_at_85%_20%,rgba(52,211,153,0.08),transparent_55%)]" />
@@ -185,7 +240,6 @@ export default function Page() {
       </div>
 
       <div className="mx-auto max-w-[1140px] px-6 pb-12 pt-20 lg:px-10 lg:pt-24">
-        {/* Top row */}
         <div className="flex items-center justify-between">
           <Link
             href="/"
@@ -202,29 +256,102 @@ export default function Page() {
           </span>
         </div>
 
-        {/* Header */}
         <div className="mt-8 max-w-5xl">
-          <h1 className="text-4xl font-black tracking-tight sm:text-5xl">
-            Start getting matched opportunities today
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#1A4FA3]/16 bg-white/85 px-3 py-1.5 text-xs font-semibold text-black/72 shadow-sm">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
+            Built for contractors who need a bid team, not another dashboard
+          </div>
+
+          <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
+            Outsource the front-end bid workload.
           </h1>
 
-          <p className="mt-3 max-w-4xl text-[17px] leading-8 text-black/72">
-            Build your profile in{" "}
-            <span className="font-semibold text-black/85">~60 seconds</span>. AMBIT
-            sends ranked opportunities daily.
-            <span className="font-semibold text-black/85"> Pro</span> adds a{" "}
-            <span className="font-semibold text-black/85">1:1 contract analyst</span>{" "}
-            with summaries + templates so you move faster.
+          <p className="mt-4 max-w-4xl text-[17px] leading-8 text-black/72 sm:text-[18px]">
+            AMBIT becomes your{" "}
+            <span className="font-semibold text-black/88">
+              sourcing, capture, and proposal support lane
+            </span>{" "}
+            so your team can stay focused on execution. We help find the right
+            opportunities, organize active pursuits, track moving pieces, and push
+            bids forward without your team drowning in admin.
           </p>
 
-          <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1.5 text-xs font-semibold text-black/68 shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
-            Only work email is required to continue
+          <div className="mt-6 grid max-w-4xl gap-3 sm:grid-cols-3">
+            <MetricPill label="Primary offer" value="Managed Capture" />
+            <MetricPill label="Best for" value="Teams bidding consistently" />
+            <MetricPill label="Self-serve option" value="$49.99/mo matches" />
           </div>
         </div>
 
-        {/* Signup card */}
         <GlowFrame className="mt-10">
+          <div className="grid gap-0 lg:grid-cols-[1.15fr_.85fr]">
+            <div className="border-b border-black/10 px-6 py-6 sm:px-8 lg:border-b-0 lg:border-r">
+              <div className="inline-flex rounded-full border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-[#1A4FA3]">
+                Flagship offer
+              </div>
+
+              <h2 className="mt-4 text-3xl font-black tracking-tight sm:text-4xl">
+                Managed Capture
+              </h2>
+
+              <div className="mt-2 text-2xl font-black text-black">Starting at $1,500/mo</div>
+
+              <p className="mt-4 max-w-2xl text-[15px] leading-7 text-black/68">
+                This is the high-touch lane. AMBIT works like an outsourced
+                sourcing + proposal support partner for companies that want real
+                help managing the front-end bid process.
+              </p>
+
+              <div className="mt-5">
+                <FeatureList
+                  items={[
+                    "Active opportunity sourcing + fit review",
+                    "Bid / no-bid triage on real pursuits",
+                    "Proposal coordination + admin support",
+                    "Amendment, deadline, and submission tracking",
+                    "Weekly pipeline accountability cadence",
+                    "Priority handling on active opportunities",
+                  ]}
+                />
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-black/10 bg-white/82 p-4 text-sm leading-7 text-black/65">
+                Best for companies that already want to bid and need help
+                organizing the work. Large or unusually complex full-build
+                proposals can still be scoped separately.
+              </div>
+            </div>
+
+            <div className="px-6 py-6 sm:px-8">
+              <div className="rounded-3xl border border-black/10 bg-white/90 p-5 shadow-[0_18px_45px_rgba(0,0,0,0.08)]">
+                <div className="text-sm font-black uppercase tracking-[0.12em] text-black/45">
+                  Request-only
+                </div>
+                <div className="mt-2 text-2xl font-black tracking-tight">
+                  Want AMBIT in the room with you?
+                </div>
+                <p className="mt-3 text-sm leading-7 text-black/65">
+                  Request Managed Capture and we’ll set up the lane around your
+                  company, service area, and bid volume.
+                </p>
+
+                <a
+                  href="mailto:ambit@sevrixgov.com?subject=AMBIT%20Managed%20Capture%20Request&body=Hi%20AMBIT%20team%2C%0A%0AI%27m%20interested%20in%20Managed%20Capture.%20Here%E2%80%99s%20my%20info%3A%0A-%20Company%3A%0A-%20Email%3A%0A-%20Service%20area%3A%0A-%20Trade%2Fscope%3A%0A-%20Typical%20bid%20volume%3A%0A%0AThanks."
+                  className="mt-5 inline-flex w-full items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-3 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.22)] transition hover:brightness-110"
+                >
+                  Request Managed Capture
+                </a>
+
+                <div className="mt-4 text-xs text-black/52">
+                  Prefer to start smaller? Self-serve matches are still available
+                  below.
+                </div>
+              </div>
+            </div>
+          </div>
+        </GlowFrame>
+
+        <GlowFrame className="mt-8">
           <div className="flex items-center justify-between border-b border-black/10 px-6 py-5 sm:px-8">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5 font-black">
@@ -232,7 +359,9 @@ export default function Page() {
               </div>
               <div>
                 <div className="text-sm font-black">AMBIT</div>
-                <div className="text-xs text-black/58">Secure signup • Encrypted</div>
+                <div className="text-xs text-black/58">
+                  Start self-serve or submit your profile for a managed setup
+                </div>
               </div>
             </div>
 
@@ -246,7 +375,8 @@ export default function Page() {
 
           <div className="border-b border-black/10 px-6 py-3 sm:px-8">
             <div className="text-xs text-black/58">
-              Choose a plan, add your basic profile, and continue.
+              Self-serve starts immediately. Managed Capture is the premium lane if
+              you want real human support driving active pursuits forward.
             </div>
           </div>
 
@@ -257,25 +387,59 @@ export default function Page() {
           </div>
         </GlowFrame>
 
-        {/* What happens next */}
+        <div className="mt-8 grid gap-5 lg:grid-cols-3">
+          <ValueCard
+            title="What we take off your desk"
+            desc="AMBIT is strongest when your team is spending too much time hunting, reviewing, organizing, and chasing bid admin."
+            bullets={[
+              "Opportunity hunting",
+              "Initial qualification",
+              "Amendment watching",
+              "Timeline + next-step organization",
+            ]}
+          />
+
+          <ValueCard
+            title="How the managed lane feels"
+            desc="Not just another feed of leads. You get a real operating rhythm around active opportunities and decision-making."
+            bullets={[
+              "Weekly pipeline review",
+              "Priority triage on real fits",
+              "Support on active pursuits",
+              "More accountability around bids",
+            ]}
+          />
+
+          <ValueCard
+            title="Who gets the most value"
+            desc="Best fit for service companies, regional contractors, and operators who want to bid more without hiring a full internal team yet."
+            bullets={[
+              "Owners stretched thin",
+              "Estimators buried in admin",
+              "Teams without proposal bandwidth",
+              "Companies serious about growth",
+            ]}
+          />
+        </div>
+
         <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <div className="text-lg font-black">What happens next</div>
 
           <div className="mt-4 space-y-4">
             <Step
               n={1}
-              title="We build your profile"
-              desc="Service area + keywords + NAICS → better match accuracy."
+              title="We learn your service area + scope"
+              desc="Keywords, trade focus, NAICS, and geography sharpen what gets surfaced."
             />
             <Step
               n={2}
-              title="Matches begin daily"
-              desc="Ranked opportunities are delivered every morning."
+              title="You choose your lane"
+              desc="Start with self-serve matches or request Managed Capture if you want AMBIT involved in the front-end workload."
             />
             <Step
               n={3}
-              title="Move faster (optional)"
-              desc="Pro adds summaries, templates, and a 1:1 analyst lane."
+              title="We help you move faster"
+              desc="The right-fit opportunities rise to the top, and the managed lane adds real capture + proposal support around active bids."
             />
           </div>
 
@@ -292,15 +456,15 @@ export default function Page() {
           </div>
         </div>
 
-        {/* Plan details */}
         <details className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
           <summary className="flex cursor-pointer list-none flex-wrap items-center justify-between gap-3 [&::-webkit-details-marker]:hidden">
             <div>
               <h2 className="text-2xl font-black tracking-tight">
-                Plan details + what’s included
+                Choose your lane
               </h2>
               <div className="mt-1 text-sm text-black/58">
-                Compare Starter vs Pro. (Enterprise is request-based below.)
+                Managed Capture is the main offer. Daily matches exists for teams
+                that only want opportunities sent over.
               </div>
             </div>
 
@@ -311,75 +475,43 @@ export default function Page() {
 
           <div className="mt-5 border-t border-black/10 pt-5">
             <div className="grid gap-5 lg:grid-cols-2">
-              <PlanReferenceCard
-                name="Starter"
+              <LaneCard
+                eyebrow="Self-serve"
+                title="Daily Matches"
                 price="$49.99/mo"
-                subtitle="Morning matches only"
+                subtitle="For companies that only want ranked opportunities delivered daily"
                 bullets={[
-                  "Daily matched opportunities (morning email)",
+                  "Daily matched opportunities",
                   "Ranked shortlist (best fits first)",
                   "Edit keywords + NAICS anytime",
                   "Cancel anytime",
                 ]}
-                note="Best for contractors who just want daily matches, clean and simple."
+                note="Clean and simple. Best when you only want leads surfaced and your team handles the rest."
               />
 
-              <PlanReferenceCard
+              <LaneCard
                 featured
-                name="Pro"
-                price="$129.99/mo"
-                subtitle="1:1 analyst + summaries + templates"
+                eyebrow="Main offer"
+                title="Managed Capture"
+                price="From $1,500/mo"
+                subtitle="For companies that want AMBIT involved in the actual front-end bid workload"
                 bullets={[
-                  "Everything in Starter",
-                  "Dedicated 1:1 contract analyst (light lane)",
-                  "Skimmable summaries + next steps",
-                  "Ready-to-send templates (LOI, emails, checklists)",
-                  "Support lane for questions + guidance",
+                  "Everything in self-serve",
+                  "Human review around real opportunities",
+                  "Capture + proposal support lane",
+                  "Amendment / deadline / admin handling",
+                  "Weekly pipeline cadence",
+                  "Priority support on active pursuits",
                 ]}
-                note="Best for contractors who want a human helping them move faster."
+                note="Built for teams that want a real outsourced sourcing + proposal support partner. Full scope is shaped around your bid volume and workflow."
               />
             </div>
 
-            <div className="mt-6 rounded-3xl border border-[#1A4FA3]/18 bg-white/90 p-6 shadow-[0_18px_55px_rgba(26,79,163,0.08)]">
-              <div className="flex flex-wrap items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <div className="text-lg font-black">Need Enterprise?</div>
-                  <div className="mt-1 text-sm text-black/62">
-                    White-glove priority lane + execution support. We set it up with
-                    you (request-only).
-                  </div>
-                </div>
-
-                <a
-                  href="mailto:ambit@sevrixgov.com?subject=AMBIT%20Enterprise%20Request&body=Hi%20AMBIT%20team%2C%0A%0AI%27d%20like%20to%20request%20Enterprise.%20Here%27s%20my%20info%3A%0A-%20Company%3A%0A-%20Email%3A%0A-%20Service%20area%3A%0A-%20Keywords%2FNAICS%3A%0A%0AThanks%21"
-                  className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1A4FA3] px-5 py-2.5 text-sm font-semibold text-white shadow-[0_16px_40px_rgba(26,79,163,0.22)] transition hover:brightness-110"
-                >
-                  Request Enterprise
-                </a>
-              </div>
-
-              <div className="mt-4 grid gap-3 md:grid-cols-2">
-                {[
-                  "Priority triage + faster turnaround on active pursuits",
-                  "Weekly pipeline review cadence + accountability",
-                  "Same-day opportunity triage (priority queue)",
-                  "Founder/leadership access",
-                ].map((b) => (
-                  <div key={b} className="flex items-start gap-2 text-sm text-black/78">
-                    <span className="mt-[1px]">
-                      <BlueCheck />
-                    </span>
-                    <span>{b}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-6">
-              <h3 className="text-xl font-black">What you’ll need to bid confidently</h3>
+            <div className="mt-6 rounded-3xl border border-black/10 bg-white/88 p-6 shadow-[0_16px_45px_rgba(0,0,0,0.08)]">
+              <div className="text-lg font-black">What you’ll need to bid confidently</div>
               <p className="mt-2 text-sm text-black/62">
-                AMBIT helps organize and guide the process — these are the core items
-                most service companies should have ready:
+                AMBIT can help organize the motion, but these are the core things
+                most service companies should already have or be ready to produce.
               </p>
 
               <div className="mt-4 grid gap-4 md:grid-cols-2">
@@ -405,7 +537,7 @@ export default function Page() {
                       <BlueCheck /> <span>Basic pricing sheet (labor, materials, markup)</span>
                     </li>
                     <li className="flex items-start gap-2">
-                      <BlueCheck /> <span>Staffing/timeline assumptions</span>
+                      <BlueCheck /> <span>Staffing / timeline assumptions</span>
                     </li>
                     <li className="flex items-start gap-2">
                       <BlueCheck /> <span>Past performance examples (if available)</span>
@@ -414,28 +546,28 @@ export default function Page() {
                 </div>
               </div>
 
-              <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm text-black/75">
-                Pro includes a 1:1 analyst lane — ideal if you want help moving fast on
-                the right opportunities.
+              <div className="mt-4 rounded-2xl border border-[#1A4FA3]/20 bg-[#1A4FA3]/8 p-4 text-sm leading-7 text-black/75">
+                Managed Capture is where the real value sits: AMBIT helps organize,
+                pressure-test, and move active opportunities forward instead of just
+                dropping leads in your inbox.
               </div>
             </div>
           </div>
         </details>
 
-        {/* Perfect for */}
         <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="text-lg font-black">Perfect for</div>
+          <div className="text-lg font-black">Best fit</div>
 
           <div className="mt-4 flex flex-wrap gap-2">
             {[
               "Landscaping",
               "HVAC",
               "Plumbing",
-              "Junk removal",
+              "Electrical",
               "Concrete",
               "Janitorial",
-              "Multi-crew operators",
               "Regional contractors",
+              "Multi-crew operators",
             ].map((t) => (
               <span
                 key={t}
@@ -447,11 +579,12 @@ export default function Page() {
           </div>
 
           <div className="mt-4 text-sm text-black/58">
-            You can update keywords/NAICS anytime to refine match quality.
+            Best for teams that want more than lead alerts and need actual help
+            driving the front-end bid process.
           </div>
 
           <div className="mt-3 text-xs text-black/52">
-            Popular keywords:{" "}
+            Common keywords:{" "}
             <span className="font-semibold text-black/62">
               emergency, preventive maintenance, install, repair, demo, cleanup
             </span>
