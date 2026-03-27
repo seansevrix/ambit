@@ -310,7 +310,7 @@ function HeroSection({ market }: { market: Market }) {
 
           <div className="mx-auto mt-5 max-w-3xl">
             <p className="text-lg font-semibold leading-relaxed text-black/80 sm:text-xl">
-              AMBIT finds relevant government and commercial opportunities for
+              The Ambit team finds relevant government and commercial opportunities for
               your company and helps move the front-end bid workload forward.
             </p>
           </div>
@@ -379,7 +379,7 @@ function HowItWorksSection() {
             </h2>
 
             <p className="mt-4 text-base font-medium text-black/70 sm:text-lg">
-              Tell us what you do, AMBIT surfaces better-fit opportunities, and
+              Tell us what you do, We surface better-fit opportunities, and
               you decide whether to self-serve or use the managed lane.
             </p>
           </div>
@@ -401,7 +401,7 @@ function HowItWorksSection() {
             <StepCard
               step="Step 2"
               accent="emerald"
-              title="AMBIT surfaces qualified opportunities"
+              title="AMBIT Team surfaces qualified opportunities"
               desc="Each match is ranked so your team is not digging through noise."
               bullets={[
                 "Buyer, location, NAICS, and due date",
@@ -661,7 +661,7 @@ function ManagedCaptureSection({ market }: { market: Market }) {
 
             <p className="mx-auto mt-4 max-w-3xl text-base font-medium leading-relaxed text-black/68 sm:text-lg">
               Managed Capture is the hands-on lane for contractors who do not
-              just want alerts. AMBIT helps with the front-end bid workload so
+              just want alerts. The Ambit team helps with the front-end bid workload so
               the right opportunities do not sit idle.
             </p>
           </div>
@@ -669,7 +669,7 @@ function ManagedCaptureSection({ market }: { market: Market }) {
           <div className="mt-10 grid gap-6 lg:grid-cols-2">
             <InfoCard
               accent="blue"
-              title="What AMBIT handles"
+              title="What we handle"
               desc="The work that usually gets stuck before your team can even decide whether to pursue the opportunity."
               bullets={[
                 "Active opportunity sourcing",
@@ -692,7 +692,7 @@ function ManagedCaptureSection({ market }: { market: Market }) {
 
             <InfoCard
               title="What stays with your team"
-              desc="AMBIT supports the process, but your team still owns the core business and submission decisions."
+              desc="AMBIT Team supports the process, but your team still owns the core business and submission decisions."
               bullets={[
                 "Final pricing decisions",
                 "Technical and operational decisions",
@@ -870,7 +870,7 @@ function TestimonialsSection({ market }: { market: Market }) {
             </div>
 
             <h2 className="mt-6 text-4xl font-black tracking-tight sm:text-5xl">
-              What contractors say about AMBIT
+              What contractors say about The Ambit team
             </h2>
 
             <p className="mt-4 text-base text-white/70 sm:text-lg">
