@@ -310,7 +310,7 @@ function HeroSection({ market }: { market: Market }) {
 
           <div className="mx-auto mt-5 max-w-4xl">
             <p className="text-lg font-semibold leading-relaxed text-black/80 sm:text-xl">
-              AMBIT helps contractors pursue government work by surfacing
+              AMBIT helps contractors pursue government and commercial work by surfacing
               relevant opportunities, showing why they fit, and helping organize
               the front-end proposal workload.
             </p>
@@ -323,7 +323,7 @@ function HeroSection({ market }: { market: Market }) {
           </div>
 
           <div className="mx-auto mt-7 grid max-w-3xl gap-3 sm:grid-cols-3">
-            <MetricCard label="What you get" value="Matched government opportunities" />
+            <MetricCard label="What you get" value="Matched opportunities" />
             <MetricCard label="Plus" value="Clear next steps + bid support" />
             <MetricCard label="Main offer" value="Managed Capture from $1,499.99/mo" />
           </div>
