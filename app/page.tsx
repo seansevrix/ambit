@@ -308,24 +308,17 @@ function HeroSection({ market }: { market: Market }) {
             Stop hunting. Start receiving.
           </h1>
 
-          <div className="mx-auto mt-5 max-w-4xl">
+          <div className="mx-auto mt-5 max-w-3xl">
             <p className="text-lg font-semibold leading-relaxed text-black/80 sm:text-xl">
-              AMBIT helps contractors pursue government and commercial work by surfacing
-              relevant opportunities, showing why they fit, and helping organize
-              the front-end proposal workload.
-            </p>
-
-            <p className="mt-3 text-sm font-medium leading-relaxed tracking-[0.01em] text-black/60 sm:text-base">
-              This is not just a lead feed. Managed Capture is the hands-on lane
-              for teams that want more than alerts. Morning Matches is the
-              lighter self-serve option for ranked daily opportunities.
+              AMBIT finds relevant government and commercial opportunities for
+              your company and helps move the front-end bid workload forward.
             </p>
           </div>
 
           <div className="mx-auto mt-7 grid max-w-3xl gap-3 sm:grid-cols-3">
             <MetricCard label="What you get" value="Matched opportunities" />
-            <MetricCard label="Plus" value="Clear next steps + bid support" />
-            <MetricCard label="Main offer" value="Managed Capture from $1,499.99/mo" />
+            <MetricCard label="Support" value="Clear next steps + bid help" />
+            <MetricCard label="Main lane" value="Managed Capture" />
           </div>
 
           <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -362,7 +355,7 @@ function HeroSection({ market }: { market: Market }) {
           </div>
 
           <div className="mt-3 text-xs font-semibold text-black/50">
-            Direct signup • No request form • Choose managed or self-serve
+            Direct signup • No request form
           </div>
         </div>
       </div>
