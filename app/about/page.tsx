@@ -1,233 +1,245 @@
-// app/about/page.tsx
 import Link from "next/link";
 
 export const metadata = {
-  title: "About | AMBIT",
+  title: "About Us | AMBIT",
   description:
-    "AMBIT helps businesses find the right government contracts faster with clear matches and simple scouting reports.",
+    "Learn about the AMBIT Team and how we help contractors source opportunities, stay on top of compliance, and reduce the admin side of bidding.",
 };
 
-const PREVIEW_HREF = "/opportunities";
 const GET_STARTED_HREF = "/get-started";
+const PREVIEW_HREF = "/live-opportunities";
+
+const WRAP = "mx-auto max-w-6xl px-6";
+const PANEL =
+  "rounded-[28px] border border-black/10 bg-white/80 shadow-[0_10px_30px_rgba(0,0,0,0.04)]";
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen scroll-smooth text-white bg-gradient-to-b from-[#061633] via-[#071a3a] to-[#061633]">
-      {/* HERO */}
-      <section className="px-6 pt-14 pb-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center">
-            <div className="text-xs tracking-widest text-blue-300/90">
-              ABOUT AMBIT
+    <main className="min-h-screen bg-[#EAF3FF] text-black">
+      <section className="pt-16 pb-10">
+        <div className={WRAP}>
+          <div className="mx-auto max-w-4xl text-center">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B7280]">
+              About Us
             </div>
 
-            <h1 className="mt-4 text-4xl md:text-6xl font-semibold tracking-tight">
-              Your Bridge to Federal, State, and Local Opportunities.
+            <h1 className="mt-4 text-4xl font-semibold tracking-tight sm:text-5xl md:text-6xl">
+              Built to feel like an
+              <span className="block">extension of your team.</span>
             </h1>
 
-            <p className="mt-5 text-base md:text-lg text-white/70">
-              Tell AMBIT what your business does and where you work. We find live opportunities,
-              score matches, and deliver a clear scouting report — so you don’t miss good bids.
+            <p className="mx-auto mt-6 max-w-2xl text-base leading-7 text-[#5F6470] md:text-lg">
+              AMBIT helps contractors find better-fit commercial and government
+              opportunities and move faster when the right one shows up. Our
+              team focuses on the front-end workload — sourcing, fit review,
+              deadlines, compliance details, and proposal support — so your team
+              can stay focused on the actual work.
             </p>
 
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+            <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
               <Link
                 href={GET_STARTED_HREF}
-                className="rounded-xl bg-[#1A4FA3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#15428B] transition"
+                className="inline-flex rounded-2xl bg-[#31245C] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95"
               >
                 Get Started
               </Link>
-
               <Link
                 href={PREVIEW_HREF}
-                className="rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
+                className="inline-flex rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold text-[#31245C] transition hover:bg-black/[0.03]"
               >
-                Preview opportunities
+                View Live Leads
               </Link>
             </div>
-
-            {/* ✅ Clickable "What we do" tab — scrolls to section below */}
-            <div className="mt-10">
-              <div className="mx-auto flex max-w-lg flex-col items-center">
-                <a
-                  href="#what-we-do"
-                  className="text-sm font-semibold text-white/85 hover:text-white transition"
-                >
-                  What we do
-                </a>
-
-                {/* ✅ Fully blue underline */}
-                <div className="mt-3 h-[3px] w-full rounded-full bg-[#1A4FA3]" />
-              </div>
-            </div>
           </div>
         </div>
       </section>
 
-      {/* ✅ WHAT DRIVES US (text block ONLY) */}
-      <section id="what-we-do" className="scroll-mt-24 px-6 pt-6 pb-10">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-left">
-            <div className="text-xs tracking-widest text-blue-300/90">
-              WHAT DRIVES US
-            </div>
-
-            <h2 className="mt-4 text-3xl md:text-4xl font-semibold tracking-tight">
-              Contract hunting shouldn’t be a full-time job.
-            </h2>
-
-            <p className="mt-4 text-white/70 leading-relaxed">
-              Businesses don’t have time to live inside portals, PDFs, and endless listings.
-              AMBIT is built to reduce noise and surface the opportunities that actually fit —
-              with match scoring, key details up front, and clear summaries you can act on.
-            </p>
-
-            <div className="mt-6 space-y-3">
-              <Feature line="Live opportunities pulled regularly so you don’t miss postings" />
-              <Feature line="Match scoring based on your profile (NAICS, location, keywords)" />
-              <Feature line="Short, scannable summaries for fast bid decisions" />
-            </div>
+      <section className="pb-10">
+        <div className={WRAP}>
+          <div className="grid gap-4 md:grid-cols-3">
+            <InfoCard
+              title="Better-fit opportunities"
+              text="We look for opportunities that make sense for your trade, service area, and scope — not just random listings."
+            />
+            <InfoCard
+              title="Less admin burden"
+              text="Our team helps reduce the paperwork, tracking, and front-end bid chaos that slows contractors down."
+            />
+            <InfoCard
+              title="Clearer next steps"
+              text="You get simple, usable information fast so you can decide whether to pursue, pass, or move forward."
+            />
           </div>
         </div>
       </section>
 
-      {/* ✅ Scouting report block BELOW the text */}
-      <section className="px-6 pb-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl">
-            <div className="rounded-3xl border border-white/10 bg-white/5 p-6 shadow-[0_0_0_1px_rgba(255,255,255,0.03)]">
-              <div className="flex items-center justify-between">
-                <div className="text-sm font-semibold">Scouting Report Preview</div>
-                <div className="text-xs text-white/60">Sample</div>
-              </div>
-
-              <div className="mt-5 space-y-3">
-                <MiniCard title="NAICS" value="237310 • Highway, Street, and Bridge" />
-                <MiniCard title="Location" value="San Diego, CA" />
-                <MiniCard title="Why it matches" value="Local + relevant NAICS + keywords align" />
-
-                <div className="rounded-2xl border border-white/10 bg-[#071a3a]/50 p-4">
-                  <div className="text-xs text-white/60">Summary</div>
-                  <div className="mt-2 text-sm text-white/80 leading-relaxed">
-                    Clear scope and schedule with standard compliance. Strong fit for businesses
-                    that want to move fast and avoid wasted time on bad opportunities.
-                  </div>
+      <section className="pb-10">
+        <div className={WRAP}>
+          <div className={`${PANEL} p-8 md:p-10`}>
+            <div className="grid gap-10 md:grid-cols-[1.05fr_0.95fr] md:items-start">
+              <div>
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                  The AMBIT Team
                 </div>
+
+                <h2 className="mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+                  We built AMBIT for contractors who need support, not more
+                  noise.
+                </h2>
+
+                <p className="mt-5 text-sm leading-7 text-[#5F6470] md:text-base">
+                  Most contractors do not have an opportunity problem. They have
+                  a time and capacity problem. There is usually work out there —
+                  but sorting through portals, reviewing requirements, tracking
+                  deadlines, and organizing proposal inputs takes time.
+                </p>
+
+                <p className="mt-4 text-sm leading-7 text-[#5F6470] md:text-base">
+                  That is where the AMBIT Team comes in. We are building AMBIT
+                  to help contractors stay organized, see better-fit leads, and
+                  offload more of the front-end bid process. The goal is simple:
+                  help your team spend less time hunting and more time deciding,
+                  preparing, and winning.
+                </p>
               </div>
 
-              <div className="mt-6 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-2xl font-semibold text-blue-300">Signal</div>
-                  <div className="mt-1 text-sm text-white/70">
-                    Better-fit opportunities first
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-                  <div className="text-2xl font-semibold text-blue-300">Speed</div>
-                  <div className="mt-1 text-sm text-white/70">
-                    Decide in minutes, not hours
-                  </div>
-                </div>
+              <div className="grid gap-4">
+                <TeamPoint
+                  title="Our team finds the right leads"
+                  text="We focus on relevant opportunities instead of sending a flood of low-fit noise."
+                />
+                <TeamPoint
+                  title="Our team helps organize the bid"
+                  text="We help surface key dates, compliance items, and scope details earlier."
+                />
+                <TeamPoint
+                  title="Our team supports the front end"
+                  text="We are built around reducing the admin side of bidding so your company can focus on execution."
+                />
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Stats row */}
-      <section className="px-6 py-10">
-        <div className="mx-auto max-w-6xl grid gap-6 md:grid-cols-3">
-          <Stat
-            big="Live"
-            small="opportunities"
-            desc="Fresh postings surfaced on a schedule so you can stay ahead."
-          />
-          <Stat
-            big="Smart"
-            small="match scoring"
-            desc="Based on what you do, where you work, and what you want."
-          />
-          <Stat
-            big="Clear"
-            small="summaries"
-            desc="Scannable details so you can bid, partner, or pass quickly."
-          />
+      <section className="pb-10">
+        <div className={WRAP}>
+          <div className="grid gap-6 md:grid-cols-2">
+            <div className={`${PANEL} p-8`}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                What We Help With
+              </div>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+                Practical support for the front-end of bidding.
+              </h3>
+
+              <div className="mt-6 space-y-4">
+                <Bullet line="Opportunity sourcing across commercial and government channels" />
+                <Bullet line="Fit review based on trade, location, and service area" />
+                <Bullet line="Deadline tracking and key requirement visibility" />
+                <Bullet line="Proposal support and front-end admin coordination" />
+              </div>
+            </div>
+
+            <div className={`${PANEL} p-8`}>
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                Why It Matters
+              </div>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight">
+                Good opportunities get missed when teams are overloaded.
+              </h3>
+
+              <p className="mt-5 text-sm leading-7 text-[#5F6470] md:text-base">
+                AMBIT is meant to help close that gap. We believe contractors
+                should not have to spend hours inside scattered listings and
+                bid documents just to figure out what is worth chasing.
+              </p>
+
+              <p className="mt-4 text-sm leading-7 text-[#5F6470] md:text-base">
+                Our team is here to make the early part of the process cleaner,
+                faster, and easier to manage.
+              </p>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="px-6 pb-16 pt-6">
-        <div className="mx-auto max-w-6xl rounded-3xl border border-white/10 bg-white/5 p-8 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div>
-            <h3 className="text-2xl font-semibold tracking-tight">
-              Ready to see matches for your business?
-            </h3>
-            <p className="mt-2 text-white/70">
-              Create your profile and start scouting in minutes.
-            </p>
-          </div>
+      <section className="pb-16 pt-2">
+        <div className={WRAP}>
+          <div className={`${PANEL} flex flex-col gap-6 p-8 md:flex-row md:items-center md:justify-between md:p-10`}>
+            <div className="max-w-2xl">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                Work With The AMBIT Team
+              </div>
+              <h3 className="mt-3 text-2xl font-semibold tracking-tight md:text-3xl">
+                Less hunting. Less admin. Better momentum.
+              </h3>
+              <p className="mt-3 text-sm leading-7 text-[#5F6470] md:text-base">
+                If your team wants better visibility into live opportunities and
+                a smoother front-end bid process, AMBIT was built for that.
+              </p>
+            </div>
 
-          <div className="flex gap-3">
-            <Link
-              href={GET_STARTED_HREF}
-              className="rounded-xl bg-[#1A4FA3] px-6 py-3 text-sm font-semibold text-white hover:bg-[#15428B] transition"
-            >
-              Get Started
-            </Link>
-            <Link
-              href={PREVIEW_HREF}
-              className="rounded-xl border border-white/15 bg-white/5 px-6 py-3 text-sm font-semibold text-white/90 hover:bg-white/10 transition"
-            >
-              Preview
-            </Link>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Link
+                href={GET_STARTED_HREF}
+                className="inline-flex rounded-2xl bg-[#31245C] px-6 py-3 text-sm font-semibold text-white transition hover:opacity-95"
+              >
+                Get Started
+              </Link>
+              <Link
+                href={PREVIEW_HREF}
+                className="inline-flex rounded-2xl border border-black/10 bg-white px-6 py-3 text-sm font-semibold text-[#31245C] transition hover:bg-black/[0.03]"
+              >
+                View Live Leads
+              </Link>
+            </div>
           </div>
-        </div>
-
-        <div className="mx-auto max-w-6xl px-2 pt-8 text-sm text-white/60">
-          Questions? Email{" "}
-          <a className="underline hover:text-white" href="mailto:ambit@sevrixgov.com">
-            ambit@sevrixgov.com
-          </a>
         </div>
       </section>
     </main>
   );
 }
 
-function Feature({ line }: { line: string }) {
-  return (
-    <div className="flex gap-3 text-white/80">
-      <span className="mt-0.5 text-blue-300">✓</span>
-      <span>{line}</span>
-    </div>
-  );
-}
-
-function MiniCard({ title, value }: { title: string; value: string }) {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-      <div className="text-xs text-white/60">{title}</div>
-      <div className="mt-1 text-sm text-white/85">{value}</div>
-    </div>
-  );
-}
-
-function Stat({
-  big,
-  small,
-  desc,
+function InfoCard({
+  title,
+  text,
 }: {
-  big: string;
-  small: string;
-  desc: string;
+  title: string;
+  text: string;
 }) {
   return (
-    <div className="rounded-3xl border border-white/10 bg-white/5 p-7">
-      <div className="text-5xl font-semibold tracking-tight text-blue-300">
-        {big}
+    <div className={`${PANEL} p-6`}>
+      <div className="text-lg font-semibold tracking-tight text-[#31245C]">
+        {title}
       </div>
-      <div className="mt-2 text-xl text-white/90">{small}</div>
-      <div className="mt-2 text-sm text-white/65">{desc}</div>
+      <p className="mt-3 text-sm leading-7 text-[#5F6470]">{text}</p>
+    </div>
+  );
+}
+
+function TeamPoint({
+  title,
+  text,
+}: {
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="rounded-[24px] border border-black/10 bg-[#F7FAFF] p-5">
+      <div className="text-base font-semibold tracking-tight text-[#31245C]">
+        {title}
+      </div>
+      <p className="mt-2 text-sm leading-7 text-[#5F6470]">{text}</p>
+    </div>
+  );
+}
+
+function Bullet({ line }: { line: string }) {
+  return (
+    <div className="flex gap-3">
+      <div className="mt-[7px] h-2 w-2 rounded-full bg-[#31245C]" />
+      <div className="text-sm leading-7 text-[#5F6470]">{line}</div>
     </div>
   );
 }
