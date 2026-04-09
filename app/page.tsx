@@ -44,7 +44,7 @@ function OpportunityCard() {
       <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
         <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
           <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
-            Opportunity
+            Sourced contract
           </div>
 
           <div className="mt-3 text-[34px] font-black leading-none text-[#171717]">
@@ -101,13 +101,13 @@ function BreakdownCard() {
       <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
         <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
           <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
-            Breakdown
+            Compliance + deadlines
           </div>
 
           <div className="mt-4 space-y-3">
             <div>
               <div className="text-sm font-bold text-[#171717]">
-                What matters
+                Requirements reviewed
               </div>
               <div className="mt-2 h-2 rounded-full bg-[#E8E5EE]" />
               <div className="mt-2 h-2 w-4/5 rounded-full bg-[#E8E5EE]" />
@@ -129,7 +129,7 @@ function BreakdownCard() {
 
             <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
               <div className="text-sm font-semibold text-[#1E1E1E]">
-                Scope summary
+                Compliance notes
               </div>
               <div className="mt-2 h-2 rounded-full bg-[#E8E5EE]" />
               <div className="mt-2 h-2 w-11/12 rounded-full bg-[#E8E5EE]" />
@@ -154,15 +154,15 @@ function WorkflowCard() {
       <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
         <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
           <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
-            Workflow
+            Proposal workflow
           </div>
 
           <div className="mt-4 space-y-3">
             {[
-              "Opportunity sourced",
-              "Scope reviewed",
-              "Requirements checked",
-              "Next actions outlined",
+              "Opportunity sent to your team",
+              "Requirements and compliance reviewed",
+              "Proposal package built",
+              "Ready for final submission",
             ].map((item, i) => (
               <div
                 key={item}
@@ -235,13 +235,14 @@ export default function HomePage() {
       <section className={`${CONTAINER} py-14 sm:py-20`}>
         <div className="grid items-center gap-14 lg:grid-cols-[1fr_520px] lg:gap-20">
           <div>
-            <h1 className="max-w-[760px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
-              Government and commercial contracts, made easier to review.
+            <h1 className="max-w-[820px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
+              We handle the admin side of bidding so you can focus on the job.
             </h1>
 
-            <p className="mt-6 max-w-[620px] text-xl leading-9 text-[#6A6775]">
-              AMBIT finds relevant opportunities, breaks down what matters, and
-              helps move the front-end bid process forward.
+            <p className="mt-6 max-w-[680px] text-xl leading-9 text-[#6A6775]">
+              AMBIT sources relevant contracts, sends them to your team, handles
+              compliance review, tracks deadlines and amendments, and builds the
+              proposal package so you are not stuck dealing with paperwork.
             </p>
 
             <div className="mt-8">
@@ -258,26 +259,34 @@ export default function HomePage() {
       <section className="py-8 sm:py-12">
         <div className={CONTAINER}>
           <SectionHeading>
-            Clear opportunity reviews that help your team move faster.
+            We find the contract, handle the paperwork, and keep the bid moving.
           </SectionHeading>
         </div>
       </section>
 
       <FeatureRow
-        title="Keep the right contract opportunities in one place."
-        body="AMBIT organizes buyer details, location, category, and fit so your team can quickly decide what deserves attention."
-        buttonText="View sample"
-        buttonHref="#sample"
+        title="We source the right contracts and send them to you."
+        body="AMBIT monitors for relevant government and commercial opportunities, reviews the fit, and puts the right jobs in front of your team so you do not have to spend hours hunting for work."
+        buttonText="Get started"
+        buttonHref="/get-started?intent=government&plan=managed_capture"
         visual={<BreakdownCard />}
       />
 
       <FeatureRow
-        title="Review requirements and next steps faster."
-        body="See the important parts first so owners, estimators, and operations teams spend less time digging and more time deciding."
-        buttonText="Get started"
-        buttonHref="/get-started?intent=government&plan=managed_capture"
+        title="We handle compliance, deadlines, and proposal building."
+        body="If you want to pursue the job, AMBIT helps carry the admin load by reviewing requirements, organizing the front-end paperwork, tracking due dates and amendments, and building the proposal package."
+        buttonText="View sample"
+        buttonHref="#sample"
         visual={<WorkflowCard />}
         reverse
+      />
+
+      <FeatureRow
+        title="Your team stays focused on the work itself."
+        body="Instead of getting buried in forms, requirement review, and bid admin, your team can stay focused on operations while AMBIT keeps the pursuit organized from sourcing to submission-ready paperwork."
+        buttonText="Start here"
+        buttonHref="/get-started?intent=government&plan=managed_capture"
+        visual={<OpportunityCard />}
       />
 
       <section
@@ -287,11 +296,12 @@ export default function HomePage() {
         <div className="rounded-[36px] bg-[#DDF3EF] px-8 py-10 sm:px-12 sm:py-12">
           <div className="max-w-4xl">
             <h3 className="text-3xl font-black leading-tight tracking-tight text-[#31245C] sm:text-4xl lg:text-[48px]">
-              Front-end bid support without the clutter.
+              Less paperwork. Less chasing. Less admin on your back.
             </h3>
             <p className="mt-4 max-w-3xl text-lg leading-8 text-[#6A6775]">
-              Relevant work, simpler breakdowns, and a clearer path from
-              opportunity review to next action.
+              We source the contract, break it down, handle the compliance and
+              deadline side, build the proposal, and leave your team with a
+              cleaner path to final submission.
             </p>
           </div>
 
