@@ -1,181 +1,305 @@
-"use client";
-
 import Link from "next/link";
 import type { ReactNode } from "react";
 
-const CONTAINER = "mx-auto max-w-[1180px] px-6 lg:px-8";
-const market = "government";
+const CONTAINER = "mx-auto max-w-[1240px] px-6 lg:px-10";
 
-const services = [
-  {
-    title: "Find",
-    body: "We source relevant government and commercial opportunities.",
-  },
-  {
-    title: "Break down",
-    body: "We simplify the contract so your team can review it quickly.",
-  },
-  {
-    title: "Support",
-    body: "We help with front-end proposal and bid admin work.",
-  },
-];
+function Button({
+  href,
+  children,
+  variant = "primary",
+}: {
+  href: string;
+  children: ReactNode;
+  variant?: "primary" | "secondary";
+}) {
+  const styles =
+    variant === "primary"
+      ? "bg-[#2A8F8B] text-white hover:bg-[#247d7a]"
+      : "border border-[#2A8F8B] text-[#2A8F8B] hover:bg-[#2A8F8B]/5";
 
-const steps = [
-  "Tell us what you do",
-  "We source and screen",
-  "You review the right opportunities",
-];
-
-function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-black/40">
+    <Link
+      href={href}
+      className={`inline-flex items-center justify-center rounded-md px-6 py-3 text-base font-semibold transition ${styles}`}
+    >
       {children}
+    </Link>
+  );
+}
+
+function SectionHeading({ children }: { children: ReactNode }) {
+  return (
+    <h2 className="mx-auto max-w-5xl text-center text-4xl font-black leading-tight tracking-tight text-[#31245C] sm:text-5xl lg:text-[58px]">
+      {children}
+    </h2>
+  );
+}
+
+function OpportunityCard() {
+  return (
+    <div className="relative mx-auto w-full max-w-[360px]">
+      <div className="absolute -left-6 top-10 h-10 w-10 rounded-full bg-[#43D1B8]" />
+      <div className="absolute -right-8 bottom-10 h-44 w-44 rounded-full bg-[#43D1B8]" />
+
+      <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
+        <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
+            Opportunity
+          </div>
+
+          <div className="mt-3 text-[34px] font-black leading-none text-[#171717]">
+            91
+          </div>
+
+          <div className="mt-1 text-sm font-medium text-[#2A8F8B]">
+            Fit score
+          </div>
+
+          <div className="mt-5 space-y-3">
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                Buyer
+              </div>
+              <div className="mt-1 text-sm font-semibold text-[#1E1E1E]">
+                Department of Veterans Affairs
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                Location
+              </div>
+              <div className="mt-1 text-sm font-semibold text-[#1E1E1E]">
+                California
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                Category
+              </div>
+              <div className="mt-1 text-sm font-semibold text-[#1E1E1E]">
+                Government · NAICS 561730
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 text-center text-xs text-[#7A7590]">
+        Example layout for display only.
+      </p>
     </div>
   );
 }
 
-function MetaBlock({
-  label,
-  value,
+function BreakdownCard() {
+  return (
+    <div className="relative mx-auto w-full max-w-[360px]">
+      <div className="absolute -left-8 bottom-10 h-44 w-44 rounded-full bg-[#43D1B8]" />
+
+      <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
+        <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
+            Breakdown
+          </div>
+
+          <div className="mt-4 space-y-3">
+            <div>
+              <div className="text-sm font-bold text-[#171717]">
+                What matters
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-[#E8E5EE]" />
+              <div className="mt-2 h-2 w-4/5 rounded-full bg-[#E8E5EE]" />
+            </div>
+
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="flex items-center justify-between text-sm font-semibold text-[#1E1E1E]">
+                <span>Due date</span>
+                <span className="text-[#2A8F8B]">Apr 28</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="flex items-center justify-between text-sm font-semibold text-[#1E1E1E]">
+                <span>Set-aside</span>
+                <span>Small Business</span>
+              </div>
+            </div>
+
+            <div className="rounded-xl bg-[#F6FBFA] px-4 py-3">
+              <div className="text-sm font-semibold text-[#1E1E1E]">
+                Scope summary
+              </div>
+              <div className="mt-2 h-2 rounded-full bg-[#E8E5EE]" />
+              <div className="mt-2 h-2 w-11/12 rounded-full bg-[#E8E5EE]" />
+              <div className="mt-2 h-2 w-3/4 rounded-full bg-[#E8E5EE]" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 text-center text-xs text-[#7A7590]">
+        Example layout for display only.
+      </p>
+    </div>
+  );
+}
+
+function WorkflowCard() {
+  return (
+    <div className="relative mx-auto w-full max-w-[360px]">
+      <div className="absolute -right-8 top-12 h-44 w-44 rounded-full bg-[#43D1B8]" />
+
+      <div className="relative rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
+        <div className="rounded-[28px] bg-white p-5 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
+          <div className="text-[12px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
+            Workflow
+          </div>
+
+          <div className="mt-4 space-y-3">
+            {[
+              "Opportunity sourced",
+              "Scope reviewed",
+              "Requirements checked",
+              "Next actions outlined",
+            ].map((item, i) => (
+              <div
+                key={item}
+                className="flex items-center gap-3 rounded-xl bg-[#F6FBFA] px-4 py-3"
+              >
+                <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#2A8F8B] text-xs font-bold text-white">
+                  {i + 1}
+                </div>
+                <div className="text-sm font-semibold text-[#1E1E1E]">
+                  {item}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <p className="mt-4 text-center text-xs text-[#7A7590]">
+        Example layout for display only.
+      </p>
+    </div>
+  );
+}
+
+function FeatureRow({
+  title,
+  body,
+  buttonText,
+  buttonHref,
+  visual,
+  reverse = false,
 }: {
-  label: string;
-  value: string;
+  title: string;
+  body: string;
+  buttonText: string;
+  buttonHref: string;
+  visual: ReactNode;
+  reverse?: boolean;
 }) {
   return (
-    <div className="border-t border-black/10 pt-4 first:border-t-0 first:pt-0">
-      <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-black/40">
-        {label}
+    <section className={`${CONTAINER} py-12 sm:py-16 lg:py-20`}>
+      <div
+        className={`grid items-center gap-14 lg:gap-20 ${
+          reverse ? "lg:grid-cols-[1fr_520px]" : "lg:grid-cols-[520px_1fr]"
+        }`}
+      >
+        <div className={reverse ? "lg:order-2" : ""}>{visual}</div>
+
+        <div className={reverse ? "lg:order-1" : ""}>
+          <h3 className="max-w-[560px] text-4xl font-black leading-tight tracking-tight text-[#31245C] sm:text-5xl lg:text-[56px]">
+            {title}
+          </h3>
+
+          <p className="mt-6 max-w-[560px] text-xl leading-9 text-[#6A6775]">
+            {body}
+          </p>
+
+          <div className="mt-8">
+            <Button href={buttonHref}>{buttonText}</Button>
+          </div>
+        </div>
       </div>
-      <div className="mt-1 text-sm font-semibold text-black/85">{value}</div>
-    </div>
+    </section>
   );
 }
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen bg-[#f7f5ef] text-black">
-      <section className={`${CONTAINER} py-10 sm:py-14`}>
-        <div className="grid items-start gap-8 lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[28px] border border-black/10 bg-white px-7 py-8 shadow-[0_8px_30px_rgba(0,0,0,0.04)] sm:px-10 sm:py-10">
-            <Eyebrow>AMBIT</Eyebrow>
-
-            <h1 className="mt-4 max-w-4xl text-5xl font-black leading-[0.94] tracking-tight sm:text-6xl lg:text-[72px]">
-              Government and commercial contract support for contractors.
+    <main className="min-h-screen bg-[#E6F5F2] text-[#31245C]">
+      <section className={`${CONTAINER} py-14 sm:py-20`}>
+        <div className="grid items-center gap-14 lg:grid-cols-[1fr_520px] lg:gap-20">
+          <div>
+            <h1 className="max-w-[760px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
+              Government and commercial contracts, made easier to review.
             </h1>
 
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-black/65">
+            <p className="mt-6 max-w-[620px] text-xl leading-9 text-[#6A6775]">
               AMBIT finds relevant opportunities, breaks down what matters, and
               helps move the front-end bid process forward.
             </p>
 
-            <div className="mt-8 flex flex-col items-start gap-3 sm:flex-row sm:items-center">
-              <Link
-                href={`/get-started?intent=${market}&plan=managed_capture`}
-                className="inline-flex items-center justify-center rounded-full bg-black px-6 py-3 text-sm font-semibold text-white transition hover:bg-black/85"
-              >
-                Get Started
-              </Link>
-
-              <a
-                href="#sample"
-                className="text-sm font-semibold text-black/75 underline decoration-black/20 underline-offset-4 transition hover:text-black hover:decoration-black/45"
-              >
-                View Sample
-              </a>
+            <div className="mt-8">
+              <Button href="/get-started?intent=government&plan=managed_capture">
+                Get started
+              </Button>
             </div>
           </div>
 
-          <div className="rounded-[28px] border border-black/10 bg-[#fcfbf8] p-7 shadow-[0_8px_30px_rgba(0,0,0,0.03)] sm:p-8">
-            <Eyebrow>What we do</Eyebrow>
-
-            <div className="mt-5 space-y-5">
-              {services.map((item) => (
-                <div
-                  key={item.title}
-                  className="border-t border-black/10 pt-4 first:border-t-0 first:pt-0"
-                >
-                  <div className="text-[28px] font-black tracking-tight">
-                    {item.title}
-                  </div>
-                  <p className="mt-1 text-base leading-7 text-black/62">
-                    {item.body}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          <OpportunityCard />
         </div>
       </section>
 
-      <section className={`${CONTAINER} pb-10 sm:pb-14`}>
-        <div className="grid gap-4 md:grid-cols-3">
-          {steps.map((step, i) => (
-            <div
-              key={step}
-              className="rounded-[22px] border border-black/10 bg-white px-6 py-5 shadow-[0_8px_24px_rgba(0,0,0,0.03)]"
-            >
-              <div className="text-[11px] font-bold uppercase tracking-[0.18em] text-black/35">
-                0{i + 1}
-              </div>
-              <div className="mt-3 text-2xl font-black leading-tight tracking-tight">
-                {step}
-              </div>
-            </div>
-          ))}
+      <section className="py-8 sm:py-12">
+        <div className={CONTAINER}>
+          <SectionHeading>
+            Clear opportunity reviews that help your team move faster.
+          </SectionHeading>
         </div>
       </section>
 
-      <section id="sample" className={`${CONTAINER} pb-12 sm:pb-16`}>
-        <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_10px_34px_rgba(0,0,0,0.04)]">
-          <div className="border-b border-black/10 px-7 py-4 sm:px-8">
-            <Eyebrow>Sample opportunity</Eyebrow>
+      <FeatureRow
+        title="Keep the right contract opportunities in one place."
+        body="AMBIT organizes buyer details, location, category, and fit so your team can quickly decide what deserves attention."
+        buttonText="View sample"
+        buttonHref="#sample"
+        visual={<BreakdownCard />}
+      />
+
+      <FeatureRow
+        title="Review requirements and next steps faster."
+        body="See the important parts first so owners, estimators, and operations teams spend less time digging and more time deciding."
+        buttonText="Get started"
+        buttonHref="/get-started?intent=government&plan=managed_capture"
+        visual={<WorkflowCard />}
+        reverse
+      />
+
+      <section
+        id="sample"
+        className={`${CONTAINER} pb-16 pt-4 sm:pb-24 sm:pt-8`}
+      >
+        <div className="rounded-[36px] bg-[#DDF3EF] px-8 py-10 sm:px-12 sm:py-12">
+          <div className="max-w-4xl">
+            <h3 className="text-3xl font-black leading-tight tracking-tight text-[#31245C] sm:text-4xl lg:text-[48px]">
+              Front-end bid support without the clutter.
+            </h3>
+            <p className="mt-4 max-w-3xl text-lg leading-8 text-[#6A6775]">
+              Relevant work, simpler breakdowns, and a clearer path from
+              opportunity review to next action.
+            </p>
           </div>
 
-          <div className="grid gap-8 px-7 py-7 lg:grid-cols-[1.15fr_0.85fr] sm:px-8 sm:py-8">
-            <div>
-              <h2 className="text-4xl font-black leading-tight tracking-tight sm:text-5xl">
-                Grounds maintenance services
-              </h2>
-
-              <p className="mt-4 max-w-2xl text-lg leading-8 text-black/64">
-                Clear scope, clear buyer, clear location, and a simple review
-                format your team can understand fast.
-              </p>
-            </div>
-
-            <div className="rounded-[22px] border border-black/10 bg-[#faf8f3] p-6">
-              <div className="space-y-4">
-                <MetaBlock
-                  label="Buyer"
-                  value="Department of Veterans Affairs"
-                />
-                <MetaBlock label="Location" value="California" />
-                <MetaBlock
-                  label="Category"
-                  value="Government · NAICS 561730"
-                />
-              </div>
-            </div>
+          <div className="mt-8">
+            <Button href="/get-started?intent=government&plan=managed_capture">
+              Start here
+            </Button>
           </div>
-        </div>
-      </section>
-
-      <section className={`${CONTAINER} pb-16 sm:pb-20`}>
-        <div className="flex flex-col items-start justify-between gap-5 rounded-[28px] border border-black/10 bg-[#111111] px-7 py-7 text-white shadow-[0_12px_34px_rgba(0,0,0,0.12)] sm:flex-row sm:items-center sm:px-8">
-          <div>
-            <Eyebrow>Next step</Eyebrow>
-            <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-white sm:text-4xl">
-              Clear work. Simple review. Better bid flow.
-            </h2>
-          </div>
-
-          <Link
-            href={`/get-started?intent=${market}&plan=managed_capture`}
-            className="inline-flex items-center justify-center rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition hover:bg-white/90"
-          >
-            Start Here
-          </Link>
         </div>
       </section>
     </main>
