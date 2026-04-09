@@ -2,6 +2,8 @@ import { Suspense, type ReactNode } from "react";
 import Link from "next/link";
 import GetStartedClient from "./GetStartedClient";
 
+const CONTAINER = "mx-auto max-w-[1240px] px-6 lg:px-10";
+
 function LockIcon() {
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
@@ -20,442 +22,241 @@ function LockIcon() {
   );
 }
 
-function ArrowIcon() {
-  return (
-    <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" aria-hidden="true">
-      <path
-        d="M5 12h14"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-      />
-      <path
-        d="M13 5l7 7-7 7"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function BlueCheck() {
-  return <span className="font-black text-[#1A4FA3]">✓</span>;
-}
-
 function LoadingFallback() {
   return (
-    <div className="flex h-[320px] items-center justify-center">
-      <div className="w-full max-w-xl rounded-3xl border border-black/10 bg-white/92 p-6 shadow-[0_24px_80px_rgba(0,0,0,0.10)]">
-        <div className="flex items-start gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black/5">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-black/20 border-t-black/60" />
-          </div>
-
-          <div className="min-w-0">
-            <div className="text-base font-semibold text-black">
-              Loading secure checkout...
-            </div>
-            <div className="mt-0.5 text-sm text-black/60">
-              Building your signup lane.
-            </div>
-          </div>
+    <div className="rounded-[28px] border border-black/10 bg-white p-8 shadow-[0_18px_40px_rgba(49,36,92,0.08)]">
+      <div className="flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#2A8F8B]/10 text-[#2A8F8B]">
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#2A8F8B]/20 border-t-[#2A8F8B]" />
         </div>
 
-        <div className="mt-5 h-2 w-full overflow-hidden rounded-full bg-black/10">
-          <div className="h-full w-[58%] bg-black/30" />
-        </div>
-
-        <div className="mt-4 text-xs text-black/50">
-          One moment — this usually takes a second.
+        <div>
+          <div className="text-base font-bold text-[#31245C]">
+            Loading secure checkout
+          </div>
+          <div className="text-sm text-[#6A6775]">
+            One moment while we prepare your signup.
+          </div>
         </div>
       </div>
     </div>
   );
 }
 
-function GlowFrame({
+function Button({
+  href,
   children,
-  className = "",
+  variant = "primary",
 }: {
+  href: string;
   children: ReactNode;
-  className?: string;
+  variant?: "primary" | "secondary";
 }) {
+  const styles =
+    variant === "primary"
+      ? "bg-[#2A8F8B] text-white hover:bg-[#247d7a]"
+      : "border border-[#2A8F8B]/20 bg-white text-[#2A8F8B] hover:bg-[#2A8F8B]/5";
+
   return (
-    <div
-      className={[
-        className,
-        "rounded-[30px] p-[1.5px]",
-        "bg-[linear-gradient(135deg,rgba(26,79,163,0.42),rgba(99,167,255,0.22),rgba(26,79,163,0.10))]",
-        "shadow-[0_28px_90px_rgba(26,79,163,0.16)]",
-      ].join(" ")}
+    <Link
+      href={href}
+      className={`inline-flex items-center justify-center rounded-md px-5 py-3 text-sm font-semibold transition ${styles}`}
     >
-      <div className="rounded-[28px] border border-white/70 bg-white/88">
-        {children}
-      </div>
-    </div>
+      {children}
+    </Link>
   );
 }
 
-function MetricPill({ label, value }: { label: string; value: string }) {
+function Eyebrow({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-2xl border border-black/10 bg-white/84 px-4 py-3 shadow-sm">
-      <div className="text-[11px] font-semibold uppercase tracking-[0.12em] text-black/45">
-        {label}
-      </div>
-      <div className="mt-1 text-sm font-black text-black/88">{value}</div>
+    <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7A7590]">
+      {children}
     </div>
   );
 }
 
-function ValueCard({
+function InfoCard({
   title,
-  desc,
-  bullets,
+  body,
 }: {
   title: string;
-  desc: string;
-  bullets: string[];
+  body: string;
 }) {
   return (
-    <div className="rounded-3xl border border-black/10 bg-white/88 p-6 shadow-[0_16px_45px_rgba(0,0,0,0.08)]">
-      <div className="text-lg font-black tracking-tight text-black">{title}</div>
-      <p className="mt-2 text-sm leading-7 text-black/65">{desc}</p>
-
-      <ul className="mt-4 space-y-2.5">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2 text-sm text-black/82">
-            <span className="mt-[1px]">
-              <BlueCheck />
-            </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
+    <div className="rounded-[24px] bg-white p-6 shadow-[0_16px_36px_rgba(49,36,92,0.08)]">
+      <div className="text-2xl font-black tracking-tight text-[#31245C]">
+        {title}
+      </div>
+      <p className="mt-3 text-base leading-8 text-[#6A6775]">{body}</p>
     </div>
   );
 }
 
-function Step({
-  n,
-  title,
-  desc,
-}: {
-  n: number;
-  title: string;
-  desc: string;
-}) {
+function BulletList({ items }: { items: string[] }) {
   return (
-    <div className="flex gap-3">
-      <div className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-black/5 text-[11px] font-black text-black/70">
-        {n}
-      </div>
-      <div>
-        <div className="font-semibold text-black/90">{title}</div>
-        <div className="text-sm text-black/65">{desc}</div>
-      </div>
-    </div>
-  );
-}
-
-function OfferCard({
-  eyebrow,
-  title,
-  price,
-  desc,
-  bullets,
-  featured = false,
-}: {
-  eyebrow: string;
-  title: string;
-  price: string;
-  desc: string;
-  bullets: string[];
-  featured?: boolean;
-}) {
-  return (
-    <div
-      className={[
-        "rounded-3xl border p-6",
-        featured
-          ? "border-[#1A4FA3]/25 bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(232,240,252,0.92))] shadow-[0_24px_70px_rgba(26,79,163,0.16)]"
-          : "border-black/10 bg-white/88 shadow-[0_16px_45px_rgba(0,0,0,0.08)]",
-      ].join(" ")}
-    >
-      <div className="inline-flex rounded-full border border-black/10 bg-white/82 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.12em] text-black/60">
-        {eyebrow}
-      </div>
-
-      <div className="mt-4 text-3xl font-black tracking-tight text-black">{title}</div>
-      <div className="mt-2 text-2xl font-black text-black">{price}</div>
-      <p className="mt-3 text-sm leading-7 text-black/65">{desc}</p>
-
-      <ul className="mt-5 space-y-2.5">
-        {bullets.map((b) => (
-          <li key={b} className="flex items-start gap-2 text-sm text-black/82">
-            <span className="mt-[1px]">
-              <BlueCheck />
-            </span>
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-function TrustRow() {
-  const items = [
-    { k: "Main offer", v: "Managed Capture" },
-    { k: "Alternative", v: "Morning Matches" },
-    { k: "Checkout", v: "Direct Stripe flow" },
-  ];
-
-  return (
-    <div className="mt-6 rounded-3xl border border-black/12 bg-white/85 px-5 py-4 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-      <div className="grid gap-3 sm:grid-cols-3">
-        {items.map((x) => (
-          <div key={x.k} className="flex items-center gap-3">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-black/5">
-              <span className="h-2 w-2 rounded-full bg-[#1A4FA3]" />
-            </span>
-            <div className="leading-tight">
-              <div className="text-xs font-semibold text-black/55">{x.k}</div>
-              <div className="text-sm font-black text-black/85">{x.v}</div>
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="space-y-3">
+      {items.map((item) => (
+        <div key={item} className="flex items-start gap-3">
+          <span className="mt-2 h-2.5 w-2.5 rounded-full bg-[#43D1B8]" />
+          <span className="text-base leading-7 text-[#6A6775]">{item}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
 export default function Page() {
   return (
-    <main className="min-h-screen text-black">
-      <div className="pointer-events-none fixed inset-0 -z-[90] bg-[#DEDEDE]" />
-
-      <div className="pointer-events-none fixed inset-0 -z-[85]">
-        <div className="absolute inset-0 opacity-[0.11] [background-image:linear-gradient(to_right,rgba(0,0,0,0.14)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.14)_1px,transparent_1px)] [background-size:72px_72px]" />
-        <div className="absolute inset-0 opacity-[0.06] [background-image:linear-gradient(to_right,rgba(0,0,0,0.20)_1px,transparent_1px),linear-gradient(to_bottom,rgba(0,0,0,0.20)_1px,transparent_1px)] [background-size:360px_360px]" />
-      </div>
-
-      <div className="pointer-events-none fixed inset-0 -z-[80]">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_0%,rgba(92,116,255,0.14),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[radial-gradient(700px_420px_at_85%_20%,rgba(52,211,153,0.08),transparent_55%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/[0.16] via-transparent to-transparent" />
-      </div>
-
-      <div className="mx-auto max-w-[1140px] px-6 pb-14 pt-20 lg:px-10 lg:pt-24">
-        <div className="flex items-center justify-between">
+    <main className="min-h-screen bg-[#E6F5F2] text-[#31245C]">
+      <div className={`${CONTAINER} py-12 sm:py-16 lg:py-20`}>
+        <div className="flex items-center justify-between gap-4">
           <Link
             href="/"
-            className="text-sm font-semibold text-black/60 transition hover:text-black"
+            className="text-sm font-semibold text-[#6A6775] transition hover:text-[#31245C]"
           >
             ← Back
           </Link>
 
-          <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold text-black/70 shadow-sm">
-            <span className="text-black/70">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[#2A8F8B]/15 bg-white px-3 py-1.5 text-xs font-semibold text-[#31245C] shadow-sm">
+            <span className="text-[#2A8F8B]">
               <LockIcon />
             </span>
             Secure signup
-          </span>
-        </div>
-
-        <div className="mt-8 max-w-5xl">
-          <div className="inline-flex items-center gap-2 rounded-full border border-[#1A4FA3]/16 bg-white/85 px-3 py-1.5 text-xs font-semibold text-black/72 shadow-sm">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#1A4FA3]" />
-            High-touch bid support, built for real operators
-          </div>
-
-          <h1 className="mt-5 text-4xl font-black tracking-tight sm:text-5xl lg:text-6xl">
-            AMBIT becomes your outsourced capture desk.
-          </h1>
-
-          <p className="mt-4 max-w-4xl text-[17px] leading-8 text-black/72 sm:text-[18px]">
-            <span className="font-semibold text-black/88">Managed Capture</span> is
-            the main lane. AMBIT helps source work, pressure-test real fits,
-            support proposal development, track amendments, and keep the front-end
-            bid workload moving so your team can stay focused on execution instead
-            of drowning in admin.
-          </p>
-
-          <div className="mt-6 grid max-w-4xl gap-3 sm:grid-cols-3">
-            <MetricPill label="Main offer" value="Managed Capture" />
-            <MetricPill label="Starting at" value="$1,499.99/mo" />
-            <MetricPill label="Alternative" value="Morning Matches" />
           </div>
         </div>
 
-        <div className="mt-10 grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
-          <OfferCard
-            featured
-            eyebrow="Flagship offer"
-            title="Managed Capture"
-            price="$1,499.99/mo"
-            desc="For contractors who want a real partner helping manage the front-end bid motion — not just another list of leads."
-            bullets={[
-              "Active opportunity sourcing",
-              "Fit review + bid / no-bid triage",
-              "Proposal support + admin handling",
-              "Amendment + deadline tracking",
-              "Priority handling on active pursuits",
-              "Weekly pipeline accountability",
-            ]}
-          />
+        <section className="pt-10 sm:pt-14">
+          <div className="grid items-start gap-12 lg:grid-cols-[1fr_520px] lg:gap-20">
+            <div>
+              <Eyebrow>Get started</Eyebrow>
 
-          <OfferCard
-            eyebrow="Cheap self-serve alternative"
-            title="Morning Matches"
-            price="$49.99/mo"
-            desc="For companies that only want ranked opportunities delivered daily and prefer to handle capture and proposal work internally."
-            bullets={[
-              "Daily matched opportunities",
-              "Ranked by fit",
-              "Low-cost self-serve lane",
-              "Cancel anytime",
-            ]}
-          />
-        </div>
+              <h1 className="mt-4 max-w-[760px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
+                Simple signup for contractors ready to move faster.
+              </h1>
 
-        <div className="mt-8 grid gap-5 lg:grid-cols-3">
-          <ValueCard
-            title="What we take off your desk"
-            desc="Managed Capture is strongest when your team is spending too much time hunting opportunities, sorting requirements, and chasing admin."
-            bullets={[
-              "Opportunity hunting",
-              "Initial qualification",
-              "Amendment watching",
-              "Bid organization",
-            ]}
-          />
+              <p className="mt-6 max-w-[620px] text-xl leading-9 text-[#6A6775]">
+                Choose the lane that fits your business and go straight into
+                secure checkout.
+              </p>
 
-          <ValueCard
-            title="What you’re actually buying"
-            desc="Not software. Not just alerts. You’re buying speed, clarity, and a real lane around active pursuits."
-            bullets={[
-              "Capture judgment",
-              "Proposal support",
-              "Deadline visibility",
-              "A more organized pipeline",
-            ]}
-          />
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Button href="#checkout">Start here</Button>
+                <Button href="/login" variant="secondary">
+                  Log in
+                </Button>
+              </div>
+            </div>
 
-          <ValueCard
-            title="Who gets the most value"
-            desc="Best for service companies, operators, and regional contractors who want to bid more without hiring a full internal team yet."
-            bullets={[
-              "Owners stretched thin",
-              "Estimators buried in admin",
-              "Teams without proposal bandwidth",
-              "Companies serious about growth",
-            ]}
-          />
-        </div>
+            <div className="rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
+              <div className="rounded-[28px] bg-white p-6 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
+                <Eyebrow>What you get</Eyebrow>
 
-        <GlowFrame className="mt-8">
-          <div className="border-b border-black/10 px-6 py-5 sm:px-8">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <div className="text-2xl font-black tracking-tight">
-                  Start your lane
+                <div className="mt-4 text-3xl font-black leading-tight text-[#31245C]">
+                  Cleaner opportunity review.
                 </div>
-                <div className="mt-1 text-sm text-black/60">
-                  Managed Capture and Morning Matches both go straight into secure
-                  Stripe checkout.
+
+                <div className="mt-5">
+                  <BulletList
+                    items={[
+                      "Relevant government and commercial opportunities",
+                      "Simple breakdowns of what matters",
+                      "A faster path from review to next action",
+                    ]}
+                  />
+                </div>
+
+                <div className="mt-6 rounded-[18px] bg-[#F6FBFA] px-4 py-4">
+                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                    Best for
+                  </div>
+                  <div className="mt-2 text-sm font-semibold text-[#31245C]">
+                    Contractors that want less noise, less admin, and a more
+                    organized bid flow.
+                  </div>
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
 
-              <span className="inline-flex items-center gap-2 rounded-full border border-black/10 bg-white/80 px-3 py-1 text-[11px] font-semibold text-black/70 shadow-sm">
-                <span className="text-black/70">
-                  <LockIcon />
-                </span>
-                Direct checkout
+        <section className="py-12 sm:py-16">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <InfoCard
+              title="Choose a lane"
+              body="Select the option that fits your team, whether you want full support or a lighter self-serve path."
+            />
+            <InfoCard
+              title="Check out securely"
+              body="Signup goes straight through secure checkout with a simple, direct flow."
+            />
+            <InfoCard
+              title="Start faster"
+              body="Once active, your business can start receiving opportunities and move through review with more structure."
+            />
+          </div>
+        </section>
+
+        <section
+          id="checkout"
+          className="rounded-[36px] bg-[#DDF3EF] px-6 py-8 shadow-[0_20px_40px_rgba(49,36,92,0.06)] sm:px-8 sm:py-10"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#31245C]/10 pb-6">
+            <div>
+              <Eyebrow>Checkout</Eyebrow>
+              <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#31245C] sm:text-4xl">
+                Start your signup.
+              </h2>
+              <p className="mt-3 max-w-2xl text-base leading-8 text-[#6A6775]">
+                Pick your lane below and continue through secure checkout.
+              </p>
+            </div>
+
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#2A8F8B]/15 bg-white px-3 py-1.5 text-xs font-semibold text-[#31245C] shadow-sm">
+              <span className="text-[#2A8F8B]">
+                <LockIcon />
               </span>
+              Direct checkout
             </div>
           </div>
 
-          <div className="px-6 py-6 sm:px-8 sm:py-8">
+          <div className="pt-8">
             <Suspense fallback={<LoadingFallback />}>
               <GetStartedClient />
             </Suspense>
           </div>
-        </GlowFrame>
+        </section>
 
-        <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="text-lg font-black">What happens next</div>
+        <section className="py-12 sm:py-16">
+          <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <div className="rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)]">
+              <Eyebrow>What happens next</Eyebrow>
+              <div className="mt-4">
+                <BulletList
+                  items={[
+                    "Choose your lane and complete checkout",
+                    "Set your targeting and business details",
+                    "Start reviewing better-fit opportunities",
+                  ]}
+                />
+              </div>
+            </div>
 
-          <div className="mt-4 space-y-4">
-            <Step
-              n={1}
-              title="Choose your lane"
-              desc="Pick Managed Capture if you want AMBIT in the room, or Morning Matches if you only want daily opportunities sent over."
-            />
-            <Step
-              n={2}
-              title="Complete checkout securely"
-              desc="Signup goes straight into Stripe. Once activated, your profile and targeting can be updated anytime."
-            />
-            <Step
-              n={3}
-              title="Start moving faster"
-              desc="Managed Capture adds real support around active pursuits. Morning Matches keeps it simple and self-serve."
-            />
+            <div className="rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)]">
+              <Eyebrow>Privacy</Eyebrow>
+              <p className="mt-4 text-base leading-8 text-[#6A6775]">
+                AMBIT uses your information to set up your account and support
+                opportunity matching. No clutter. No confusing flow.
+              </p>
+
+              <div className="mt-6 text-sm font-semibold text-[#31245C]">
+                Already subscribed?{" "}
+                <Link href="/login" className="text-[#2A8F8B] hover:underline">
+                  Log in
+                </Link>
+              </div>
+            </div>
           </div>
-
-          <div className="mt-5 rounded-2xl border border-black/10 bg-white/80 p-4 text-sm text-black/62">
-            <span className="font-semibold text-black/78">Privacy:</span> AMBIT
-            uses your profile only to match and deliver opportunities. No spam.
-          </div>
-
-          <div className="mt-4 text-sm text-black/62">
-            Already subscribed?{" "}
-            <Link
-              href="/login"
-              className="font-semibold text-[#1A4FA3] hover:underline"
-            >
-              Log in
-            </Link>
-          </div>
-        </div>
-
-        <div className="mt-8 rounded-3xl border border-black/12 bg-white/85 p-6 shadow-[0_18px_55px_rgba(0,0,0,0.08)]">
-          <div className="flex items-center gap-2 text-lg font-black">
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-2xl bg-[#1A4FA3]/10 text-[#1A4FA3]">
-              <ArrowIcon />
-            </span>
-            Best fit
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {[
-              "Landscaping",
-              "HVAC",
-              "Plumbing",
-              "Electrical",
-              "Concrete",
-              "Janitorial",
-              "Regional contractors",
-              "Multi-crew operators",
-            ].map((t) => (
-              <span
-                key={t}
-                className="rounded-full border border-black/10 bg-white/80 px-3 py-1 text-xs font-semibold text-black/72 shadow-sm transition hover:-translate-y-[1px] hover:bg-white"
-              >
-                {t}
-              </span>
-            ))}
-          </div>
-
-          <div className="mt-4 text-sm text-black/58">
-            Best for teams that want more than alerts and need actual help driving
-            the front-end bid process.
-          </div>
-        </div>
-
-        <TrustRow />
+        </section>
       </div>
     </main>
   );
