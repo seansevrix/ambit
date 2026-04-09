@@ -1,45 +1,29 @@
 import Link from "next/link";
 
-const WRAP = "mx-auto max-w-[1200px] px-6 lg:px-10";
-const TITLE = "text-xs font-semibold text-white/70";
-const LINK = "text-sm font-semibold text-white/55 hover:text-white transition";
-const PRIME_BTN =
-  "inline-flex w-fit items-center justify-center rounded-md border border-[#4C7DFF]/60 bg-[#2E5BFF]/15 px-2.5 py-1.5 text-xs font-semibold text-[#CFE0FF] hover:bg-[#2E5BFF]/25 hover:text-white transition";
+const WRAP = "mx-auto max-w-[1240px] px-6 lg:px-10";
+const TITLE =
+  "text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]";
+const LINK =
+  "text-sm font-semibold text-[#6A6775] transition hover:text-[#31245C]";
 
 export default function SiteFooter() {
   return (
-    <footer className="border-t border-white/10 bg-[#070B18]">
-      <div className={`${WRAP} py-12`}>
-        <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
-          {/* Brand */}
+    <footer className="border-t border-[#31245C]/10 bg-[#F3F1F4]">
+      <div className={`${WRAP} py-14`}>
+        <div className="grid gap-12 md:grid-cols-[1.4fr_0.8fr_0.8fr]">
           <div>
-            <div className="text-sm font-semibold text-white/90">AMBIT</div>
-            <p className="mt-3 max-w-xs text-sm text-white/55">
-              We find, rank, and deliver high-intent opportunities so you can stop chasing leads
-              and start winning contracts.
+            <div className="text-lg font-black tracking-tight text-[#31245C]">
+              AMBIT
+            </div>
+            <p className="mt-4 max-w-sm text-sm leading-7 text-[#6A6775]">
+              AMBIT helps contractors find relevant opportunities, review them
+              faster, and move the front-end bid process forward.
             </p>
           </div>
 
-          {/* Solutions */}
-          <div>
-            <div className={TITLE}>Solutions</div>
-            <div className="mt-4 grid gap-2">
-              <Link href="/preview/residential" className={LINK}>
-                Residential
-              </Link>
-              <Link href="/preview/commercial" className={LINK}>
-                Commercial
-              </Link>
-              <Link href="/preview/government" className={LINK}>
-                Government
-              </Link>
-            </div>
-          </div>
-
-          {/* Company */}
           <div>
             <div className={TITLE}>Company</div>
-            <div className="mt-4 grid gap-2">
+            <div className="mt-4 grid gap-3">
               <Link href="/testimonials" className={LINK}>
                 Reviews
               </Link>
@@ -52,26 +36,22 @@ export default function SiteFooter() {
             </div>
           </div>
 
-          {/* Support */}
           <div>
-            <div className={TITLE}>Support</div>
-            <div className="mt-4 flex flex-col items-start gap-2">
+            <div className={TITLE}>Access</div>
+            <div className="mt-4 grid gap-3">
               <Link href="/login" className={LINK}>
                 Log in
               </Link>
               <Link href="/get-started" className={LINK}>
                 Get started
               </Link>
-              <Link href="/prime" className={PRIME_BTN}>
-                Ambit Prime
-              </Link>
             </div>
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-white/10 pt-6 text-xs text-white/45 sm:flex-row">
+        <div className="mt-12 flex flex-col gap-3 border-t border-[#31245C]/10 pt-6 text-xs text-[#7A7590] sm:flex-row sm:items-center sm:justify-between">
           <div>© {new Date().getFullYear()} AMBIT. All rights reserved.</div>
-          <div className="text-white/40">Results vary by trade, service area, and response time.</div>
+          <div>Results vary by trade, service area, and response time.</div>
         </div>
       </div>
     </footer>
