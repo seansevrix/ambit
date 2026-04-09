@@ -131,13 +131,13 @@ export default function Page() {
               <Eyebrow>Get started</Eyebrow>
 
               <h1 className="mt-4 max-w-[780px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
-                We handle the admin load so you can focus on the job.
+                We handle the admin side so you can focus on the job itself.
               </h1>
 
-              <p className="mt-6 max-w-[640px] text-xl leading-9 text-[#6A6775]">
-                AMBIT helps contractors source opportunities, break down what
-                matters, organize proposal work, track deadlines, and keep the
-                front-end bid process moving.
+              <p className="mt-6 max-w-[660px] text-xl leading-9 text-[#6A6775]">
+                AMBIT sources contracts, reviews requirements, tracks compliance
+                and deadlines, and builds the proposal package so your team is
+                not stuck buried in paperwork.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -153,17 +153,17 @@ export default function Page() {
                 <Eyebrow>What we handle</Eyebrow>
 
                 <div className="mt-4 text-3xl font-black leading-tight text-[#31245C]">
-                  Less admin on your desk.
+                  We carry the paperwork load.
                 </div>
 
                 <div className="mt-5">
                   <BulletList
                     items={[
-                      "Contract sourcing and initial fit review",
-                      "Requirement breakdowns and next-step clarity",
-                      "Proposal organization and front-end admin support",
-                      "Deadline and amendment tracking",
-                      "A cleaner path from review to submission",
+                      "We find and send relevant contract opportunities",
+                      "We review requirements and compliance items",
+                      "We track due dates, amendments, and next actions",
+                      "We organize and build the proposal package",
+                      "Your team mainly reviews and submits",
                     ]}
                   />
                 </div>
@@ -173,8 +173,8 @@ export default function Page() {
                     Bottom line
                   </div>
                   <div className="mt-2 text-sm font-semibold text-[#31245C]">
-                    Your team stays focused on execution. AMBIT helps carry the
-                    front-end bid workload.
+                    Less bullshit paperwork on your back. More time focused on
+                    the actual work.
                   </div>
                 </div>
               </div>
@@ -186,15 +186,15 @@ export default function Page() {
           <div className="grid gap-6 lg:grid-cols-3">
             <InfoCard
               title="We source"
-              body="AMBIT finds relevant government and commercial opportunities so your team spends less time hunting and more time reviewing the right work."
+              body="AMBIT monitors for relevant government and commercial work, filters for fit, and puts real opportunities in front of your team."
             />
             <InfoCard
-              title="We organize"
-              body="We simplify requirements, structure the early response process, and make it easier to understand what the opportunity is asking for."
+              title="We manage the admin"
+              body="We help handle the front-end paperwork, requirement review, compliance items, deadlines, and amendment tracking that slow teams down."
             />
             <InfoCard
-              title="We support"
-              body="We help keep proposal admin, amendments, deadlines, and front-end bid tasks moving so your team is not buried in paperwork."
+              title="We build the proposal"
+              body="If you want to pursue the job, we organize and build the proposal package so your team is not starting from scratch."
             />
           </div>
         </section>
@@ -233,13 +233,14 @@ export default function Page() {
         <section className="py-12 sm:py-16">
           <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
             <div className="rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)]">
-              <Eyebrow>What happens next</Eyebrow>
+              <Eyebrow>How it works</Eyebrow>
               <div className="mt-4">
                 <BulletList
                   items={[
-                    "Choose your lane and complete checkout",
-                    "Set your business details and targeting",
-                    "Start receiving opportunities with more structure and less admin drag",
+                    "We source the contract and send it to your team",
+                    "If you want to pursue it, we handle the admin side",
+                    "We build the proposal package and keep the process moving",
+                    "Your team reviews and submits",
                   ]}
                 />
               </div>
@@ -250,9 +251,10 @@ export default function Page() {
               <div className="mt-4">
                 <BulletList
                   items={[
-                    "Less time chasing contracts",
-                    "Less confusion around requirements",
-                    "Less front-end bid admin on internal staff",
+                    "Less time hunting for contracts",
+                    "Less time buried in forms and requirement review",
+                    "Less internal admin drag on estimators and operators",
+                    "A cleaner path from opportunity to submission",
                   ]}
                 />
               </div>
