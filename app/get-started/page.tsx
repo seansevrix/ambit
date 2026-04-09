@@ -130,13 +130,14 @@ export default function Page() {
             <div>
               <Eyebrow>Get started</Eyebrow>
 
-              <h1 className="mt-4 max-w-[760px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
-                Simple signup for contractors ready to move faster.
+              <h1 className="mt-4 max-w-[780px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
+                We handle the admin load so you can focus on the job.
               </h1>
 
-              <p className="mt-6 max-w-[620px] text-xl leading-9 text-[#6A6775]">
-                Choose the lane that fits your business and go straight into
-                secure checkout.
+              <p className="mt-6 max-w-[640px] text-xl leading-9 text-[#6A6775]">
+                AMBIT helps contractors source opportunities, break down what
+                matters, organize proposal work, track deadlines, and keep the
+                front-end bid process moving.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
@@ -149,29 +150,31 @@ export default function Page() {
 
             <div className="rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
               <div className="rounded-[28px] bg-white p-6 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
-                <Eyebrow>What you get</Eyebrow>
+                <Eyebrow>What we handle</Eyebrow>
 
                 <div className="mt-4 text-3xl font-black leading-tight text-[#31245C]">
-                  Cleaner opportunity review.
+                  Less admin on your desk.
                 </div>
 
                 <div className="mt-5">
                   <BulletList
                     items={[
-                      "Relevant government and commercial opportunities",
-                      "Simple breakdowns of what matters",
-                      "A faster path from review to next action",
+                      "Contract sourcing and initial fit review",
+                      "Requirement breakdowns and next-step clarity",
+                      "Proposal organization and front-end admin support",
+                      "Deadline and amendment tracking",
+                      "A cleaner path from review to submission",
                     ]}
                   />
                 </div>
 
                 <div className="mt-6 rounded-[18px] bg-[#F6FBFA] px-4 py-4">
                   <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
-                    Best for
+                    Bottom line
                   </div>
                   <div className="mt-2 text-sm font-semibold text-[#31245C]">
-                    Contractors that want less noise, less admin, and a more
-                    organized bid flow.
+                    Your team stays focused on execution. AMBIT helps carry the
+                    front-end bid workload.
                   </div>
                 </div>
               </div>
@@ -182,16 +185,16 @@ export default function Page() {
         <section className="py-12 sm:py-16">
           <div className="grid gap-6 lg:grid-cols-3">
             <InfoCard
-              title="Choose a lane"
-              body="Select the option that fits your team, whether you want full support or a lighter self-serve path."
+              title="We source"
+              body="AMBIT finds relevant government and commercial opportunities so your team spends less time hunting and more time reviewing the right work."
             />
             <InfoCard
-              title="Check out securely"
-              body="Signup goes straight through secure checkout with a simple, direct flow."
+              title="We organize"
+              body="We simplify requirements, structure the early response process, and make it easier to understand what the opportunity is asking for."
             />
             <InfoCard
-              title="Start faster"
-              body="Once active, your business can start receiving opportunities and move through review with more structure."
+              title="We support"
+              body="We help keep proposal admin, amendments, deadlines, and front-end bid tasks moving so your team is not buried in paperwork."
             />
           </div>
         </section>
@@ -204,10 +207,11 @@ export default function Page() {
             <div>
               <Eyebrow>Checkout</Eyebrow>
               <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#31245C] sm:text-4xl">
-                Start your signup.
+                Choose your lane and start secure signup.
               </h2>
               <p className="mt-3 max-w-2xl text-base leading-8 text-[#6A6775]">
-                Pick your lane below and continue through secure checkout.
+                Pick the option that fits your business and continue through
+                direct checkout below.
               </p>
             </div>
 
@@ -234,19 +238,24 @@ export default function Page() {
                 <BulletList
                   items={[
                     "Choose your lane and complete checkout",
-                    "Set your targeting and business details",
-                    "Start reviewing better-fit opportunities",
+                    "Set your business details and targeting",
+                    "Start receiving opportunities with more structure and less admin drag",
                   ]}
                 />
               </div>
             </div>
 
             <div className="rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)]">
-              <Eyebrow>Privacy</Eyebrow>
-              <p className="mt-4 text-base leading-8 text-[#6A6775]">
-                AMBIT uses your information to set up your account and support
-                opportunity matching. No clutter. No confusing flow.
-              </p>
+              <Eyebrow>Why teams sign up</Eyebrow>
+              <div className="mt-4">
+                <BulletList
+                  items={[
+                    "Less time chasing contracts",
+                    "Less confusion around requirements",
+                    "Less front-end bid admin on internal staff",
+                  ]}
+                />
+              </div>
 
               <div className="mt-6 text-sm font-semibold text-[#31245C]">
                 Already subscribed?{" "}
