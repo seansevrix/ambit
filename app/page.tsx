@@ -190,16 +190,16 @@ function WorkflowCard() {
 function FeatureRow({
   title,
   body,
+  visual,
   buttonText,
   buttonHref,
-  visual,
   reverse = false,
 }: {
   title: string;
   body: string;
-  buttonText: string;
-  buttonHref: string;
   visual: ReactNode;
+  buttonText?: string;
+  buttonHref?: string;
   reverse?: boolean;
 }) {
   return (
@@ -220,9 +220,11 @@ function FeatureRow({
             {body}
           </p>
 
-          <div className="mt-8">
-            <Button href={buttonHref}>{buttonText}</Button>
-          </div>
+          {buttonText && buttonHref ? (
+            <div className="mt-8">
+              <Button href={buttonHref}>{buttonText}</Button>
+            </div>
+          ) : null}
         </div>
       </div>
     </section>
@@ -275,10 +277,7 @@ export default function HomePage() {
       <FeatureRow
         title="We handle compliance, deadlines, and proposal building."
         body="If you want to pursue the job, AMBIT helps carry the admin load by reviewing requirements, organizing the front-end paperwork, tracking due dates and amendments, and building the proposal package."
-        buttonText="View sample"
-        buttonHref="#sample"
         visual={<WorkflowCard />}
-        reverse
       />
 
       <FeatureRow
