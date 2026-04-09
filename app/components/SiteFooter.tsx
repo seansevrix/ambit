@@ -16,8 +16,6 @@ export default function SiteFooter() {
               AMBIT
             </div>
             <p className="mt-4 max-w-sm text-sm leading-7 text-[#6A6775]">
-              AMBIT helps contractors find relevant opportunities, review them
-              faster, and move the front-end bid process forward.
             </p>
           </div>
 
