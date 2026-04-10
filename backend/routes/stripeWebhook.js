@@ -8,6 +8,17 @@ const router = express.Router();
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 
+const STRIPE_PRICE_ID_PILOT =
+  process.env.STRIPE_PRICE_ID_PILOT ||
+  process.env.STRIPE_PRICE_PILOT ||
+  "";
+
+const STRIPE_PRICE_ID_ENTERPRISE =
+  process.env.STRIPE_PRICE_ID_ENTERPRISE ||
+  process.env.STRIPE_PRICE_ENTERPRISE ||
+  process.env.STRIPE_PRICE_ENTERPRISE_ID ||
+  "";
+
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 function setIfDefined(obj, key, value) {
@@ -26,7 +37,6 @@ async function updateCustomerById(customerId, patch) {
 }
 
 async function updateCustomerByStripeIds({ stripeCustomerId, stripeSubscriptionId }, patch) {
-  // Try subscriptionId first (most specific), then fallback to customerId
   const where = stripeSubscriptionId
     ? { stripeSubscriptionId: String(stripeSubscriptionId) }
     : { stripeCustomerId: String(stripeCustomerId) };
@@ -37,31 +47,173 @@ async function updateCustomerByStripeIds({ stripeCustomerId, stripeSubscriptionI
   });
 }
 
-// ✅ Welcome email helper (idempotent using Stripe customer metadata)
+async function getStripeCustomer(stripeCustomerId) {
+  if (!stripeCustomerId) return null;
+  const sc = await stripe.customers.retrieve(String(stripeCustomerId));
+  if (!sc || sc.deleted) return null;
+  return sc;
+}
+
+async function markCustomerMetadata(stripeCustomerId, metadataPatch) {
+  const sc = await getStripeCustomer(stripeCustomerId);
+  if (!sc) return null;
+
+  return stripe.customers.update(String(stripeCustomerId), {
+    metadata: {
+      ...(sc.metadata || {}),
+      ...metadataPatch,
+    },
+  });
+}
+
+async function getSetupPaymentMethodIdFromSession(sessionId) {
+  const session = await stripe.checkout.sessions.retrieve(String(sessionId), {
+    expand: ["setup_intent"],
+  });
+
+  let setupIntent = session?.setup_intent || null;
+
+  if (!setupIntent) return null;
+
+  if (typeof setupIntent === "string") {
+    setupIntent = await stripe.setupIntents.retrieve(setupIntent);
+  }
+
+  const paymentMethod = setupIntent?.payment_method || null;
+
+  if (!paymentMethod) return null;
+  return typeof paymentMethod === "string" ? paymentMethod : paymentMethod.id;
+}
+
+async function maybeCreateEnterprisePilotSchedule({
+  customerId,
+  stripeCustomerId,
+  sessionId,
+}) {
+  if (!stripeCustomerId) {
+    throw new Error("Missing stripeCustomerId for enterprise pilot schedule creation.");
+  }
+
+  if (!STRIPE_PRICE_ID_PILOT || !STRIPE_PRICE_ID_ENTERPRISE) {
+    throw new Error(
+      "Missing STRIPE_PRICE_ID_PILOT and/or STRIPE_PRICE_ID_ENTERPRISE on backend env vars."
+    );
+  }
+
+  const sc = await getStripeCustomer(stripeCustomerId);
+  if (!sc) {
+    throw new Error("Stripe customer not found while creating enterprise pilot schedule.");
+  }
+
+  if (sc.metadata?.enterprisePilotScheduleCreated === "true") {
+    return {
+      alreadyCreated: true,
+      scheduleId: sc.metadata?.enterprisePilotScheduleId || null,
+      subscriptionId: sc.metadata?.enterprisePilotSubscriptionId || null,
+    };
+  }
+
+  const paymentMethodId = await getSetupPaymentMethodIdFromSession(sessionId);
+  if (!paymentMethodId) {
+    throw new Error("No saved payment method found on enterprise setup session.");
+  }
+
+  await stripe.customers.update(String(stripeCustomerId), {
+    invoice_settings: {
+      default_payment_method: paymentMethodId,
+    },
+  });
+
+  const schedule = await stripe.subscriptionSchedules.create(
+    {
+      customer: String(stripeCustomerId),
+      start_date: "now",
+      end_behavior: "release",
+      default_settings: {
+        collection_method: "charge_automatically",
+        default_payment_method: paymentMethodId,
+      },
+      metadata: {
+        customerId: String(customerId || ""),
+        plan: "enterprise",
+        tier: "enterprise",
+        billingFlow: "enterprise_pilot_schedule",
+      },
+      phases: [
+        {
+          items: [{ price: STRIPE_PRICE_ID_PILOT, quantity: 1 }],
+          duration: {
+            interval: "month",
+            interval_count: 1,
+          },
+          proration_behavior: "none",
+          metadata: {
+            customerId: String(customerId || ""),
+            plan: "enterprise",
+            tier: "enterprise",
+            billingFlow: "enterprise_pilot_schedule",
+            phase: "pilot",
+          },
+        },
+        {
+          items: [{ price: STRIPE_PRICE_ID_ENTERPRISE, quantity: 1 }],
+          proration_behavior: "none",
+          metadata: {
+            customerId: String(customerId || ""),
+            plan: "enterprise",
+            tier: "enterprise",
+            billingFlow: "enterprise_pilot_schedule",
+            phase: "full",
+          },
+        },
+      ],
+    },
+    {
+      idempotencyKey: `enterprise-pilot-schedule-${String(sessionId)}`,
+    }
+  );
+
+  const subscriptionId =
+    typeof schedule?.subscription === "string"
+      ? schedule.subscription
+      : schedule?.subscription?.id || null;
+
+  await markCustomerMetadata(stripeCustomerId, {
+    enterprisePilotScheduleCreated: "true",
+    enterprisePilotScheduleCreatedAt: new Date().toISOString(),
+    enterprisePilotScheduleId: schedule?.id || "",
+    enterprisePilotSubscriptionId: subscriptionId || "",
+    enterprisePilotFlow: "true",
+    appCustomerId: String(customerId || ""),
+  });
+
+  return {
+    alreadyCreated: false,
+    scheduleId: schedule?.id || null,
+    subscriptionId,
+  };
+}
+
+// Welcome email helper
 async function maybeSendWelcomeEmail({ customerId, stripeCustomerId }) {
   try {
     if (!stripeCustomerId) return;
 
-    // Fetch Stripe customer so we can check metadata
     const sc = await stripe.customers.retrieve(String(stripeCustomerId));
     if (sc?.deleted) return;
 
-    // If already sent, do nothing (Stripe retries webhooks sometimes)
     if (sc.metadata?.welcomeSent === "true") return;
 
-    // Load app customer from DB
     if (!customerId || !Number.isFinite(customerId)) return;
 
     const customer = await prisma.customer.findUnique({ where: { id: customerId } });
     if (!customer?.email) return;
 
-    // Send welcome email
     await sendWelcomeEmail({
       to: customer.email,
       companyName: customer.companyName || customer.name || "there",
     });
 
-    // Mark as sent (so it never sends twice)
     await stripe.customers.update(String(stripeCustomerId), {
       metadata: {
         ...(sc.metadata || {}),
@@ -73,7 +225,6 @@ async function maybeSendWelcomeEmail({ customerId, stripeCustomerId }) {
 
     console.log("✅ Welcome email sent to:", customer.email);
   } catch (err) {
-    // Do NOT fail the webhook if email fails — Stripe will retry and could cause duplicates.
     console.warn("⚠️ Welcome email failed (non-fatal):", err?.message || err);
   }
 }
@@ -83,6 +234,7 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
     console.error("❌ Stripe not configured: missing STRIPE_SECRET_KEY");
     return res.status(500).json({ ok: false, error: "Stripe not configured" });
   }
+
   if (!STRIPE_WEBHOOK_SECRET) {
     console.error("❌ Missing STRIPE_WEBHOOK_SECRET env var");
     return res.status(500).json({ ok: false, error: "Missing STRIPE_WEBHOOK_SECRET" });
@@ -108,15 +260,50 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
       case "checkout.session.completed": {
         const session = event.data.object;
 
-        // Your billing.js set metadata.customerId AND client_reference_id
         const customerId = Number(
           session?.metadata?.customerId || session?.client_reference_id
         );
 
         const stripeCustomerId = session?.customer ? String(session.customer) : null;
-        const stripeSubscriptionId = session?.subscription ? String(session.subscription) : null;
+        let stripeSubscriptionId = session?.subscription ? String(session.subscription) : null;
 
-        // Status is more reliable from subscription object, but default safely.
+        const billingFlow = String(session?.metadata?.billingFlow || "");
+        const mode = String(session?.mode || "");
+
+        // Enterprise pilot flow:
+        // setup-mode checkout completes -> create schedule -> unlock customer
+        if (mode === "setup" && billingFlow === "enterprise_pilot_schedule") {
+          const created = await maybeCreateEnterprisePilotSchedule({
+            customerId,
+            stripeCustomerId,
+            sessionId: session.id,
+          });
+
+          if (created?.subscriptionId) {
+            stripeSubscriptionId = String(created.subscriptionId);
+          }
+
+          const patch = {
+            subscriptionStatus: "active",
+            isActive: true,
+          };
+
+          setIfDefined(patch, "stripeCustomerId", stripeCustomerId);
+          setIfDefined(patch, "stripeSubscriptionId", stripeSubscriptionId);
+
+          if (customerId) {
+            await updateCustomerById(customerId, patch);
+            console.log("✅ Updated customer from enterprise pilot setup flow:", customerId);
+          } else if (stripeCustomerId || stripeSubscriptionId) {
+            await updateCustomerByStripeIds({ stripeCustomerId, stripeSubscriptionId }, patch);
+            console.log("✅ Updated customer from enterprise pilot setup flow via stripe IDs");
+          }
+
+          await maybeSendWelcomeEmail({ customerId, stripeCustomerId });
+          break;
+        }
+
+        // Default subscription checkout flow for starter / pro / associate
         let status = "active";
 
         if (stripeSubscriptionId) {
@@ -132,6 +319,7 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
           subscriptionStatus: status,
           isActive: isActiveStatus(status),
         };
+
         setIfDefined(patch, "stripeCustomerId", stripeCustomerId);
         setIfDefined(patch, "stripeSubscriptionId", stripeSubscriptionId);
 
@@ -145,9 +333,7 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
           console.log("⚠️ No customerId/stripe IDs on session — nothing to update");
         }
 
-        // ✅ Send welcome email ONCE (non-fatal if it fails)
         await maybeSendWelcomeEmail({ customerId, stripeCustomerId });
-
         break;
       }
 
@@ -159,11 +345,8 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
         const stripeCustomerId = sub?.customer ? String(sub.customer) : null;
         const stripeSubscriptionId = sub?.id ? String(sub.id) : null;
 
-        // Stripe subscription status values include:
-        // trialing, active, past_due, canceled, unpaid, incomplete, incomplete_expired, paused
         let status = sub?.status || "active";
 
-        // If Stripe says "deleted" event, treat as canceled/inactive
         if (event.type === "customer.subscription.deleted") {
           status = "canceled";
         }
@@ -172,6 +355,7 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
           subscriptionStatus: status,
           isActive: isActiveStatus(status),
         };
+
         setIfDefined(patch, "stripeCustomerId", stripeCustomerId);
         setIfDefined(patch, "stripeSubscriptionId", stripeSubscriptionId);
 
@@ -190,7 +374,6 @@ router.post("/", express.raw({ type: "application/json" }), async (req, res) => 
       }
 
       default:
-        // Not needed for gating/unlocking
         break;
     }
 

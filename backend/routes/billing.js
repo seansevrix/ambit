@@ -12,23 +12,18 @@ const STRIPE_SECRET_KEY =
 const stripe = STRIPE_SECRET_KEY ? new Stripe(STRIPE_SECRET_KEY) : null;
 
 /**
- * ✅ Plans (CURRENT)
- *  - associate   (LEGACY / grandfathered only)  old price stays forever for existing customers
- *  - starter     ($49.99/mo)  morning matches only
- *  - pro         ($129.99/mo) 1:1 analyst + summaries + templates
- *  - enterprise  ($1499.99/mo) priority lane + execution support
+ * ✅ Plans
+ *  - associate   (LEGACY / grandfathered only)
+ *  - starter     ($49.99/mo)
+ *  - pro         ($129.99/mo)
+ *  - enterprise  (Managed Capture)
  *
- * ✅ Env var standard (recommended)
- *  - STRIPE_PRICE_ID_ASSOCIATE   (legacy)
+ * ✅ Env vars
+ *  - STRIPE_PRICE_ID_ASSOCIATE
  *  - STRIPE_PRICE_ID_STARTER
  *  - STRIPE_PRICE_ID_PRO
- *  - STRIPE_PRICE_ID_ENTERPRISE
- *
- * ✅ Back-compat supported (old names)
- *  - associate: STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID
- *  - pro: STRIPE_PRICE_PRO
- *  - enterprise: STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID
- *  - (optional old): STRIPE_PRICE_EXECUTIVE / STRIPE_PRICE_ALL_ID / STRIPE_PRICE_ALL
+ *  - STRIPE_PRICE_ID_ENTERPRISE   -> full monthly price ($1499)
+ *  - STRIPE_PRICE_ID_PILOT        -> first-month pilot price ($499)
  */
 
 // Legacy / Associate (grandfathered)
@@ -40,26 +35,32 @@ const STRIPE_PRICE_ID_ASSOCIATE =
   process.env.STRIPE_PRICE_ID ||
   "";
 
-// Starter (new)
+// Starter
 const STRIPE_PRICE_ID_STARTER =
   process.env.STRIPE_PRICE_ID_STARTER ||
   process.env.STRIPE_PRICE_STARTER ||
   "";
 
-// Pro (new)
+// Pro
 const STRIPE_PRICE_ID_PRO =
   process.env.STRIPE_PRICE_ID_PRO ||
   process.env.STRIPE_PRICE_PRO ||
   "";
 
-// Enterprise (new)
+// Enterprise full price
 const STRIPE_PRICE_ID_ENTERPRISE =
   process.env.STRIPE_PRICE_ID_ENTERPRISE ||
   process.env.STRIPE_PRICE_ENTERPRISE ||
   process.env.STRIPE_PRICE_ENTERPRISE_ID ||
   "";
 
-// Optional: old executive fallbacks (kept only to avoid breaking ancient env setups)
+// Enterprise pilot first month
+const STRIPE_PRICE_ID_PILOT =
+  process.env.STRIPE_PRICE_ID_PILOT ||
+  process.env.STRIPE_PRICE_PILOT ||
+  "";
+
+// Optional: old executive fallbacks
 const STRIPE_PRICE_ID_EXECUTIVE =
   process.env.STRIPE_PRICE_ID_EXECUTIVE ||
   process.env.STRIPE_PRICE_EXECUTIVE ||
@@ -96,28 +97,24 @@ function normalizeEmail(email) {
  *
  * Back-compat:
  *  - associate/single/basic => associate
- *  - executive/prime/all/all3/all_markets => pro (default) OR enterprise if you want
+ *  - executive/prime/all/all3/all_markets => pro
  */
 function normalizePlan(planRaw) {
   const p = String(planRaw || "").trim().toLowerCase();
 
-  // New public plans
   if (p === "starter") return "starter";
   if (p === "pro") return "pro";
   if (p === "enterprise") return "enterprise";
 
-  // Legacy/grandfathered (keep distinct)
   if (p === "associate") return "associate";
   if (p === "single" || p === "single_market" || p === "basic") return "associate";
 
-  // Enterprise aliases
   if (p === "corp" || p === "corporate" || p === "enterprise_plus") return "enterprise";
 
-  // Old names -> Pro (keep old links working)
-  if (p === "executive" || p === "prime" || p === "all" || p === "all3" || p === "all_markets")
+  if (p === "executive" || p === "prime" || p === "all" || p === "all3" || p === "all_markets") {
     return "pro";
+  }
 
-  // Default for new traffic
   return "pro";
 }
 
@@ -137,7 +134,7 @@ function missingPriceMessage(plan) {
     return "Missing STRIPE_PRICE_ID_PRO (or STRIPE_PRICE_PRO) on backend env vars.";
   }
   if (plan === "enterprise") {
-    return "Missing STRIPE_PRICE_ID_ENTERPRISE (or STRIPE_PRICE_ENTERPRISE / STRIPE_PRICE_ENTERPRISE_ID) on backend env vars.";
+    return "Missing STRIPE_PRICE_ID_PILOT and/or STRIPE_PRICE_ID_ENTERPRISE on backend env vars.";
   }
   if (plan === "associate") {
     return "Missing STRIPE_PRICE_ID_ASSOCIATE (or STRIPE_PRICE_ASSOCIATE / STRIPE_PRICE_SINGLE_ID / STRIPE_PRICE_ID) on backend env vars.";
@@ -197,7 +194,9 @@ async function findCustomer({ customerId, email }) {
  * Body:
  *   { customerId?: number, email?: string, plan?: "associate" | "starter" | "pro" | "enterprise" | legacy strings }
  *
- * Paid-first flow (no trial)
+ * Flows:
+ *  - starter/pro/associate => direct subscription Checkout
+ *  - enterprise => setup-mode Checkout, then webhook creates 2-phase schedule
  */
 async function createCheckoutSession(req, res) {
   try {
@@ -219,8 +218,6 @@ async function createCheckoutSession(req, res) {
       });
     }
 
-    // If customer is grandfathered on associate and caller didn't specify a plan,
-    // default them to associate (prevents accidental upgrades in internal calls).
     const planRequested = String(planRaw || "").trim().toLowerCase();
     let plan = normalizePlan(planRaw);
 
@@ -228,15 +225,8 @@ async function createCheckoutSession(req, res) {
       plan = "associate";
     }
 
-    // Optional: keep honoring "executive" if you STILL have that env configured
     const allowExecutive =
       (planRequested === "executive" || planRequested === "prime") && STRIPE_PRICE_ID_EXECUTIVE;
-
-    const priceId = allowExecutive ? STRIPE_PRICE_ID_EXECUTIVE : resolvePriceId(plan);
-
-    if (!priceId) {
-      return res.status(500).json({ ok: false, error: missingPriceMessage(plan) });
-    }
 
     const stripeCustomerId = await ensureStripeCustomer(customer);
     const frontendBase = getFrontendBaseUrl(req);
@@ -245,6 +235,46 @@ async function createCheckoutSession(req, res) {
     const cancelUrl = `${frontendBase}/get-started?checkout=cancel&plan=${plan}&email=${encodeURIComponent(
       customer.email || ""
     )}`;
+
+    // Enterprise / Managed Capture:
+    // Save the payment method first, then let the webhook create the 2-phase schedule:
+    // month 1 = pilot, month 2+ = full price.
+    if (plan === "enterprise") {
+      if (!STRIPE_PRICE_ID_PILOT || !STRIPE_PRICE_ID_ENTERPRISE) {
+        return res.status(500).json({
+          ok: false,
+          error: missingPriceMessage(plan),
+        });
+      }
+
+      const session = await stripe.checkout.sessions.create({
+        mode: "setup",
+        customer: stripeCustomerId,
+        payment_method_collection: "always",
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        client_reference_id: String(customer.id),
+        metadata: {
+          customerId: String(customer.id),
+          plan,
+          tier: plan,
+          billingFlow: "enterprise_pilot_schedule",
+        },
+      });
+
+      return res.status(200).json({
+        ok: true,
+        url: session.url,
+        plan,
+        customerId: customer.id,
+      });
+    }
+
+    const priceId = allowExecutive ? STRIPE_PRICE_ID_EXECUTIVE : resolvePriceId(plan);
+
+    if (!priceId) {
+      return res.status(500).json({ ok: false, error: missingPriceMessage(plan) });
+    }
 
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
