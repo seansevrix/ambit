@@ -58,14 +58,12 @@ export default function SiteNav() {
 
         {/* Middle */}
         <div className="hidden md:flex justify-self-center">
-          <a
-            href={`mailto:ambit@sevrixgov.com?subject=${encodeURIComponent(
-              "Try Ambit Free"
-            )}&body=${encodeURIComponent("Try Ambit Free")}`}
-            className="inline-flex items-center justify-center rounded-full border border-black/15 bg-white px-5 py-2 text-sm font-semibold text-black shadow-sm transition hover:-translate-y-[1px] hover:border-black/25 hover:bg-black/[0.03]"
+          <Link
+            href="/live-contracts"
+            className="text-sm font-medium text-black transition hover:opacity-70"
           >
-            Try Ambit Free
-          </a>
+            Live Contracts
+          </Link>
         </div>
 
         {/* Right */}
