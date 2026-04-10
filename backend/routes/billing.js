@@ -250,6 +250,7 @@ async function createCheckoutSession(req, res) {
       const session = await stripe.checkout.sessions.create({
         mode: "setup",
         customer: stripeCustomerId,
+        currency: "usd",
         success_url: successUrl,
         cancel_url: cancelUrl,
         client_reference_id: String(customer.id),
