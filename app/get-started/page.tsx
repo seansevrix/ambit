@@ -105,9 +105,54 @@ function BulletList({ items }: { items: string[] }) {
   );
 }
 
+function PilotPriceCard() {
+  return (
+    <div className="rounded-[32px] border border-black/5 bg-white p-5 shadow-[0_18px_40px_rgba(49,36,92,0.10)] sm:p-6">
+      <div className="rounded-[24px] border border-[#2A8F8B]/10 bg-[#F8FCFB] p-6">
+        <Eyebrow>New client pilot</Eyebrow>
+
+        <div className="mt-4 text-3xl font-black leading-tight text-[#31245C] sm:text-[34px]">
+          Start with a lower-risk first month.
+        </div>
+
+        <div className="mt-5 flex items-end gap-3">
+          <span className="text-2xl font-bold text-[#8C879D] line-through">
+            $1,499
+          </span>
+          <span className="text-5xl font-black tracking-tight text-[#A02727]">
+            $499
+          </span>
+        </div>
+
+        <p className="mt-3 text-base leading-7 text-[#6A6775]">
+          One-time pilot for new clients. A simple way to test AMBIT before
+          moving into full monthly support.
+        </p>
+
+        <div className="mt-5 rounded-[18px] border border-[#31245C]/8 bg-white px-4 py-4">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+            Included in the pilot
+          </div>
+
+          <div className="mt-3">
+            <BulletList
+              items={[
+                "Contract sourcing aligned to your trade and service area",
+                "Requirement and compliance review",
+                "Deadline, amendment, and action tracking",
+                "Front-end proposal organization and support",
+              ]}
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Page() {
   return (
-    <main className="min-h-screen bg-[#E6F5F2] text-[#31245C]">
+    <main className="min-h-screen bg-[#EAF3FF] text-[#31245C]">
       <div className={`${CONTAINER} py-12 sm:py-16 lg:py-20`}>
         <div className="flex items-center justify-between gap-4">
           <Link
@@ -126,59 +171,42 @@ export default function Page() {
         </div>
 
         <section className="pt-10 sm:pt-14">
-          <div className="grid items-start gap-12 lg:grid-cols-[1fr_520px] lg:gap-20">
+          <div className="grid items-start gap-10 lg:grid-cols-[1fr_500px] lg:gap-16">
             <div>
               <Eyebrow>Get started</Eyebrow>
 
-              <h1 className="mt-4 max-w-[780px] text-5xl font-black leading-[1.02] tracking-tight text-[#2A8F8B] sm:text-6xl lg:text-[72px]">
-                We handle the admin side so you can focus on the job itself.
+              <h1 className="mt-4 max-w-[760px] text-5xl font-black leading-[1.02] tracking-tight text-[#31245C] sm:text-6xl lg:text-[70px]">
+                We handle the front-end contract work so your team can stay
+                focused on execution.
               </h1>
 
-              <p className="mt-6 max-w-[660px] text-xl leading-9 text-[#6A6775]">
-                AMBIT sources contracts, reviews requirements, tracks compliance
-                and deadlines, and builds the proposal package so your team is
-                not stuck buried in paperwork.
+              <p className="mt-6 max-w-[680px] text-xl leading-9 text-[#6A6775]">
+                AMBIT finds relevant opportunities, reviews requirements,
+                tracks deadlines and compliance items, and helps build the
+                proposal package so your team is not stuck buried in admin.
               </p>
 
               <div className="mt-8 flex flex-wrap gap-3">
-                <Button href="#checkout">Start here</Button>
+                <Button href="#checkout">Start secure signup</Button>
                 <Button href="/login" variant="secondary">
                   Log in
                 </Button>
               </div>
-            </div>
 
-            <div className="rounded-[34px] border border-black/5 bg-[#F7F5F6] p-4 shadow-[0_18px_40px_rgba(49,36,92,0.10)]">
-              <div className="rounded-[28px] bg-white p-6 shadow-[inset_0_0_0_1px_rgba(0,0,0,0.05)]">
-                <Eyebrow>What we handle</Eyebrow>
-
-                <div className="mt-4 text-3xl font-black leading-tight text-[#31245C]">
-                  We carry the paperwork load.
+              <div className="mt-8 max-w-[690px] rounded-[22px] border border-[#31245C]/8 bg-white px-5 py-5 shadow-[0_16px_36px_rgba(49,36,92,0.06)]">
+                <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
+                  What this means
                 </div>
-
-                <div className="mt-5">
-                  <BulletList
-                    items={[
-                      "We find and send relevant contract opportunities",
-                      "We review requirements and compliance items",
-                      "We track due dates, amendments, and next actions",
-                      "We organize and build the proposal package",
-                      "Your team mainly reviews and submits",
-                    ]}
-                  />
-                </div>
-
-                <div className="mt-6 rounded-[18px] bg-[#F6FBFA] px-4 py-4">
-                  <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#7A7590]">
-                    Bottom line
-                  </div>
-                  <div className="mt-2 text-sm font-semibold text-[#31245C]">
-                    Less bullshit paperwork on your back. More time focused on
-                    the actual work.
-                  </div>
-                </div>
+                <p className="mt-3 text-base leading-8 text-[#6A6775]">
+                  We are built for teams that want help with the sourcing,
+                  review, organization, and proposal prep work that usually
+                  slows bids down. You focus on the job. We help carry the
+                  paperwork load.
+                </p>
               </div>
             </div>
+
+            <PilotPriceCard />
           </div>
         </section>
 
@@ -190,28 +218,29 @@ export default function Page() {
             />
             <InfoCard
               title="We manage the admin"
-              body="We help handle the front-end paperwork, requirement review, compliance items, deadlines, and amendment tracking that slow teams down."
+              body="We help handle requirement review, compliance items, deadlines, and amendment tracking so your team is not losing time in paperwork."
             />
             <InfoCard
-              title="We build the proposal"
-              body="If you want to pursue the job, we organize and build the proposal package so your team is not starting from scratch."
+              title="We support the proposal"
+              body="If you want to pursue the opportunity, we help organize and build the front-end proposal package so your team is not starting from scratch."
             />
           </div>
         </section>
 
         <section
           id="checkout"
-          className="rounded-[36px] bg-[#DDF3EF] px-6 py-8 shadow-[0_20px_40px_rgba(49,36,92,0.06)] sm:px-8 sm:py-10"
+          className="rounded-[36px] bg-[#DFF3EE] px-6 py-8 shadow-[0_20px_40px_rgba(49,36,92,0.06)] sm:px-8 sm:py-10"
         >
           <div className="flex flex-wrap items-center justify-between gap-4 border-b border-[#31245C]/10 pb-6">
             <div>
               <Eyebrow>Checkout</Eyebrow>
               <h2 className="mt-3 text-3xl font-black leading-tight tracking-tight text-[#31245C] sm:text-4xl">
-                Choose your lane and start secure signup.
+                Choose your lane and continue through secure checkout.
               </h2>
               <p className="mt-3 max-w-2xl text-base leading-8 text-[#6A6775]">
-                Pick the option that fits your business and continue through
-                direct checkout below.
+                Start with the option that fits your business best. New clients
+                can use the pilot to test the process before moving into ongoing
+                support.
               </p>
             </div>
 
@@ -221,6 +250,26 @@ export default function Page() {
               </span>
               Direct checkout
             </div>
+          </div>
+
+          <div className="mt-6 rounded-[24px] border border-[#31245C]/8 bg-white px-5 py-5">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <div className="text-sm font-semibold uppercase tracking-[0.14em] text-[#7A7590]">
+                Pilot available
+              </div>
+              <div className="text-lg font-semibold text-[#8C879D] line-through">
+                $1,499
+              </div>
+              <div className="text-3xl font-black tracking-tight text-[#A02727]">
+                $499 first month
+              </div>
+            </div>
+
+            <p className="mt-3 max-w-3xl text-base leading-8 text-[#6A6775]">
+              The pilot is designed for businesses that want to see how AMBIT
+              works with real opportunities, real admin support, and real
+              proposal assistance before committing long term.
+            </p>
           </div>
 
           <div className="pt-8">
@@ -237,10 +286,10 @@ export default function Page() {
               <div className="mt-4">
                 <BulletList
                   items={[
-                    "We source the contract and send it to your team",
-                    "If you want to pursue it, we handle the admin side",
-                    "We build the proposal package and keep the process moving",
-                    "Your team reviews and submits",
+                    "We source opportunities that fit your trade and service area",
+                    "If you want to pursue one, we help handle the front-end admin work",
+                    "We organize the proposal package and keep the process moving",
+                    "Your team reviews, approves, and submits",
                   ]}
                 />
               </div>
@@ -253,7 +302,7 @@ export default function Page() {
                   items={[
                     "Less time hunting for contracts",
                     "Less time buried in forms and requirement review",
-                    "Less internal admin drag on estimators and operators",
+                    "Less admin drag on operators and estimators",
                     "A cleaner path from opportunity to submission",
                   ]}
                 />
