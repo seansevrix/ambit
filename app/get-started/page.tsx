@@ -119,7 +119,7 @@ function PilotPriceCard() {
           <span className="text-2xl font-bold text-[#8C879D] line-through">
             $1,499
           </span>
-          <span className="text-5xl font-black tracking-tight text-[#A02727]">
+          <span className="text-5xl font-black tracking-tight text-[#2A8F8B]">
             $499
           </span>
         </div>
@@ -260,7 +260,7 @@ export default function Page() {
               <div className="text-lg font-semibold text-[#8C879D] line-through">
                 $1,499
               </div>
-              <div className="text-3xl font-black tracking-tight text-[#A02727]">
+              <div className="text-3xl font-black tracking-tight text-[#2A8F8B]">
                 $499 first month
               </div>
             </div>
