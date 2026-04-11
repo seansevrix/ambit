@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ShareOpportunityButton from "./ShareOpportunityButton";
 
 type Opportunity = {
   id: string;
@@ -187,29 +188,37 @@ export default async function LiveContractDetailPage({
                 Next Step
               </p>
               <p className="mt-3 text-[15px] leading-7 text-black/70">
-                Review the official source, then start with Ambit if you want
-                help handling the front-end admin and proposal build.
+                If you want help pursuing this opportunity, start with Ambit
+                first. You can also copy this Ambit page link and share it
+                directly with your team.
               </p>
 
               <div className="mt-5 flex flex-col gap-3">
-                <a
-                  href={opportunity.officialUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center justify-center rounded-2xl bg-black px-4 py-3 text-sm font-medium text-white"
-                >
-                  View Official Source
-                </a>
-
                 <Link
                   href={`/get-started?opportunity=${encodeURIComponent(
                     opportunity.title
                   )}`}
-                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium"
+                  className="inline-flex items-center justify-center rounded-2xl bg-black px-4 py-3 text-sm font-medium text-white"
                 >
                   Start With Ambit
                 </Link>
+
+                <ShareOpportunityButton slug={opportunity.slug} />
+
+                <a
+                  href={opportunity.officialUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
+                >
+                  View Official Source
+                </a>
               </div>
+
+              <p className="mt-3 text-xs leading-6 text-black/50">
+                Full solicitation details are available through the official
+                source link above.
+              </p>
             </div>
           </div>
         </div>
