@@ -38,7 +38,7 @@ export default function SiteNav() {
     <header
       data-ambit-nav="1"
       className={cx(
-        "sticky top-0 z-[150] w-full border-b border-black/10 bg-[#F7F5F2]/70 backdrop-blur",
+        "sticky top-0 z-[150] w-full border-b border-black/10 bg-[#F7F5F2]/75 backdrop-blur",
         "transition-opacity duration-150",
         hideNav && "pointer-events-none opacity-0"
       )}
@@ -58,10 +58,10 @@ export default function SiteNav() {
         <div className="hidden md:flex justify-self-center">
           <Link
             href="/live-contracts"
-            className="inline-flex items-center gap-2 rounded-full border border-[#1E9BA2]/20 bg-[#DFF5F4] px-4 py-2 text-sm font-semibold text-[#11656B] shadow-[0_6px_20px_rgba(30,155,162,0.10)] transition duration-200 hover:-translate-y-[1px] hover:bg-[#D4F1EF] hover:shadow-[0_10px_24px_rgba(30,155,162,0.16)]"
+            className="group inline-flex items-center gap-2 rounded-full border border-[#0A66FF]/20 bg-[#EAF2FF] px-5 py-2 text-sm font-semibold text-[#0A66FF] shadow-[0_8px_24px_rgba(10,102,255,0.12)] transition duration-200 hover:-translate-y-[1px] hover:border-[#0A66FF]/35 hover:bg-[#E1ECFF] hover:shadow-[0_12px_28px_rgba(10,102,255,0.18)]"
           >
-            <span className="h-2 w-2 rounded-full bg-[#1DB6AE] animate-pulse" />
-            Live Contracts
+            <span className="h-2 w-2 rounded-full bg-[#0A66FF] animate-pulse" />
+            <span>Live Contracts</span>
           </Link>
         </div>
 
