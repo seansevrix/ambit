@@ -1,6 +1,6 @@
--- Postgres-safe, replay-safe baseline bridge.
--- This replaces the original full-init migration so it can be replayed
--- after earlier legacy migrations without failing on already-existing tables.
+-- Fully replay-safe Postgres baseline bridge.
+-- Ensures enum, core tables, indexes, and FKs exist without assuming
+-- earlier legacy migrations succeeded in a specific order.
 
 DO $$
 BEGIN
@@ -14,34 +14,110 @@ BEGIN
 END
 $$;
 
--- Customer: add missing columns if they do not already exist
+-- Create Customer if missing
+CREATE TABLE IF NOT EXISTS "Customer" (
+  "id" SERIAL NOT NULL,
+  "name" TEXT NOT NULL,
+  "email" TEXT NOT NULL,
+  "passwordHash" TEXT,
+  "phone" TEXT,
+  "industry" TEXT,
+  "location" TEXT,
+  "serviceArea" TEXT,
+  "services" TEXT,
+  "segments" "OpportunitySegment"[],
+  "sources" TEXT[],
+  "keywords" TEXT,
+  "naics" TEXT,
+  "naicsCodes" TEXT[],
+  "stripeCustomerId" TEXT,
+  "stripeSubscriptionId" TEXT,
+  "subscriptionStatus" TEXT,
+  "isActive" BOOLEAN NOT NULL DEFAULT false,
+  "digestEnabled" BOOLEAN NOT NULL DEFAULT true,
+  "lastDigestSentAt" TIMESTAMP(3),
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Customer_pkey" PRIMARY KEY ("id")
+);
+
+-- Create Opportunity if missing
+CREATE TABLE IF NOT EXISTS "Opportunity" (
+  "id" SERIAL NOT NULL,
+  "segment" "OpportunitySegment" NOT NULL DEFAULT 'government',
+  "source" TEXT NOT NULL DEFAULT 'sam',
+  "externalId" TEXT,
+  "url" TEXT,
+  "title" TEXT NOT NULL,
+  "location" TEXT NOT NULL DEFAULT '',
+  "naics" TEXT NOT NULL DEFAULT '',
+  "keywords" TEXT,
+  "agency" TEXT,
+  "postedDate" TIMESTAMP(3),
+  "dueDate" TIMESTAMP(3),
+  "summary" TEXT,
+  "category" TEXT,
+  "valueText" TEXT,
+  "status" TEXT,
+  "raw" JSONB,
+  "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" TIMESTAMP(3) NOT NULL,
+  CONSTRAINT "Opportunity_pkey" PRIMARY KEY ("id")
+);
+
+-- Add missing columns to Customer
 ALTER TABLE "Customer"
 ADD COLUMN IF NOT EXISTS "passwordHash" TEXT,
 ADD COLUMN IF NOT EXISTS "serviceArea" TEXT,
 ADD COLUMN IF NOT EXISTS "segments" "OpportunitySegment"[],
 ADD COLUMN IF NOT EXISTS "sources" TEXT[],
+ADD COLUMN IF NOT EXISTS "keywords" TEXT,
+ADD COLUMN IF NOT EXISTS "naics" TEXT,
 ADD COLUMN IF NOT EXISTS "naicsCodes" TEXT[],
+ADD COLUMN IF NOT EXISTS "stripeCustomerId" TEXT,
+ADD COLUMN IF NOT EXISTS "stripeSubscriptionId" TEXT,
+ADD COLUMN IF NOT EXISTS "subscriptionStatus" TEXT,
+ADD COLUMN IF NOT EXISTS "isActive" BOOLEAN NOT NULL DEFAULT false,
 ADD COLUMN IF NOT EXISTS "digestEnabled" BOOLEAN NOT NULL DEFAULT true,
-ADD COLUMN IF NOT EXISTS "lastDigestSentAt" TIMESTAMP(3);
+ADD COLUMN IF NOT EXISTS "lastDigestSentAt" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3);
 
--- Opportunity: add missing columns if they do not already exist
+-- Add missing columns to Opportunity
 ALTER TABLE "Opportunity"
 ADD COLUMN IF NOT EXISTS "segment" "OpportunitySegment" NOT NULL DEFAULT 'government',
 ADD COLUMN IF NOT EXISTS "source" TEXT NOT NULL DEFAULT 'sam',
 ADD COLUMN IF NOT EXISTS "externalId" TEXT,
+ADD COLUMN IF NOT EXISTS "url" TEXT,
+ADD COLUMN IF NOT EXISTS "keywords" TEXT,
+ADD COLUMN IF NOT EXISTS "agency" TEXT,
+ADD COLUMN IF NOT EXISTS "postedDate" TIMESTAMP(3),
 ADD COLUMN IF NOT EXISTS "dueDate" TIMESTAMP(3),
+ADD COLUMN IF NOT EXISTS "summary" TEXT,
 ADD COLUMN IF NOT EXISTS "category" TEXT,
 ADD COLUMN IF NOT EXISTS "valueText" TEXT,
 ADD COLUMN IF NOT EXISTS "status" TEXT,
-ADD COLUMN IF NOT EXISTS "raw" JSONB;
+ADD COLUMN IF NOT EXISTS "raw" JSONB,
+ADD COLUMN IF NOT EXISTS "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+ADD COLUMN IF NOT EXISTS "updatedAt" TIMESTAMP(3);
 
--- Keep defaults aligned
+-- Backfill and defaults for Opportunity
+UPDATE "Opportunity"
+SET "location" = ''
+WHERE "location" IS NULL;
+
+UPDATE "Opportunity"
+SET "naics" = ''
+WHERE "naics" IS NULL;
+
 ALTER TABLE "Opportunity"
 ALTER COLUMN "segment" SET DEFAULT 'government',
 ALTER COLUMN "source" SET DEFAULT 'sam',
-ALTER COLUMN "naics" SET DEFAULT '';
+ALTER COLUMN "naics" SET DEFAULT '',
+ALTER COLUMN "location" SET NOT NULL,
+ALTER COLUMN "naics" SET NOT NULL;
 
--- Create missing tables only if they do not exist
+-- Supporting tables
 CREATE TABLE IF NOT EXISTS "ThumbtackIntegration" (
   "id" SERIAL NOT NULL,
   "customerId" INTEGER NOT NULL,
@@ -98,7 +174,7 @@ CREATE INDEX IF NOT EXISTS "ThumbtackWebhookEvent_processed_idx" ON "ThumbtackWe
 
 CREATE UNIQUE INDEX IF NOT EXISTS "User_email_key" ON "User"("email");
 
--- Foreign keys: add only if missing
+-- Foreign keys
 DO $$
 BEGIN
   IF NOT EXISTS (
