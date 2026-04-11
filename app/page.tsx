@@ -191,15 +191,11 @@ function FeatureRow({
   title,
   body,
   visual,
-  buttonText,
-  buttonHref,
   reverse = false,
 }: {
   title: string;
   body: string;
   visual: ReactNode;
-  buttonText?: string;
-  buttonHref?: string;
   reverse?: boolean;
 }) {
   return (
@@ -219,12 +215,6 @@ function FeatureRow({
           <p className="mt-6 max-w-[560px] text-xl leading-9 text-[#6A6775]">
             {body}
           </p>
-
-          {buttonText && buttonHref ? (
-            <div className="mt-8">
-              <Button href={buttonHref}>{buttonText}</Button>
-            </div>
-          ) : null}
         </div>
       </div>
     </section>
@@ -269,8 +259,6 @@ export default function HomePage() {
       <FeatureRow
         title="We source the right contracts and send them to you."
         body="AMBIT monitors for relevant government and commercial opportunities, reviews the fit, and puts the right jobs in front of your team so you do not have to spend hours hunting for work."
-        buttonText="Get started"
-        buttonHref="/get-started?intent=government&plan=managed_capture"
         visual={<BreakdownCard />}
       />
 
@@ -283,8 +271,6 @@ export default function HomePage() {
       <FeatureRow
         title="Your team stays focused on the work itself."
         body="Instead of getting buried in forms, requirement review, and bid admin, your team can stay focused on operations while AMBIT keeps the pursuit organized from sourcing to submission-ready paperwork."
-        buttonText="Start here"
-        buttonHref="/get-started?intent=government&plan=managed_capture"
         visual={<OpportunityCard />}
       />
 
