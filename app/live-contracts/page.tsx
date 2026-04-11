@@ -1,4 +1,3 @@
-// app/live-contracts/page.tsx
 "use client";
 
 import { useMemo, useState } from "react";
@@ -96,6 +95,7 @@ export default function LiveContractsPage() {
   const [selectedTrade, setSelectedTrade] = useState("All");
   const [selectedState, setSelectedState] = useState("All");
   const [keyword, setKeyword] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const filtered = useMemo(() => {
     const q = keyword.trim().toLowerCase();
@@ -119,6 +119,21 @@ export default function LiveContractsPage() {
       return matchesTrade && matchesState && matchesKeyword;
     });
   }, [selectedTrade, selectedState, keyword]);
+
+  async function handleShare(slug: string, id: string) {
+    const shareUrl =
+      typeof window !== "undefined"
+        ? `${window.location.origin}/live-contracts/${slug}`
+        : `https://ambitco.app/live-contracts/${slug}`;
+
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setCopiedId(null);
+    }
+  }
 
   return (
     <main className="min-h-screen bg-[#EAF3FF] text-black">
@@ -238,23 +253,29 @@ export default function LiveContractsPage() {
                     </p>
 
                     <div className="mt-4 flex flex-col gap-2">
+                      <Link
+                        href={`/live-contracts/${opp.slug}`}
+                        className="inline-flex items-center justify-center rounded-2xl bg-black px-4 py-3 text-sm font-medium text-white"
+                      >
+                        View in Ambit
+                      </Link>
+
+                      <button
+                        type="button"
+                        onClick={() => handleShare(opp.slug, opp.id)}
+                        className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
+                      >
+                        {copiedId === opp.id ? "Ambit link copied" : "Share"}
+                      </button>
+
                       <a
                         href={opp.officialUrl}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center justify-center rounded-2xl bg-black px-4 py-3 text-sm font-medium text-white"
+                        className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
                       >
                         View Official Source
                       </a>
-
-                      <Link
-                        href={`/get-started?opportunity=${encodeURIComponent(
-                          opp.title
-                        )}`}
-                        className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium"
-                      >
-                        Start With Ambit
-                      </Link>
                     </div>
                   </div>
                 </div>
