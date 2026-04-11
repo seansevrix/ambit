@@ -58,8 +58,9 @@ export default function SiteNav() {
         <div className="hidden md:flex justify-self-center">
           <Link
             href="/live-contracts"
-            className="inline-flex items-center justify-center rounded-full border border-black/15 bg-black px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
+            className="inline-flex items-center gap-2 rounded-full border border-[#1E9BA2]/20 bg-[#DFF5F4] px-4 py-2 text-sm font-semibold text-[#11656B] shadow-[0_6px_20px_rgba(30,155,162,0.10)] transition duration-200 hover:-translate-y-[1px] hover:bg-[#D4F1EF] hover:shadow-[0_10px_24px_rgba(30,155,162,0.16)]"
           >
+            <span className="h-2 w-2 rounded-full bg-[#1DB6AE] animate-pulse" />
             Live Contracts
           </Link>
         </div>
