@@ -44,7 +44,6 @@ export default function SiteNav() {
       )}
     >
       <div className="mx-auto grid max-w-[1180px] grid-cols-[1fr_auto_1fr] items-center px-6 py-4 lg:px-10">
-        {/* Left */}
         <div className="justify-self-start">
           <Link href="/" className="flex items-center gap-3">
             <span
@@ -56,17 +55,15 @@ export default function SiteNav() {
           </Link>
         </div>
 
-        {/* Middle */}
         <div className="hidden md:flex justify-self-center">
           <Link
             href="/live-contracts"
-            className="text-sm font-medium text-black transition hover:opacity-70"
+            className="inline-flex items-center justify-center rounded-full border border-black/15 bg-black px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
           >
             Live Contracts
           </Link>
         </div>
 
-        {/* Right */}
         <div className="justify-self-end">
           <Link
             href="/login"
