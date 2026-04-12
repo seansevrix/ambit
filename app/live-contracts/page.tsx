@@ -116,23 +116,6 @@ function formatDate(date: string | null) {
   });
 }
 
-function getDaysLeft(date: string | null) {
-  if (!date) return null;
-  const now = new Date();
-  const due = new Date(date);
-  due.setHours(23, 59, 59, 999);
-  const diff = due.getTime() - now.getTime();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
-}
-
-function getDeadlineText(date: string | null) {
-  const daysLeft = getDaysLeft(date);
-
-  if (daysLeft === null) return "Deadline TBD";
-  if (daysLeft <= 0) return "Closing soon";
-  return `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
-}
-
 function getTradeLabel(category: string | null) {
   if (!category) return "Opportunity";
   return TRADE_LABELS[category] || category;
@@ -251,7 +234,7 @@ export default async function LiveContractsPage({
           </h1>
 
           <p className="mt-4 max-w-3xl text-[15px] leading-7 text-black/70">
-            If you’re interested in pursuing an opportunity, contact{" "}
+            Interested in pursuing an opportunity? Contact{" "}
             <a
               href="mailto:ambit@sevrixgov.com"
               className="font-medium text-black underline underline-offset-4"
@@ -401,9 +384,6 @@ export default async function LiveContractsPage({
                     </p>
                     <p className="mt-1 text-lg font-semibold">
                       {formatDate(opp.dueDate)}
-                    </p>
-                    <p className="mt-1 text-sm text-black/60">
-                      {getDeadlineText(opp.dueDate)}
                     </p>
 
                     <div className="mt-4 flex flex-col gap-2">
