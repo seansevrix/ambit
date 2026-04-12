@@ -1,13 +1,5 @@
 import Link from "next/link";
 import Script from "next/script";
-import { PrismaClient, Prisma } from "@prisma/client";
-
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
-const prisma = globalForPrisma.prisma ?? new PrismaClient();
-
-if (process.env.NODE_ENV !== "production") {
-  globalForPrisma.prisma = prisma;
-}
 
 const TRADE_OPTIONS = [
   { value: "All", label: "All" },
@@ -38,6 +30,20 @@ const TRADE_LABELS = Object.fromEntries(
   TRADE_OPTIONS.map((option) => [option.value, option.label])
 ) as Record<string, string>;
 
+type LiveOpportunity = {
+  id: number | string;
+  slug: string;
+  title: string;
+  buyer: string | null;
+  location: string | null;
+  state: string | null;
+  category: string | null;
+  dueDate: string | null;
+  source: string;
+  summaryShort: string | null;
+  sourceUrl: string;
+};
+
 function getSingleValue(
   value: string | string[] | undefined,
   fallback = ""
@@ -46,7 +52,7 @@ function getSingleValue(
   return value ?? fallback;
 }
 
-function formatDate(date: Date | null) {
+function formatDate(date: string | null) {
   if (!date) return "TBD";
   return new Date(date).toLocaleDateString("en-US", {
     month: "short",
@@ -55,7 +61,7 @@ function formatDate(date: Date | null) {
   });
 }
 
-function getDaysLeft(date: Date | null) {
+function getDaysLeft(date: string | null) {
   if (!date) return null;
   const now = new Date();
   const due = new Date(date);
@@ -64,7 +70,7 @@ function getDaysLeft(date: Date | null) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-function getDeadlineText(date: Date | null) {
+function getDeadlineText(date: string | null) {
   const daysLeft = getDaysLeft(date);
 
   if (daysLeft === null) return "Deadline TBD";
@@ -77,9 +83,60 @@ function getTradeLabel(category: string | null) {
   return TRADE_LABELS[category] || category;
 }
 
-type SearchParamsShape = Promise<
-  Record<string, string | string[] | undefined>
->;
+function getBackendBaseUrl() {
+  return (
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "https://ambit-0dnp.onrender.com"
+  );
+}
+
+async function fetchLiveContracts(params: {
+  trade: string;
+  state: string;
+  keyword: string;
+}) {
+  const backendBase = getBackendBaseUrl();
+
+  const url = new URL("/engine/live-contracts", backendBase);
+
+  if (params.trade && params.trade !== "All") {
+    url.searchParams.set("trade", params.trade);
+  }
+
+  if (params.state && params.state !== "All") {
+    url.searchParams.set("state", params.state);
+  }
+
+  if (params.keyword.trim()) {
+    url.searchParams.set("keyword", params.keyword.trim());
+  }
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+      next: { revalidate: 0 },
+    });
+
+    if (!res.ok) {
+      return [];
+    }
+
+    const data = await res.json();
+
+    if (Array.isArray(data)) return data as LiveOpportunity[];
+    if (Array.isArray(data?.opportunities)) {
+      return data.opportunities as LiveOpportunity[];
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+type SearchParamsShape = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function LiveContractsPage({
   searchParams,
@@ -92,67 +149,21 @@ export default async function LiveContractsPage({
   const selectedState = getSingleValue(resolvedSearchParams.state, "All");
   const keyword = getSingleValue(resolvedSearchParams.keyword, "").trim();
 
-  const where: Prisma.LiveOpportunityWhereInput = {
-    isActive: true,
-    source: "sam.gov",
-  };
-
-  if (selectedTrade !== "All") {
-    where.category = selectedTrade;
-  }
-
-  if (selectedState !== "All") {
-    where.state = selectedState;
-  }
-
-  if (keyword) {
-    where.OR = [
-      { title: { contains: keyword, mode: "insensitive" } },
-      { buyer: { contains: keyword, mode: "insensitive" } },
-      { location: { contains: keyword, mode: "insensitive" } },
-      { state: { contains: keyword, mode: "insensitive" } },
-      { category: { contains: keyword, mode: "insensitive" } },
-      { summaryShort: { contains: keyword, mode: "insensitive" } },
-      { summaryLong: { contains: keyword, mode: "insensitive" } },
-      { noticeType: { contains: keyword, mode: "insensitive" } },
-      { naics: { contains: keyword, mode: "insensitive" } },
-    ];
-  }
-
-  const [opportunities, stateRows] = await Promise.all([
-    prisma.liveOpportunity.findMany({
-      where,
-      orderBy: [{ dueDate: "asc" }, { postedDate: "desc" }, { createdAt: "desc" }],
-      take: 60,
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        buyer: true,
-        location: true,
-        state: true,
-        category: true,
-        dueDate: true,
-        source: true,
-        summaryShort: true,
-        sourceUrl: true,
-      },
-    }),
-    prisma.liveOpportunity.findMany({
-      where: {
-        isActive: true,
-        source: "sam.gov",
-        state: { not: null },
-      },
-      select: { state: true },
-      distinct: ["state"],
-      orderBy: { state: "asc" },
-    }),
-  ]);
+  const opportunities = await fetchLiveContracts({
+    trade: selectedTrade,
+    state: selectedState,
+    keyword,
+  });
 
   const stateOptions = [
     "All",
-    ...stateRows.map((row) => row.state).filter((value): value is string => Boolean(value)),
+    ...Array.from(
+      new Set(
+        opportunities
+          .map((opp) => opp.state)
+          .filter((value): value is string => Boolean(value))
+      )
+    ).sort(),
   ];
 
   return (
@@ -285,8 +296,7 @@ export default async function LiveContractsPage({
         <div className="grid gap-4">
           {opportunities.map((opp) => {
             const tradeLabel = getTradeLabel(opp.category);
-            const locationText =
-              opp.location || opp.state || "Location TBD";
+            const locationText = opp.location || opp.state || "Location TBD";
             const summary =
               opp.summaryShort || "Active public opportunity available inside Ambit.";
             const shareUrl = `https://ambitco.app/live-contracts/${opp.slug}`;
