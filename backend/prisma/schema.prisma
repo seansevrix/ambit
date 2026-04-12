@@ -147,7 +147,49 @@ model Opportunity {
   @@index([segment])
   @@index([source])
 }
+model LiveOpportunity {
+  id      Int                @id @default(autoincrement())
+  segment OpportunitySegment @default(government)
 
+  // where it came from (sam.gov, opengov, planhub, etc.)
+  source     String
+  externalId String?
+  sourceUrl  String
+
+  // public page fields
+  slug     String @unique
+  title    String
+  buyer    String?
+  location String?
+  state    String?
+  naics    String?
+  category String?
+  status   String?
+  noticeType String?
+
+  // content shown on public cards/detail pages
+  summaryShort String?
+  summaryLong  String?
+
+  postedDate DateTime?
+  dueDate    DateTime?
+  isActive   Boolean @default(true)
+
+  // optional debugging/raw source payload
+  raw Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([source, externalId])
+  @@unique([source, sourceUrl])
+  @@index([segment])
+  @@index([source])
+  @@index([state])
+  @@index([category])
+  @@index([dueDate])
+  @@index([isActive])
+}
 model ThumbtackIntegration {
   id         Int      @id @default(autoincrement())
   customerId Int      @unique
