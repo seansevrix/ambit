@@ -67,14 +67,6 @@ function clampScore(n: number) {
   return Math.max(0, Math.min(100, Math.round(n)));
 }
 
-function scoreLabel(n: number) {
-  if (n >= 90) return "Elite Fit";
-  if (n >= 75) return "Strong Fit";
-  if (n >= 60) return "Solid Fit";
-  if (n >= 40) return "Possible";
-  return "Low";
-}
-
 function prettyErr(e: any) {
   if (e?.name === "AbortError") {
     return "Server is waking up — please retry in a few seconds.";
@@ -102,6 +94,37 @@ function buildPursueHref(match: Match, customerId: number) {
   );
 
   return `mailto:ambit@sevrixgov.com?subject=${subject}&body=${body}`;
+}
+
+function looksLikeRawNoticeSummary(summary?: string | null) {
+  const s = String(summary || "").trim().toLowerCase();
+  if (!s) return true;
+
+  return (
+    s.startsWith("http://") ||
+    s.startsWith("https://") ||
+    s.includes("api.sam.gov/prod/opportunities") ||
+    s.includes("noticedesc?noticeid=")
+  );
+}
+
+function buildReadableSummary(match: Match) {
+  const raw = String(match.summary || "").trim();
+
+  if (raw && !looksLikeRawNoticeSummary(raw)) {
+    return raw;
+  }
+
+  const parts = [
+    match.title ? `${match.title}.` : "This opportunity is currently active.",
+    match.agency ? `Buyer: ${match.agency}.` : null,
+    match.location ? `Location: ${match.location}.` : null,
+    match.naics ? `NAICS: ${match.naics}.` : null,
+    match.dueDate ? `Current due date: ${fmtDate(match.dueDate)}.` : null,
+    "Review the official source for full scope, requirements, and submission instructions.",
+  ].filter(Boolean);
+
+  return parts.join(" ");
 }
 
 type SortKey = "score_desc" | "posted_desc" | "due_asc" | "title_asc";
@@ -349,10 +372,12 @@ export default function ScoutingReportClient(props: { customerId?: number }) {
             const score = clampScore(m.score || 0);
             const isStarred = !!starred[m.id];
             const isExpanded = !!expanded[m.id];
-            const summary = m.summary || "";
-            const showToggle = summary.length > 420;
+            const readableSummary = buildReadableSummary(m);
+            const showToggle = readableSummary.length > 520;
             const visibleSummary =
-              isExpanded || !showToggle ? summary : `${summary.slice(0, 420)}…`;
+              isExpanded || !showToggle
+                ? readableSummary
+                : `${readableSummary.slice(0, 520)}…`;
 
             return (
               <div
@@ -434,72 +459,62 @@ export default function ScoutingReportClient(props: { customerId?: number }) {
                   </div>
                 </div>
 
-                <div className="mt-5 grid gap-4 lg:grid-cols-[1.4fr_0.9fr]">
+                <div className="mt-5 grid gap-4 lg:grid-cols-[1.45fr_0.85fr]">
                   <div className="rounded-[22px] border border-slate-200 bg-white p-5">
                     <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Opportunity summary
+                      Opportunity Summary
                     </div>
 
-                    {summary ? (
-                      <>
-                        <p className="mt-3 text-[15px] leading-7 text-slate-700">
-                          {visibleSummary}
-                        </p>
+                    <p className="mt-3 text-[15px] leading-7 text-slate-700">
+                      {visibleSummary}
+                    </p>
 
-                        {showToggle ? (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              setExpanded((prev) => ({
-                                ...prev,
-                                [m.id]: !prev[m.id],
-                              }))
-                            }
-                            className="mt-3 text-sm font-semibold text-[#1A4FA3] underline underline-offset-4"
-                          >
-                            {isExpanded ? "Show less" : "Show more"}
-                          </button>
-                        ) : null}
-                      </>
-                    ) : (
-                      <p className="mt-3 text-[15px] leading-7 text-slate-700">
-                        No summary returned yet for this opportunity.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-[22px] border border-slate-200 bg-[#F8FBFF] p-5">
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
-                      Match details
-                    </div>
-
-                    <div className="mt-3 inline-flex rounded-full bg-[#1A4FA3]/10 px-3 py-1 text-xs font-semibold text-[#1A4FA3] ring-1 ring-[#1A4FA3]/15">
-                      {scoreLabel(score)}
-                    </div>
+                    {showToggle ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpanded((prev) => ({
+                            ...prev,
+                            [m.id]: !prev[m.id],
+                          }))
+                        }
+                        className="mt-3 text-sm font-semibold text-[#1A4FA3] underline underline-offset-4"
+                      >
+                        {isExpanded ? "Show less" : "Show more"}
+                      </button>
+                    ) : null}
 
                     {m.reasons?.length ? (
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        {m.reasons.slice(0, 4).map((r, idx) => (
-                          <span
-                            key={idx}
-                            className="inline-flex items-center rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-700"
-                          >
-                            {r}
-                          </span>
-                        ))}
+                      <div className="mt-6">
+                        <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Why It Matched
+                        </div>
+
+                        <ul className="mt-3 list-disc space-y-2 pl-5 text-[14px] leading-6 text-slate-700">
+                          {m.reasons.map((reason, idx) => (
+                            <li key={idx}>{reason}</li>
+                          ))}
+                        </ul>
                       </div>
-                    ) : (
-                      <p className="mt-4 text-sm text-slate-600">
-                        No match reasons returned.
-                      </p>
-                    )}
+                    ) : null}
 
                     {m.profileIncomplete ? (
-                      <div className="mt-4 rounded-2xl border border-blue-100 bg-white px-4 py-3 text-sm text-slate-700">
+                      <div className="mt-5 rounded-2xl border border-blue-100 bg-[#F8FBFF] px-4 py-3 text-sm text-slate-700">
                         Profile incomplete — add services, keywords, and NAICS for
                         better matches.
                       </div>
                     ) : null}
+                  </div>
+
+                  <div className="rounded-[22px] border border-slate-200 bg-[#F8FBFF] p-5">
+                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Next Step
+                    </div>
+
+                    <p className="mt-3 text-[15px] leading-7 text-slate-700">
+                      If you want to move on this opportunity, Ambit can begin the
+                      pursuit and help organize the front-end process.
+                    </p>
 
                     <div className="mt-5 flex flex-col gap-2">
                       <a
