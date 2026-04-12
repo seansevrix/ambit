@@ -43,7 +43,9 @@ function abortableFetch(
 ) {
   const ac = new AbortController();
   const t = setTimeout(() => ac.abort(), ms);
-  return fetch(url, { ...init, signal: ac.signal }).finally(() => clearTimeout(t));
+  return fetch(url, { ...init, signal: ac.signal }).finally(() =>
+    clearTimeout(t)
+  );
 }
 
 function formatDate(iso?: string | null) {
@@ -72,21 +74,49 @@ function scoreLabel(score?: number) {
 }
 
 function prettyErr(e: any) {
-  if (e?.name === "AbortError")
+  if (e?.name === "AbortError") {
     return "Server is waking up — please retry in a few seconds.";
+  }
   return e?.message || "Unknown error";
+}
+
+function buildPursueHref(args: {
+  customerId: number;
+  title: string;
+  agency: string;
+  location: string;
+  naics?: string | null;
+  url?: string | null;
+}) {
+  const subject = encodeURIComponent(`Let's Pursue: ${args.title}`);
+  const body = encodeURIComponent(
+    [
+      "Hi Ambit team,",
+      "",
+      "I'd like to pursue this opportunity.",
+      "",
+      `Customer ID: ${args.customerId}`,
+      `Opportunity: ${args.title}`,
+      `Agency: ${args.agency}`,
+      `Location: ${args.location}`,
+      `NAICS: ${args.naics || "N/A"}`,
+      `Source: ${args.url || "N/A"}`,
+      "",
+      "Please reach out with next steps.",
+    ].join("\n")
+  );
+
+  return `mailto:ambit@sevrixgov.com?subject=${subject}&body=${body}`;
 }
 
 export default function MatchesClient({ customerId }: { customerId: number }) {
   const baseUrl = useMemo(() => API_BASE, []);
 
   const [mounted, setMounted] = useState(false);
-
   const [loading, setLoading] = useState(true);
   const [needsSub, setNeedsSub] = useState(false);
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [error, setError] = useState<string | null>(null);
-
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [showProfile, setShowProfile] = useState(false);
 
@@ -134,6 +164,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
   const startCheckout = useCallback(async () => {
     setError(null);
+
     try {
       const res = await abortableFetch(
         "/api/stripe/checkout",
@@ -146,10 +177,15 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
       );
 
       const txt = await res.text().catch(() => "");
-      if (!res.ok) throw new Error(txt || `Checkout failed: ${res.status}`);
+      if (!res.ok) {
+        throw new Error(txt || `Checkout failed: ${res.status}`);
+      }
 
       const { url } = JSON.parse(txt || "{}");
-      if (!url) throw new Error("Missing checkout URL.");
+      if (!url) {
+        throw new Error("Missing checkout URL.");
+      }
+
       window.location.href = url;
     } catch (e: any) {
       setError(prettyErr(e));
@@ -160,7 +196,6 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     load();
   }, [load]);
 
-  // When returning from Stripe, poll a bit for active status -> matches.
   useEffect(() => {
     const sp = new URLSearchParams(window.location.search);
     if (sp.get("checkout") !== "success") return;
@@ -177,7 +212,6 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     return () => clearInterval(timer);
   }, [load]);
 
-  // Lock scroll while modal is open
   useEffect(() => {
     if (!showProfile) return;
     const prev = document.body.style.overflow;
@@ -187,7 +221,6 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     };
   }, [showProfile]);
 
-  // ✅ HARD FIX: Hide SiteNav while modal is open (beats any z-index problem)
   useEffect(() => {
     const cls = "ambit-hide-nav";
     try {
@@ -196,6 +229,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     } catch {
       // ignore
     }
+
     return () => {
       try {
         document.body.classList.remove(cls);
@@ -205,26 +239,36 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
     };
   }, [showProfile]);
 
-  // ESC closes modal
   useEffect(() => {
     if (!showProfile) return;
+
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") setShowProfile(false);
     }
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [showProfile]);
 
-  const ProfileModal =
+  const profileModal =
     mounted && showProfile
       ? createPortal(
           <div style={styles.profileOverlay} role="dialog" aria-modal="true">
-            <div style={styles.profileBackdrop} onClick={() => setShowProfile(false)} />
+            <div
+              style={styles.profileBackdrop}
+              onClick={() => setShowProfile(false)}
+            />
 
-            <div style={styles.profilePanelWrap} onClick={(e) => e.stopPropagation()}>
+            <div
+              style={styles.profilePanelWrap}
+              onClick={(e) => e.stopPropagation()}
+            >
               <div style={styles.profileTopRow}>
                 <div style={styles.profileTitle}>Edit profile</div>
-                <button onClick={() => setShowProfile(false)} style={styles.profileCloseBtn}>
+                <button
+                  onClick={() => setShowProfile(false)}
+                  style={styles.profileCloseBtn}
+                >
                   Close
                 </button>
               </div>
@@ -250,10 +294,13 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
           <div style={styles.pageHeader}>
             <div>
               <div style={styles.kicker}>AMBIT</div>
-              <h1 style={styles.h1}>Scouting Report</h1>
-              <div style={styles.subtle}>Customer #{customerId}</div>
+              <h1 style={styles.h1}>Opportunity Matches</h1>
+              <div style={styles.subtle}>
+                Ranked opportunities tailored to your profile.
+              </div>
             </div>
           </div>
+
           <div style={styles.card}>
             <div style={styles.loading}>Loading matches…</div>
           </div>
@@ -264,21 +311,26 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
   return (
     <div style={styles.shell}>
-      {ProfileModal}
+      {profileModal}
 
       <div style={styles.container}>
         <div style={styles.pageHeader}>
           <div>
             <div style={styles.kicker}>AMBIT</div>
-            <h1 style={styles.h1}>Scouting Report</h1>
-            <div style={styles.subtle}>Customer #{customerId}</div>
+            <h1 style={styles.h1}>Opportunity Matches</h1>
+            <div style={styles.subtle}>
+              Ranked opportunities tailored to your profile.
+            </div>
           </div>
 
           <div style={styles.headerActions}>
-            <button onClick={() => setShowProfile(true)} style={styles.ghostBtn}>
-              Edit Profile
+            <button
+              onClick={() => setShowProfile(true)}
+              style={styles.secondaryBtn}
+            >
+              Edit profile
             </button>
-            <button onClick={load} style={styles.ghostBtn}>
+            <button onClick={load} style={styles.secondaryBtn}>
               Refresh
             </button>
           </div>
@@ -288,7 +340,7 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
           <div style={styles.card}>
             <div style={styles.paywallRow}>
               <div>
-                <div style={styles.sectionTitle}>Subscription Required</div>
+                <div style={styles.sectionTitle}>Subscription required</div>
                 <div style={styles.body}>
                   This customer is inactive. Subscribe to unlock match results.
                 </div>
@@ -298,8 +350,8 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                 <button onClick={startCheckout} style={styles.primaryBtn}>
                   Subscribe
                 </button>
-                <button onClick={load} style={styles.ghostBtn}>
-                  I already subscribed → Refresh
+                <button onClick={load} style={styles.secondaryBtn}>
+                  I already subscribed
                 </button>
               </div>
             </div>
@@ -309,7 +361,13 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
         ) : (
           <>
             {error ? (
-              <div style={{ ...styles.card, borderColor: "rgba(220,38,38,.35)" }}>
+              <div
+                style={{
+                  ...styles.card,
+                  border: "1px solid rgba(220,38,38,0.18)",
+                  background: "rgba(255,255,255,0.92)",
+                }}
+              >
                 <div style={styles.errorText}>Error: {error}</div>
               </div>
             ) : null}
@@ -318,11 +376,12 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
               <div style={styles.card}>
                 <div style={styles.sectionTitle}>No matches yet</div>
                 <div style={styles.body}>
-                  Add more customer info (services, keywords, NAICS) and more opportunities.
+                  Add more customer info like services, keywords, and NAICS to
+                  improve match quality.
                 </div>
               </div>
             ) : (
-              <div style={{ display: "grid", gap: 14 }}>
+              <div style={styles.matchesWrap}>
                 {matches.map((m, idx) => {
                   const key = String(m.id ?? idx);
                   const posted = formatDate(m.postedDate);
@@ -330,23 +389,32 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                   const title = safeStr(m.title) || "Untitled opportunity";
                   const location = safeStr(m.location) || "Unknown location";
                   const naics = safeStr(m.naics);
-                  const score = typeof m.score === "number" ? m.score : undefined;
+                  const score =
+                    typeof m.score === "number" ? m.score : undefined;
                   const label = scoreLabel(score);
                   const reasons = Array.isArray(m.reasons) ? m.reasons : [];
-
                   const fullSummary = safeStr(m.summary);
                   const isExpanded = !!expanded[key];
 
-                  const summaryToShow =
-                    !fullSummary
-                      ? null
-                      : isExpanded
-                      ? fullSummary
-                      : fullSummary.length > 900
-                      ? fullSummary.slice(0, 900) + "…"
-                      : fullSummary;
+                  const summaryToShow = !fullSummary
+                    ? null
+                    : isExpanded
+                    ? fullSummary
+                    : fullSummary.length > 900
+                    ? `${fullSummary.slice(0, 900)}…`
+                    : fullSummary;
 
-                  const hasLongSummary = !!fullSummary && fullSummary.length > 900;
+                  const hasLongSummary =
+                    !!fullSummary && fullSummary.length > 900;
+
+                  const pursueHref = buildPursueHref({
+                    customerId,
+                    title,
+                    agency,
+                    location,
+                    naics,
+                    url: m.url,
+                  });
 
                   return (
                     <div key={key} style={styles.card}>
@@ -356,45 +424,52 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
                             <div style={styles.title}>{title}</div>
                           </div>
 
-                          <div style={styles.metaLine}>
-                            <span style={styles.metaStrong}>{agency}</span>
-                            <span style={styles.metaDot}>•</span>
-                            <span>{location}</span>
+                          <div style={styles.metaRow}>
+                            <span style={styles.metaChip}>{location}</span>
+                            <span style={styles.metaChip}>{agency}</span>
                             {naics ? (
-                              <>
-                                <span style={styles.metaDot}>•</span>
-                                <span>NAICS {naics}</span>
-                              </>
+                              <span style={styles.metaChip}>NAICS {naics}</span>
                             ) : null}
                             {posted ? (
-                              <>
-                                <span style={styles.metaDot}>•</span>
-                                <span>Posted {posted}</span>
-                              </>
+                              <span style={styles.metaChip}>
+                                Posted {posted}
+                              </span>
                             ) : null}
                           </div>
                         </div>
 
                         <div style={styles.scoreBox}>
-                          <div style={styles.scoreKicker}>Match</div>
+                          <div style={styles.scoreKicker}>Match score</div>
                           <div style={styles.scoreValue}>
                             {typeof score === "number" ? score : "?"}
                           </div>
                           <div style={styles.scoreLabel}>{label}</div>
 
-                          {m.url ? (
-                            <a href={m.url} target="_blank" rel="noreferrer" style={styles.linkBtn}>
-                              View Source →
+                          <div style={styles.scoreActions}>
+                            {m.url ? (
+                              <a
+                                href={m.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                style={styles.linkBtn}
+                              >
+                                View Source
+                              </a>
+                            ) : (
+                              <div style={styles.noLink}>No source link</div>
+                            )}
+
+                            <a href={pursueHref} style={styles.pursueBtn}>
+                              Let’s Pursue
                             </a>
-                          ) : (
-                            <div style={styles.noLink}>No source link</div>
-                          )}
+                          </div>
                         </div>
                       </div>
 
                       <div style={styles.grid}>
                         <div style={styles.section}>
                           <div style={styles.sectionTitle}>Why it matched</div>
+
                           {reasons.length ? (
                             <ul style={styles.list}>
                               {reasons.map((r, i2) => (
@@ -409,25 +484,34 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 
                           {m.profileIncomplete ? (
                             <div style={styles.callout}>
-                              Profile incomplete — add services/keywords/NAICS for better matches.
+                              Profile incomplete — add services, keywords, and
+                              NAICS for better matches.
                             </div>
                           ) : null}
                         </div>
 
                         <div style={styles.section}>
-                          <div style={styles.sectionTitle}>Opportunity summary</div>
+                          <div style={styles.sectionTitle}>
+                            Opportunity summary
+                          </div>
+
                           {summaryToShow ? (
                             <>
                               <div style={styles.body}>{summaryToShow}</div>
+
                               {hasLongSummary ? (
-                                <button onClick={() => toggleExpanded(key)} style={styles.textBtn}>
+                                <button
+                                  onClick={() => toggleExpanded(key)}
+                                  style={styles.textBtn}
+                                >
                                   {isExpanded ? "Show less" : "Show more"}
                                 </button>
                               ) : null}
                             </>
                           ) : (
                             <div style={styles.body}>
-                              No summary yet. (Next step: auto-generate this from the posting.)
+                              No summary yet. The source is still available for
+                              review.
                             </div>
                           )}
                         </div>
@@ -447,59 +531,66 @@ export default function MatchesClient({ customerId }: { customerId: number }) {
 const styles: Record<string, CSSProperties> = {
   shell: {
     minHeight: "100vh",
-    padding: "28px 16px",
-    background: "#0b0f14",
-    color: "rgba(255,255,255,0.92)",
+    padding: "32px 16px 48px",
+    background: "#EAF3FF",
+    color: "#0F172A",
     fontFamily:
       '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
   },
   container: {
-    maxWidth: 1050,
+    maxWidth: 1180,
     margin: "0 auto",
   },
   pageHeader: {
     display: "flex",
     alignItems: "flex-end",
     justifyContent: "space-between",
-    gap: 14,
-    marginBottom: 16,
+    gap: 16,
+    flexWrap: "wrap",
+    marginBottom: 18,
   },
   kicker: {
     fontSize: 12,
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
     textTransform: "uppercase",
-    opacity: 0.7,
-    marginBottom: 6,
+    color: "rgba(25, 55, 109, 0.70)",
+    marginBottom: 8,
+    fontWeight: 800,
   },
   h1: {
     margin: 0,
-    fontSize: 30,
+    fontSize: 32,
     fontWeight: 900,
-    letterSpacing: -0.3,
+    letterSpacing: -0.6,
+    color: "#0F172A",
   },
   subtle: {
-    marginTop: 6,
-    opacity: 0.7,
-    fontSize: 13,
+    marginTop: 8,
+    color: "rgba(15, 23, 42, 0.62)",
+    fontSize: 15,
+    lineHeight: 1.5,
   },
   headerActions: {
     display: "flex",
     gap: 10,
     flexWrap: "wrap",
   },
+  matchesWrap: {
+    display: "grid",
+    gap: 14,
+  },
   card: {
-    borderRadius: 16,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.04)",
-    padding: 16,
-    boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+    borderRadius: 24,
+    border: "1px solid rgba(15, 23, 42, 0.08)",
+    background: "rgba(255,255,255,0.96)",
+    padding: 18,
+    boxShadow: "0 10px 30px rgba(15,23,42,0.06)",
   },
   loading: {
     fontWeight: 700,
-    opacity: 0.9,
+    color: "rgba(15, 23, 42, 0.80)",
   },
 
-  // ✅ Overlay (nav hidden via body class, but we still keep this clean + scrollable)
   profileOverlay: {
     position: "fixed",
     inset: 0,
@@ -512,38 +603,39 @@ const styles: Record<string, CSSProperties> = {
   profileBackdrop: {
     position: "fixed",
     inset: 0,
-    background: "rgba(0,0,0,0.35)",
+    background: "rgba(15, 23, 42, 0.28)",
+    backdropFilter: "blur(4px)",
   },
   profilePanelWrap: {
     position: "relative",
     width: "100%",
     maxWidth: 980,
-    borderRadius: 18,
+    borderRadius: 22,
     overflow: "hidden",
-    boxShadow: "0 30px 90px rgba(0,0,0,0.45)",
-    background: "rgba(255,255,255,0.92)",
+    boxShadow: "0 30px 90px rgba(15,23,42,0.25)",
+    background: "rgba(255,255,255,0.98)",
   },
   profileTopRow: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 12,
-    padding: "12px 14px",
-    background: "rgba(255,255,255,0.92)",
-    borderBottom: "1px solid rgba(0,0,0,0.08)",
+    padding: "14px 16px",
+    background: "rgba(255,255,255,0.98)",
+    borderBottom: "1px solid rgba(15,23,42,0.08)",
   },
   profileTitle: {
     fontWeight: 900,
-    color: "rgba(0,0,0,0.70)",
+    color: "#0F172A",
   },
   profileCloseBtn: {
-    padding: "8px 12px",
+    padding: "9px 13px",
     borderRadius: 999,
-    border: "1px solid rgba(0,0,0,0.10)",
+    border: "1px solid rgba(15,23,42,0.10)",
     background: "white",
-    fontWeight: 900,
+    fontWeight: 800,
     cursor: "pointer",
-    color: "rgba(0,0,0,0.70)",
+    color: "#0F172A",
   },
   profileScroll: {
     padding: 14,
@@ -554,108 +646,131 @@ const styles: Record<string, CSSProperties> = {
   reportTopRow: {
     display: "grid",
     gridTemplateColumns: "1fr 220px",
-    gap: 14,
+    gap: 16,
     alignItems: "start",
   },
   titleRow: {
     display: "flex",
     alignItems: "center",
     gap: 10,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   title: {
     fontSize: 18,
     fontWeight: 900,
-    letterSpacing: -0.2,
-    lineHeight: 1.25,
-    overflow: "hidden",
-    textOverflow: "ellipsis",
-    whiteSpace: "nowrap",
+    letterSpacing: -0.25,
+    lineHeight: 1.3,
+    color: "#0F172A",
   },
-  metaLine: {
+  metaRow: {
     display: "flex",
     flexWrap: "wrap",
     gap: 8,
     alignItems: "center",
-    fontSize: 13,
-    opacity: 0.85,
-    lineHeight: 1.4,
   },
-  metaStrong: {
-    fontWeight: 800,
-    opacity: 0.95,
-  },
-  metaDot: {
-    opacity: 0.55,
+  metaChip: {
+    display: "inline-flex",
+    alignItems: "center",
+    borderRadius: 999,
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "#F5F8FF",
+    padding: "7px 12px",
+    fontSize: 12,
+    fontWeight: 700,
+    color: "rgba(15,23,42,0.72)",
+    lineHeight: 1.2,
   },
   scoreBox: {
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(0,0,0,0.18)",
+    borderRadius: 20,
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "#F8FBFF",
     padding: 14,
     textAlign: "center",
   },
   scoreKicker: {
-    fontSize: 12,
-    opacity: 0.7,
+    fontSize: 11,
+    color: "rgba(15,23,42,0.48)",
     fontWeight: 800,
     textTransform: "uppercase",
-    letterSpacing: 1.0,
+    letterSpacing: 1.1,
   },
   scoreValue: {
-    fontSize: 40,
+    fontSize: 36,
     fontWeight: 950,
     letterSpacing: -1,
     marginTop: 6,
-    lineHeight: 1.0,
+    lineHeight: 1,
+    color: "#1D4ED8",
   },
   scoreLabel: {
     marginTop: 6,
     fontSize: 13,
     fontWeight: 800,
-    opacity: 0.9,
+    color: "rgba(15,23,42,0.75)",
+  },
+  scoreActions: {
+    marginTop: 14,
+    display: "flex",
+    flexDirection: "column",
+    gap: 8,
   },
   linkBtn: {
-    display: "inline-block",
-    marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.12)",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 12px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.10)",
     textDecoration: "none",
-    fontWeight: 900,
-    color: "rgba(255,255,255,0.92)",
-    background: "rgba(255,255,255,0.06)",
+    fontWeight: 800,
+    color: "#0F172A",
+    background: "white",
+  },
+  pursueBtn: {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: "11px 12px",
+    borderRadius: 14,
+    border: "none",
+    textDecoration: "none",
+    fontWeight: 800,
+    color: "white",
+    background: "#1D4ED8",
   },
   noLink: {
-    marginTop: 12,
+    padding: "11px 12px",
+    borderRadius: 14,
+    background: "rgba(15,23,42,0.04)",
     fontSize: 12,
-    opacity: 0.6,
+    color: "rgba(15,23,42,0.48)",
+    fontWeight: 700,
   },
   grid: {
-    marginTop: 14,
+    marginTop: 16,
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: 14,
   },
   section: {
-    borderRadius: 14,
-    border: "1px solid rgba(255,255,255,0.08)",
-    background: "rgba(255,255,255,0.03)",
-    padding: 14,
+    borderRadius: 18,
+    border: "1px solid rgba(15,23,42,0.08)",
+    background: "white",
+    padding: 16,
     minWidth: 0,
   },
   sectionTitle: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: 900,
     textTransform: "uppercase",
-    letterSpacing: 1.0,
-    opacity: 0.82,
+    letterSpacing: 1.1,
+    color: "rgba(15,23,42,0.52)",
     marginBottom: 10,
   },
   body: {
     fontSize: 14,
-    lineHeight: 1.6,
-    opacity: 0.92,
+    lineHeight: 1.65,
+    color: "rgba(15,23,42,0.82)",
     whiteSpace: "pre-wrap",
     wordBreak: "break-word",
   },
@@ -664,51 +779,51 @@ const styles: Record<string, CSSProperties> = {
     paddingLeft: 18,
   },
   listItem: {
-    marginBottom: 6,
+    marginBottom: 7,
     fontSize: 14,
     lineHeight: 1.55,
-    opacity: 0.92,
+    color: "rgba(15,23,42,0.82)",
   },
   callout: {
     marginTop: 12,
-    padding: "10px 12px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.10)",
-    background: "rgba(255,255,255,0.05)",
-    fontWeight: 800,
+    padding: "11px 13px",
+    borderRadius: 14,
+    border: "1px solid rgba(29,78,216,0.10)",
+    background: "#F4F8FF",
+    fontWeight: 700,
     fontSize: 13,
-    opacity: 0.9,
+    color: "rgba(15,23,42,0.76)",
   },
   primaryBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
+    padding: "11px 15px",
+    borderRadius: 14,
     border: "none",
-    fontWeight: 900,
+    fontWeight: 800,
     cursor: "pointer",
-    background: "rgba(255,255,255,0.92)",
-    color: "#0b0f14",
+    background: "#1D4ED8",
+    color: "white",
   },
-  ghostBtn: {
-    padding: "10px 14px",
-    borderRadius: 12,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(255,255,255,0.04)",
-    fontWeight: 900,
+  secondaryBtn: {
+    padding: "11px 15px",
+    borderRadius: 14,
+    border: "1px solid rgba(15,23,42,0.10)",
+    background: "white",
+    fontWeight: 800,
     cursor: "pointer",
-    color: "rgba(255,255,255,0.92)",
+    color: "#0F172A",
   },
   textBtn: {
     marginTop: 10,
     padding: 0,
     border: "none",
     background: "transparent",
-    color: "rgba(255,255,255,0.9)",
+    color: "#1D4ED8",
     cursor: "pointer",
-    fontWeight: 900,
+    fontWeight: 800,
     textDecoration: "underline",
   },
   errorText: {
-    color: "rgba(248,113,113,0.95)",
+    color: "#B91C1C",
     fontWeight: 800,
     fontSize: 14,
   },
