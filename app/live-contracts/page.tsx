@@ -30,6 +30,61 @@ const TRADE_LABELS = Object.fromEntries(
   TRADE_OPTIONS.map((option) => [option.value, option.label])
 ) as Record<string, string>;
 
+const STATE_OPTIONS = [
+  { value: "All", label: "All States" },
+  { value: "AL", label: "Alabama" },
+  { value: "AK", label: "Alaska" },
+  { value: "AZ", label: "Arizona" },
+  { value: "AR", label: "Arkansas" },
+  { value: "CA", label: "California" },
+  { value: "CO", label: "Colorado" },
+  { value: "CT", label: "Connecticut" },
+  { value: "DE", label: "Delaware" },
+  { value: "DC", label: "District of Columbia" },
+  { value: "FL", label: "Florida" },
+  { value: "GA", label: "Georgia" },
+  { value: "HI", label: "Hawaii" },
+  { value: "ID", label: "Idaho" },
+  { value: "IL", label: "Illinois" },
+  { value: "IN", label: "Indiana" },
+  { value: "IA", label: "Iowa" },
+  { value: "KS", label: "Kansas" },
+  { value: "KY", label: "Kentucky" },
+  { value: "LA", label: "Louisiana" },
+  { value: "ME", label: "Maine" },
+  { value: "MD", label: "Maryland" },
+  { value: "MA", label: "Massachusetts" },
+  { value: "MI", label: "Michigan" },
+  { value: "MN", label: "Minnesota" },
+  { value: "MS", label: "Mississippi" },
+  { value: "MO", label: "Missouri" },
+  { value: "MT", label: "Montana" },
+  { value: "NE", label: "Nebraska" },
+  { value: "NV", label: "Nevada" },
+  { value: "NH", label: "New Hampshire" },
+  { value: "NJ", label: "New Jersey" },
+  { value: "NM", label: "New Mexico" },
+  { value: "NY", label: "New York" },
+  { value: "NC", label: "North Carolina" },
+  { value: "ND", label: "North Dakota" },
+  { value: "OH", label: "Ohio" },
+  { value: "OK", label: "Oklahoma" },
+  { value: "OR", label: "Oregon" },
+  { value: "PA", label: "Pennsylvania" },
+  { value: "RI", label: "Rhode Island" },
+  { value: "SC", label: "South Carolina" },
+  { value: "SD", label: "South Dakota" },
+  { value: "TN", label: "Tennessee" },
+  { value: "TX", label: "Texas" },
+  { value: "UT", label: "Utah" },
+  { value: "VT", label: "Vermont" },
+  { value: "VA", label: "Virginia" },
+  { value: "WA", label: "Washington" },
+  { value: "WV", label: "West Virginia" },
+  { value: "WI", label: "Wisconsin" },
+  { value: "WY", label: "Wyoming" },
+] as const;
+
 type LiveOpportunity = {
   id: number | string;
   slug: string;
@@ -97,7 +152,6 @@ async function fetchLiveContracts(params: {
   keyword: string;
 }) {
   const backendBase = getBackendBaseUrl();
-
   const url = new URL("/engine/live-contracts", backendBase);
 
   if (params.trade && params.trade !== "All") {
@@ -155,17 +209,6 @@ export default async function LiveContractsPage({
     keyword,
   });
 
-  const stateOptions = [
-    "All",
-    ...Array.from(
-      new Set(
-        opportunities
-          .map((opp) => opp.state)
-          .filter((value): value is string => Boolean(value))
-      )
-    ).sort(),
-  ];
-
   return (
     <main className="min-h-screen bg-[#EAF3FF] text-black">
       <Script id="live-contract-share" strategy="afterInteractive">{`
@@ -208,12 +251,31 @@ export default async function LiveContractsPage({
           </h1>
 
           <p className="mt-4 max-w-3xl text-[15px] leading-7 text-black/70">
-            A public view of active opportunities inside Ambit. These are
-            filtered toward janitorial, landscaping, HVAC, plumbing,
-            electrical, security, waste, roofing, painting, logistics,
-            warehousing, staffing, office support, medical support, and other
-            contractor-friendly lanes.
+            If you’re interested in pursuing an opportunity, contact{" "}
+            <a
+              href="mailto:ambit@sevrixgov.com"
+              className="font-medium text-black underline underline-offset-4"
+            >
+              ambit@sevrixgov.com
+            </a>{" "}
+            to have an Ambit team member begin your pursuit.
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <a
+              href="mailto:ambit@sevrixgov.com?subject=Ambit%20Live%20Contract%20Pursuit"
+              className="inline-flex items-center justify-center rounded-2xl bg-black px-5 py-3 text-sm font-medium text-white"
+            >
+              Contact Ambit
+            </a>
+
+            <Link
+              href="/get-started"
+              className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-5 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
 
         <form
@@ -248,9 +310,9 @@ export default async function LiveContractsPage({
               defaultValue={selectedState}
               className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
             >
-              {stateOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+              {STATE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
