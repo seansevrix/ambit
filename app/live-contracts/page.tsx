@@ -1,142 +1,191 @@
-"use client";
-
-import { useMemo, useState } from "react";
 import Link from "next/link";
+import Script from "next/script";
+import { PrismaClient, Prisma } from "@prisma/client";
 
-type Opportunity = {
-  id: string;
-  slug: string;
-  title: string;
-  buyer: string;
-  city: string;
-  state: string;
-  trade: string;
-  dueDate: string;
-  source: string;
-  summary: string;
-  officialUrl: string;
-};
+const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient };
+const prisma = globalForPrisma.prisma ?? new PrismaClient();
 
-const opportunities: Opportunity[] = [
-  {
-    id: "1",
-    slug: "houston-isd-hvac-makeup-air-units",
-    title: "Hattie Mae White Admin Building HVAC Makeup Air Units Replacement",
-    buyer: "Houston ISD",
-    city: "Houston",
-    state: "TX",
-    trade: "HVAC",
-    dueDate: "2026-04-28",
-    source: "Public RFP",
-    summary:
-      "Replacement of makeup air units, test and balance, and BAS controls work for the administration building.",
-    officialUrl:
-      "https://media.governmentnavigator.com/media/bid/1774884212_26-03-09.pdf",
-  },
-  {
-    id: "2",
-    slug: "murrieta-citywide-sidewalk-replacement-2026",
-    title: "Citywide Sidewalk Replacement Program 2026",
-    buyer: "City of Murrieta",
-    city: "Murrieta",
-    state: "CA",
-    trade: "Construction",
-    dueDate: "2026-04-30",
-    source: "PlanetBids",
-    summary:
-      "Citywide sidewalk replacement and related concrete improvements under MSD Project No. 26-003 / CIP No. 13064.",
-    officialUrl:
-      "https://vendors.planetbids.com/portal/17992/bo/bo-detail/140670",
-  },
-  {
-    id: "3",
-    slug: "plano-median-renovation-15th-street",
-    title: "Median Renovation – 15th Street",
-    buyer: "City of Plano",
-    city: "Plano",
-    state: "TX",
-    trade: "Landscaping",
-    dueDate: "2026-04-29",
-    source: "IonWave",
-    summary:
-      "Median renovation work including tree removal, boring, irrigation improvements, controllers, and new trees.",
-    officialUrl:
-      "https://planotx.ionwave.net/PublicDetail.aspx?bidID=2222&SourceType=1",
-  },
-];
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
 
 const TRADE_OPTIONS = [
-  "All",
-  "HVAC",
-  "Plumbing",
-  "Construction",
-  "Landscaping",
-  "Fire Alarm",
-];
+  { value: "All", label: "All" },
+  { value: "janitorial", label: "Janitorial" },
+  { value: "landscaping", label: "Landscaping" },
+  { value: "plumbing-hvac", label: "Plumbing & HVAC" },
+  { value: "electrical", label: "Electrical" },
+  { value: "security", label: "Security" },
+  { value: "waste-management", label: "Waste Management" },
+  { value: "roofing", label: "Roofing" },
+  { value: "painting", label: "Painting" },
+  { value: "logistics-supply-chain", label: "Logistics & Supply Chain" },
+  { value: "office-admin", label: "Office Admin" },
+  { value: "temporary-help", label: "Temporary Help" },
+  { value: "office-supplies", label: "Office Supplies" },
+  { value: "warehousing", label: "Warehousing" },
+  { value: "nursing-home-health", label: "Nursing & Home Health" },
+  { value: "medical-equipment-rental", label: "Medical Equipment Rental" },
+  { value: "environmental-remediation", label: "Environmental Remediation" },
+  { value: "concrete-paving", label: "Concrete & Paving" },
+  { value: "fire-alarm-access-control", label: "Fire Alarm & Access Control" },
+  { value: "fencing-gates", label: "Fencing & Gates" },
+  { value: "restoration-mitigation", label: "Restoration & Mitigation" },
+  { value: "pest-control", label: "Pest Control" },
+] as const;
 
-const STATE_OPTIONS = ["All", "CA", "TX", "FL", "NY", "NJ"];
+const TRADE_LABELS = Object.fromEntries(
+  TRADE_OPTIONS.map((option) => [option.value, option.label])
+) as Record<string, string>;
 
-function formatDate(dateString: string) {
-  return new Date(`${dateString}T12:00:00`).toLocaleDateString("en-US", {
+function getSingleValue(
+  value: string | string[] | undefined,
+  fallback = ""
+): string {
+  if (Array.isArray(value)) return value[0] ?? fallback;
+  return value ?? fallback;
+}
+
+function formatDate(date: Date | null) {
+  if (!date) return "TBD";
+  return new Date(date).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function getDaysLeft(dateString: string) {
+function getDaysLeft(date: Date | null) {
+  if (!date) return null;
   const now = new Date();
-  const due = new Date(`${dateString}T23:59:59`);
+  const due = new Date(date);
+  due.setHours(23, 59, 59, 999);
   const diff = due.getTime() - now.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-export default function LiveContractsPage() {
-  const [selectedTrade, setSelectedTrade] = useState("All");
-  const [selectedState, setSelectedState] = useState("All");
-  const [keyword, setKeyword] = useState("");
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+function getDeadlineText(date: Date | null) {
+  const daysLeft = getDaysLeft(date);
 
-  const filtered = useMemo(() => {
-    const q = keyword.trim().toLowerCase();
+  if (daysLeft === null) return "Deadline TBD";
+  if (daysLeft <= 0) return "Closing soon";
+  return `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`;
+}
 
-    return opportunities.filter((opp) => {
-      const matchesTrade =
-        selectedTrade === "All" || opp.trade === selectedTrade;
+function getTradeLabel(category: string | null) {
+  if (!category) return "Opportunity";
+  return TRADE_LABELS[category] || category;
+}
 
-      const matchesState =
-        selectedState === "All" || opp.state === selectedState;
+type SearchParamsShape = Promise<
+  Record<string, string | string[] | undefined>
+>;
 
-      const matchesKeyword =
-        q.length === 0 ||
-        opp.title.toLowerCase().includes(q) ||
-        opp.buyer.toLowerCase().includes(q) ||
-        opp.city.toLowerCase().includes(q) ||
-        opp.state.toLowerCase().includes(q) ||
-        opp.trade.toLowerCase().includes(q) ||
-        opp.summary.toLowerCase().includes(q);
+export default async function LiveContractsPage({
+  searchParams,
+}: {
+  searchParams?: SearchParamsShape;
+}) {
+  const resolvedSearchParams = (await searchParams) ?? {};
 
-      return matchesTrade && matchesState && matchesKeyword;
-    });
-  }, [selectedTrade, selectedState, keyword]);
+  const selectedTrade = getSingleValue(resolvedSearchParams.trade, "All");
+  const selectedState = getSingleValue(resolvedSearchParams.state, "All");
+  const keyword = getSingleValue(resolvedSearchParams.keyword, "").trim();
 
-  async function handleShare(slug: string, id: string) {
-    const shareUrl =
-      typeof window !== "undefined"
-        ? `${window.location.origin}/live-contracts/${slug}`
-        : `https://ambitco.app/live-contracts/${slug}`;
+  const where: Prisma.LiveOpportunityWhereInput = {
+    isActive: true,
+    source: "sam.gov",
+  };
 
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setCopiedId(id);
-      window.setTimeout(() => setCopiedId(null), 2000);
-    } catch {
-      setCopiedId(null);
-    }
+  if (selectedTrade !== "All") {
+    where.category = selectedTrade;
   }
+
+  if (selectedState !== "All") {
+    where.state = selectedState;
+  }
+
+  if (keyword) {
+    where.OR = [
+      { title: { contains: keyword, mode: "insensitive" } },
+      { buyer: { contains: keyword, mode: "insensitive" } },
+      { location: { contains: keyword, mode: "insensitive" } },
+      { state: { contains: keyword, mode: "insensitive" } },
+      { category: { contains: keyword, mode: "insensitive" } },
+      { summaryShort: { contains: keyword, mode: "insensitive" } },
+      { summaryLong: { contains: keyword, mode: "insensitive" } },
+      { noticeType: { contains: keyword, mode: "insensitive" } },
+      { naics: { contains: keyword, mode: "insensitive" } },
+    ];
+  }
+
+  const [opportunities, stateRows] = await Promise.all([
+    prisma.liveOpportunity.findMany({
+      where,
+      orderBy: [{ dueDate: "asc" }, { postedDate: "desc" }, { createdAt: "desc" }],
+      take: 60,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        buyer: true,
+        location: true,
+        state: true,
+        category: true,
+        dueDate: true,
+        source: true,
+        summaryShort: true,
+        sourceUrl: true,
+      },
+    }),
+    prisma.liveOpportunity.findMany({
+      where: {
+        isActive: true,
+        source: "sam.gov",
+        state: { not: null },
+      },
+      select: { state: true },
+      distinct: ["state"],
+      orderBy: { state: "asc" },
+    }),
+  ]);
+
+  const stateOptions = [
+    "All",
+    ...stateRows.map((row) => row.state).filter((value): value is string => Boolean(value)),
+  ];
 
   return (
     <main className="min-h-screen bg-[#EAF3FF] text-black">
+      <Script id="live-contract-share" strategy="afterInteractive">{`
+        document.addEventListener("click", async function (event) {
+          const target = event.target;
+          if (!(target instanceof HTMLElement)) return;
+
+          const button = target.closest("[data-live-share]");
+          if (!(button instanceof HTMLButtonElement)) return;
+
+          const shareUrl = button.getAttribute("data-share-url");
+          const defaultLabel = button.getAttribute("data-default-label") || "Share";
+          if (!shareUrl) return;
+
+          try {
+            if (navigator.share) {
+              await navigator.share({ url: shareUrl });
+              return;
+            }
+
+            await navigator.clipboard.writeText(shareUrl);
+            button.textContent = "Ambit link copied";
+            window.setTimeout(() => {
+              button.textContent = defaultLabel;
+            }, 2000);
+          } catch {
+            button.textContent = defaultLabel;
+          }
+        });
+      `}</Script>
+
       <section className="mx-auto max-w-[1240px] px-6 py-12 lg:px-10">
         <div className="mb-8">
           <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#4E6FAE]">
@@ -148,36 +197,47 @@ export default function LiveContractsPage() {
           </h1>
 
           <p className="mt-4 max-w-3xl text-[15px] leading-7 text-black/70">
-            A public view of active opportunities inside Ambit. Filter by
-            trade, state, or keyword and open the official source directly from
-            each card.
+            A public view of active opportunities inside Ambit. These are
+            filtered toward janitorial, landscaping, HVAC, plumbing,
+            electrical, security, waste, roofing, painting, logistics,
+            warehousing, staffing, office support, medical support, and other
+            contractor-friendly lanes.
           </p>
         </div>
 
-        <div className="mb-8 grid gap-3 rounded-[28px] border border-black/10 bg-white/75 p-4 shadow-sm md:grid-cols-3">
+        <form
+          method="get"
+          className="mb-8 grid gap-3 rounded-[28px] border border-black/10 bg-white/75 p-4 shadow-sm md:grid-cols-4"
+        >
           <div>
-            <label className="mb-2 block text-sm font-medium">Trade</label>
+            <label htmlFor="trade" className="mb-2 block text-sm font-medium">
+              Trade
+            </label>
             <select
-              value={selectedTrade}
-              onChange={(e) => setSelectedTrade(e.target.value)}
+              id="trade"
+              name="trade"
+              defaultValue={selectedTrade}
               className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
             >
               {TRADE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {option}
+                <option key={option.value} value={option.value}>
+                  {option.label}
                 </option>
               ))}
             </select>
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">State</label>
+            <label htmlFor="state" className="mb-2 block text-sm font-medium">
+              State
+            </label>
             <select
-              value={selectedState}
-              onChange={(e) => setSelectedState(e.target.value)}
+              id="state"
+              name="state"
+              defaultValue={selectedState}
               className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
             >
-              {STATE_OPTIONS.map((option) => (
+              {stateOptions.map((option) => (
                 <option key={option} value={option}>
                   {option}
                 </option>
@@ -186,26 +246,50 @@ export default function LiveContractsPage() {
           </div>
 
           <div>
-            <label className="mb-2 block text-sm font-medium">Keyword</label>
+            <label htmlFor="keyword" className="mb-2 block text-sm font-medium">
+              Keyword
+            </label>
             <input
-              value={keyword}
-              onChange={(e) => setKeyword(e.target.value)}
-              placeholder="HVAC, sidewalk, irrigation..."
+              id="keyword"
+              name="keyword"
+              defaultValue={keyword}
+              placeholder="HVAC, janitorial, irrigation..."
               className="w-full rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm outline-none"
             />
           </div>
-        </div>
+
+          <div className="flex items-end gap-2">
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-2xl bg-black px-4 py-3 text-sm font-medium text-white"
+            >
+              Apply Filters
+            </button>
+
+            <Link
+              href="/live-contracts"
+              className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
+            >
+              Reset
+            </Link>
+          </div>
+        </form>
 
         <div className="mb-5 flex items-center justify-between">
           <p className="text-sm text-black/60">
-            Showing {filtered.length} opportunit
-            {filtered.length === 1 ? "y" : "ies"}
+            Showing {opportunities.length} opportunit
+            {opportunities.length === 1 ? "y" : "ies"}
           </p>
         </div>
 
         <div className="grid gap-4">
-          {filtered.map((opp) => {
-            const daysLeft = getDaysLeft(opp.dueDate);
+          {opportunities.map((opp) => {
+            const tradeLabel = getTradeLabel(opp.category);
+            const locationText =
+              opp.location || opp.state || "Location TBD";
+            const summary =
+              opp.summaryShort || "Active public opportunity available inside Ambit.";
+            const shareUrl = `https://ambitco.app/live-contracts/${opp.slug}`;
 
             return (
               <article
@@ -216,13 +300,13 @@ export default function LiveContractsPage() {
                   <div className="max-w-3xl">
                     <div className="mb-3 flex flex-wrap gap-2">
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-                        {opp.trade}
+                        {tradeLabel}
                       </span>
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-                        {opp.city}, {opp.state}
+                        {locationText}
                       </span>
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-                        {opp.source}
+                        {opp.source === "sam.gov" ? "SAM.gov" : opp.source}
                       </span>
                     </div>
 
@@ -231,11 +315,11 @@ export default function LiveContractsPage() {
                     </h2>
 
                     <p className="mt-2 text-sm font-medium text-black/65">
-                      Buyer: {opp.buyer}
+                      Buyer: {opp.buyer || "Public Agency"}
                     </p>
 
                     <p className="mt-3 text-[15px] leading-7 text-black/70">
-                      {opp.summary}
+                      {summary}
                     </p>
                   </div>
 
@@ -247,9 +331,7 @@ export default function LiveContractsPage() {
                       {formatDate(opp.dueDate)}
                     </p>
                     <p className="mt-1 text-sm text-black/60">
-                      {daysLeft > 0
-                        ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
-                        : "Closing soon"}
+                      {getDeadlineText(opp.dueDate)}
                     </p>
 
                     <div className="mt-4 flex flex-col gap-2">
@@ -262,14 +344,16 @@ export default function LiveContractsPage() {
 
                       <button
                         type="button"
-                        onClick={() => handleShare(opp.slug, opp.id)}
+                        data-live-share="1"
+                        data-share-url={shareUrl}
+                        data-default-label="Share"
                         className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
                       >
-                        {copiedId === opp.id ? "Ambit link copied" : "Share"}
+                        Share
                       </button>
 
                       <a
-                        href={opp.officialUrl}
+                        href={opp.sourceUrl}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
@@ -284,7 +368,7 @@ export default function LiveContractsPage() {
           })}
         </div>
 
-        {filtered.length === 0 ? (
+        {opportunities.length === 0 ? (
           <div className="mt-8 rounded-[28px] border border-dashed border-black/10 bg-white/60 p-8 text-center">
             <p className="text-lg font-medium">No matches found.</p>
             <p className="mt-2 text-sm text-black/60">
