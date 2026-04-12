@@ -11,7 +11,7 @@ function envBool(value, defaultValue = false) {
   return v === "1" || v === "true" || v === "yes" || v === "on";
 }
 
-const SAM_LIVE_LOOKBACK_DAYS = Number(process.env.SAM_LIVE_LOOKBACK_DAYS || 14);
+const SAM_LIVE_LOOKBACK_DAYS = Number(process.env.SAM_LIVE_LOOKBACK_DAYS || 21);
 const SAM_LIVE_PAGE_SIZE = Number(process.env.SAM_LIVE_PAGE_SIZE || 50);
 const SAM_LIVE_MAX_PAGES = Number(process.env.SAM_LIVE_MAX_PAGES || 12);
 
@@ -23,6 +23,341 @@ const SAM_SOFT_FAIL_ON_UPSTREAM = envBool(process.env.SAM_SOFT_FAIL_ON_UPSTREAM,
 const FORCE_ACTIVE_QUERY = envBool(process.env.SAM_FORCE_ACTIVE_QUERY, false);
 
 const RETRYABLE_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
+
+const TARGET_LANE_RULES = [
+  {
+    category: "janitorial",
+    naics: ["561720"],
+    keywords: [
+      "janitorial",
+      "custodial",
+      "custodian",
+      "floor care",
+      "window cleaning",
+      "housekeeping",
+      "sanitation",
+      "disinfection",
+      "restroom cleaning",
+      "building cleaning",
+    ],
+  },
+  {
+    category: "landscaping",
+    naics: ["561730"],
+    keywords: [
+      "landscaping",
+      "grounds maintenance",
+      "groundskeeping",
+      "mowing",
+      "lawn",
+      "irrigation",
+      "tree trimming",
+      "snow removal",
+      "grounds care",
+      "vegetation",
+    ],
+  },
+  {
+    category: "plumbing-hvac",
+    naics: ["238220"],
+    keywords: [
+      "hvac",
+      "heating",
+      "ventilation",
+      "air conditioning",
+      "chiller",
+      "boiler",
+      "mechanical system",
+      "mechanical systems",
+      "plumbing",
+      "pipe repair",
+      "water heater",
+      "ductwork",
+      "controls upgrade",
+      "test and balance",
+      "makeup air unit",
+      "rtu",
+      "cooling tower",
+      "sewer line",
+      "water line",
+    ],
+  },
+  {
+    category: "electrical",
+    naics: ["238210"],
+    keywords: [
+      "electrical",
+      "electric",
+      "wiring",
+      "lighting",
+      "low voltage",
+      "low-voltage",
+      "power distribution",
+      "generator",
+      "switchgear",
+      "panelboard",
+      "transformer",
+      "site lighting",
+    ],
+  },
+  {
+    category: "security",
+    naics: ["561612", "561621"],
+    keywords: [
+      "security guard",
+      "guard services",
+      "armed guard",
+      "unarmed guard",
+      "physical security",
+      "patrol",
+      "surveillance",
+      "access control",
+      "camera system",
+      "cctv",
+      "alarm monitoring",
+      "security system",
+    ],
+  },
+  {
+    category: "waste-management",
+    naics: ["562111", "562112", "562119"],
+    keywords: [
+      "trash removal",
+      "refuse",
+      "recycling",
+      "solid waste",
+      "waste hauling",
+      "dumpster",
+      "roll-off",
+      "garbage collection",
+      "debris removal",
+      "hazmat disposal",
+    ],
+  },
+  {
+    category: "roofing",
+    naics: ["238160"],
+    keywords: [
+      "roof",
+      "roofing",
+      "shingle",
+      "membrane",
+      "gutter",
+      "roof replacement",
+      "roof repair",
+      "sheet metal roofing",
+      "standing seam",
+      "flashing",
+    ],
+  },
+  {
+    category: "painting",
+    naics: ["238320"],
+    keywords: [
+      "painting",
+      "paint",
+      "coating",
+      "industrial coating",
+      "surface prep",
+      "lead abatement",
+      "striping",
+      "epoxy coating",
+      "repaint",
+    ],
+  },
+  {
+    category: "logistics-supply-chain",
+    naics: ["541614"],
+    keywords: [
+      "logistics",
+      "supply chain",
+      "distribution",
+      "freight",
+      "procurement support",
+      "material management",
+      "inventory support",
+      "shipping and receiving",
+      "delivery support",
+      "transportation support",
+    ],
+  },
+  {
+    category: "office-admin",
+    naics: ["561110"],
+    keywords: [
+      "clerical",
+      "data entry",
+      "record management",
+      "records management",
+      "administrative support",
+      "office support",
+      "mailroom",
+      "document processing",
+      "back office",
+      "program support",
+    ],
+  },
+  {
+    category: "temporary-help",
+    naics: ["561320"],
+    keywords: [
+      "temporary help",
+      "staffing",
+      "temp services",
+      "labor hire",
+      "personnel support",
+      "contract staffing",
+      "temporary staffing",
+      "supplemental staffing",
+    ],
+  },
+  {
+    category: "office-supplies",
+    naics: ["453210"],
+    keywords: [
+      "office supplies",
+      "stationery",
+      "toner",
+      "printer paper",
+      "office furniture",
+      "desks",
+      "chairs",
+      "filing cabinet",
+      "copier supplies",
+      "micro-purchase",
+    ],
+  },
+  {
+    category: "warehousing",
+    naics: ["493110"],
+    keywords: [
+      "warehouse",
+      "warehousing",
+      "storage",
+      "cold storage",
+      "inventory management",
+      "distribution center",
+      "fulfillment",
+      "stockroom",
+      "material storage",
+    ],
+  },
+  {
+    category: "nursing-home-health",
+    naics: ["623110", "621610"],
+    keywords: [
+      "nursing",
+      "home health",
+      "home healthcare",
+      "patient care",
+      "elder care",
+      "skilled nursing",
+      "home visits",
+      "caregiver",
+      "clinical staffing",
+    ],
+  },
+  {
+    category: "medical-equipment-rental",
+    naics: ["532283"],
+    keywords: [
+      "medical equipment rental",
+      "hospital bed",
+      "oxygen",
+      "oxygen concentrator",
+      "mobility device",
+      "wheelchair rental",
+      "durable medical equipment",
+      "dme rental",
+    ],
+  },
+  {
+    category: "environmental-remediation",
+    naics: ["562910"],
+    keywords: [
+      "environmental remediation",
+      "asbestos",
+      "mold removal",
+      "soil testing",
+      "hazardous cleanup",
+      "lead cleanup",
+      "site remediation",
+      "contaminated soil",
+      "abatement",
+    ],
+  },
+
+  // Adjacent teaser lanes
+  {
+    category: "concrete-paving",
+    naics: ["237310"],
+    keywords: [
+      "concrete",
+      "asphalt",
+      "paving",
+      "sidewalk",
+      "curb",
+      "parking lot",
+      "striping",
+      "milling",
+      "resurfacing",
+    ],
+  },
+  {
+    category: "fire-alarm-access-control",
+    naics: ["561621", "238210"],
+    keywords: [
+      "fire alarm",
+      "access control",
+      "card reader",
+      "burglar alarm",
+      "mass notification",
+      "security electronics",
+      "door hardware",
+      "electronic security",
+    ],
+  },
+  {
+    category: "fencing-gates",
+    naics: ["238990"],
+    keywords: [
+      "fence",
+      "fencing",
+      "gate",
+      "gates",
+      "perimeter fencing",
+      "chain link",
+      "ornamental fence",
+      "barrier",
+    ],
+  },
+  {
+    category: "restoration-mitigation",
+    naics: [],
+    keywords: [
+      "water mitigation",
+      "fire restoration",
+      "disaster restoration",
+      "flood cleanup",
+      "smoke damage",
+      "emergency restoration",
+    ],
+  },
+  {
+    category: "pest-control",
+    naics: ["561710"],
+    keywords: [
+      "pest control",
+      "extermination",
+      "rodent control",
+      "termite treatment",
+      "insect control",
+      "wildlife control",
+    ],
+  },
+];
+
+const ALLOWED_CATEGORIES = TARGET_LANE_RULES.map((rule) => rule.category);
 
 function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
@@ -218,26 +553,21 @@ function firstSentence(text) {
   return `${sentence.slice(0, 219).trim()}…`;
 }
 
-function deriveCategory(title, description, naics) {
-  const text = lower(`${title} ${description} ${naics || ""}`);
+function deriveTargetCategory(title, description, naics) {
+  const normalizedNaics = normalizeNaics(naics);
+  const text = lower(`${title} ${description}`);
 
-  const rules = [
-    ["roofing", ["roof", "roofing"]],
-    ["hvac", ["hvac", "air conditioning", "heating", "ventilation", "chiller", "boiler"]],
-    ["electrical", ["electrical", "electric", "lighting", "generator", "power distribution"]],
-    ["plumbing", ["plumbing", "plumber", "sewer", "pipe", "water line", "wastewater"]],
-    ["landscaping", ["landscaping", "grounds", "irrigation", "mowing", "tree trimming", "lawn"]],
-    ["janitorial", ["janitorial", "custodial", "cleaning", "housekeeping"]],
-    ["concrete", ["concrete", "paving", "asphalt", "sidewalk", "curb", "striping"]],
-    ["security", ["security", "camera", "surveillance", "access control", "alarm"]],
-    ["painting", ["painting", "paint", "coating"]],
-    ["flooring", ["flooring", "tile", "carpet", "vinyl plank"]],
-    ["it", ["software", "network", "cyber", "it support", "cloud", "technology"]],
-  ];
+  if (normalizedNaics) {
+    for (const rule of TARGET_LANE_RULES) {
+      if (rule.naics.includes(normalizedNaics)) {
+        return rule.category;
+      }
+    }
+  }
 
-  for (const [category, terms] of rules) {
-    if (terms.some((term) => text.includes(term))) {
-      return category;
+  for (const rule of TARGET_LANE_RULES) {
+    if (rule.keywords.some((term) => text.includes(term))) {
+      return rule.category;
     }
   }
 
@@ -260,13 +590,13 @@ function buildSlug(title, externalId) {
   return suffix ? `${base}-${suffix}`.slice(0, 120) : base.slice(0, 120);
 }
 
-function buildSummaries({ title, description, noticeType, agency, location }) {
+function buildSummaries({ title, description, noticeType, agency, location, category }) {
   const cleanedDescription = cleanText(description, 1800);
 
   const summaryShort =
     firstSentence(cleanedDescription) ||
     cleanText(
-      [noticeType, title, agency, location].filter(Boolean).join(" — "),
+      [category, noticeType, title, agency, location].filter(Boolean).join(" — "),
       220
     ) ||
     null;
@@ -274,7 +604,13 @@ function buildSummaries({ title, description, noticeType, agency, location }) {
   const summaryLong =
     cleanedDescription ||
     cleanText(
-      [title, noticeType ? `Notice type: ${noticeType}` : null, agency, location]
+      [
+        title,
+        category ? `Lane: ${category}` : null,
+        noticeType ? `Notice type: ${noticeType}` : null,
+        agency,
+        location,
+      ]
         .filter(Boolean)
         .join(" — "),
       1200
@@ -424,6 +760,22 @@ async function findExistingLiveOpportunity({ source, externalId, sourceUrl, slug
   });
 }
 
+async function deactivateExistingLiveOpportunity({ source, externalId, sourceUrl }) {
+  const ors = [];
+
+  if (sourceUrl) ors.push({ source, sourceUrl });
+  if (externalId) ors.push({ source, externalId });
+
+  if (!ors.length) return 0;
+
+  const result = await prisma.liveOpportunity.updateMany({
+    where: { OR: ors },
+    data: { isActive: false },
+  });
+
+  return result.count;
+}
+
 function shouldSoftFail(err) {
   const msg = String(err?.message || err || "");
   if (err instanceof UpstreamTransientError) return true;
@@ -450,6 +802,8 @@ async function main() {
   let skippedNoTitle = 0;
   let skippedNoUrl = 0;
   let skippedUnusable = 0;
+  let skippedWrongLane = 0;
+  let deactivatedFilteredOut = 0;
 
   while (pageCount < SAM_LIVE_MAX_PAGES) {
     const data = await fetchPage({
@@ -472,7 +826,8 @@ async function main() {
       }
 
       const externalId = pickNoticeId(o);
-      const sourceUrl = pickUiLink(o) || (externalId ? `https://sam.gov/opp/${externalId}/view` : null);
+      const sourceUrl =
+        pickUiLink(o) || (externalId ? `https://sam.gov/opp/${externalId}/view` : null);
 
       if (!sourceUrl) {
         skippedNoUrl++;
@@ -492,6 +847,11 @@ async function main() {
       });
 
       if (!keepDecision.keep) {
+        deactivatedFilteredOut += await deactivateExistingLiveOpportunity({
+          source: "sam.gov",
+          externalId,
+          sourceUrl,
+        });
         skippedUnusable++;
         continue;
       }
@@ -501,17 +861,31 @@ async function main() {
       const state = pickState(o);
       const naics = pickNaics(o);
       const description = pickDescription(o);
-      const category = deriveCategory(title, description, naics);
+
+      const category = deriveTargetCategory(title, description, naics);
+
+      if (!category || !ALLOWED_CATEGORIES.includes(category)) {
+        deactivatedFilteredOut += await deactivateExistingLiveOpportunity({
+          source: "sam.gov",
+          externalId,
+          sourceUrl,
+        });
+        skippedWrongLane++;
+        continue;
+      }
+
       const { summaryShort, summaryLong } = buildSummaries({
         title,
         description,
         noticeType,
         agency: buyer,
         location,
+        category,
       });
 
       const slug = buildSlug(title, externalId || sourceUrl);
-      const isActive = !isExpired(dueDate) && !/archived|cancelled|canceled/i.test(lower(status));
+      const isActive =
+        !isExpired(dueDate) && !/archived|cancelled|canceled/i.test(lower(status));
 
       const payload = {
         segment: "government",
@@ -524,7 +898,7 @@ async function main() {
         location: location || null,
         state: state || null,
         naics: naics || null,
-        category: category || null,
+        category,
         status: status || null,
         noticeType: noticeType || null,
         summaryShort: summaryShort || null,
@@ -570,8 +944,20 @@ async function main() {
     data: { isActive: false },
   });
 
+  const nonTargetCleanupResult = await prisma.liveOpportunity.updateMany({
+    where: {
+      source: "sam.gov",
+      isActive: true,
+      OR: [
+        { category: null },
+        { category: { notIn: ALLOWED_CATEGORIES } },
+      ],
+    },
+    data: { isActive: false },
+  });
+
   console.log(
-    `[ingestSamGovLive] scanned=${scanned} inserted=${inserted} updated=${updated} skippedNoTitle=${skippedNoTitle} skippedNoUrl=${skippedNoUrl} skippedUnusable=${skippedUnusable} expiredMarkedInactive=${expireResult.count} postedFrom=${postedFrom} postedTo=${postedTo} pages=${pageCount}`
+    `[ingestSamGovLive] scanned=${scanned} inserted=${inserted} updated=${updated} skippedNoTitle=${skippedNoTitle} skippedNoUrl=${skippedNoUrl} skippedUnusable=${skippedUnusable} skippedWrongLane=${skippedWrongLane} deactivatedFilteredOut=${deactivatedFilteredOut} expiredMarkedInactive=${expireResult.count} deactivatedNonTarget=${nonTargetCleanupResult.count} postedFrom=${postedFrom} postedTo=${postedTo} pages=${pageCount}`
   );
 }
 
@@ -584,7 +970,9 @@ main()
     const msg = String(err?.message || err || "");
 
     if (SAM_SOFT_FAIL_ON_UPSTREAM && shouldSoftFail(err)) {
-      console.warn(`[ingestSamGovLive] upstream outage/transient issue detected — soft fail: ${msg}`);
+      console.warn(
+        `[ingestSamGovLive] upstream outage/transient issue detected — soft fail: ${msg}`
+      );
       await prisma.$disconnect();
       process.exit(0);
       return;
