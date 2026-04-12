@@ -14,6 +14,7 @@ import stripeWebhookRoutes from "./routes/stripeWebhook.js";
 import authRoutes from "./routes/auth.js";
 import unsubscribeRoutes from "./routes/unsubscribe.js";
 import leadsRouter from "./routes/leads.js";
+import liveContractsRouter from "./routes/liveContracts.js";
 
 const app = express();
 app.disable("x-powered-by");
@@ -104,6 +105,7 @@ app.use("/engine", customersRoutes);
 app.use("/engine", opportunitiesRoutes);
 app.use("/engine", matchesRoutes);
 app.use("/engine/billing", billingRoutes);
+app.use("/engine", liveContractsRouter);
 
 /**
  * ✅ 404 (for everything else)
