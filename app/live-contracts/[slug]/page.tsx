@@ -2,88 +2,128 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ShareOpportunityButton from "./ShareOpportunityButton";
 
-type Opportunity = {
-  id: string;
+type LiveOpportunity = {
+  id: number | string;
   slug: string;
   title: string;
-  buyer: string;
-  city: string;
-  state: string;
-  trade: string;
-  dueDate: string;
+  buyer: string | null;
+  location: string | null;
+  state: string | null;
+  category: string | null;
+  status: string | null;
+  noticeType: string | null;
+  naics: string | null;
+  postedDate: string | null;
+  dueDate: string | null;
+  summaryShort: string | null;
+  summaryLong: string | null;
   source: string;
-  summary: string;
-  officialUrl: string;
-  fitNote: string;
+  sourceUrl: string;
 };
 
-const opportunities: Opportunity[] = [
-  {
-    id: "1",
-    slug: "houston-isd-hvac-makeup-air-units",
-    title: "Hattie Mae White Admin Building HVAC Makeup Air Units Replacement",
-    buyer: "Houston ISD",
-    city: "Houston",
-    state: "TX",
-    trade: "HVAC",
-    dueDate: "2026-04-28",
-    source: "Public RFP",
-    summary:
-      "Replacement of makeup air units, test and balance, and BAS controls work for the administration building.",
-    officialUrl:
-      "https://media.governmentnavigator.com/media/bid/1774884212_26-03-09.pdf",
-    fitNote:
-      "This opportunity aligns well with commercial HVAC equipment and controls work in the Houston market.",
-  },
-  {
-    id: "2",
-    slug: "murrieta-citywide-sidewalk-replacement-2026",
-    title: "Citywide Sidewalk Replacement Program 2026",
-    buyer: "City of Murrieta",
-    city: "Murrieta",
-    state: "CA",
-    trade: "Construction",
-    dueDate: "2026-04-30",
-    source: "PlanetBids",
-    summary:
-      "Citywide sidewalk replacement and related concrete improvements under MSD Project No. 26-003 / CIP No. 13064.",
-    officialUrl:
-      "https://vendors.planetbids.com/portal/17992/bo/bo-detail/140670",
-    fitNote:
-      "This is a strong fit for local California concrete and public works contractors handling sidewalk and related improvements.",
-  },
-  {
-    id: "3",
-    slug: "plano-median-renovation-15th-street",
-    title: "Median Renovation – 15th Street",
-    buyer: "City of Plano",
-    city: "Plano",
-    state: "TX",
-    trade: "Landscaping",
-    dueDate: "2026-04-29",
-    source: "IonWave",
-    summary:
-      "Median renovation work including tree removal, boring, irrigation improvements, controllers, and new trees.",
-    officialUrl:
-      "https://planotx.ionwave.net/PublicDetail.aspx?bidID=2222&SourceType=1",
-    fitNote:
-      "This opportunity fits exterior site improvement and landscape-related contractors operating in the DFW market.",
-  },
-];
+const TRADE_LABELS: Record<string, string> = {
+  janitorial: "Janitorial",
+  landscaping: "Landscaping",
+  "plumbing-hvac": "Plumbing & HVAC",
+  electrical: "Electrical",
+  security: "Security",
+  "waste-management": "Waste Management",
+  roofing: "Roofing",
+  painting: "Painting",
+  "logistics-supply-chain": "Logistics & Supply Chain",
+  "office-admin": "Office Admin",
+  "temporary-help": "Temporary Help",
+  "office-supplies": "Office Supplies",
+  warehousing: "Warehousing",
+  "nursing-home-health": "Nursing & Home Health",
+  "medical-equipment-rental": "Medical Equipment Rental",
+  "environmental-remediation": "Environmental Remediation",
+  "concrete-paving": "Concrete & Paving",
+  "fire-alarm-access-control": "Fire Alarm & Access Control",
+  "fencing-gates": "Fencing & Gates",
+  "restoration-mitigation": "Restoration & Mitigation",
+  "pest-control": "Pest Control",
+};
 
-function formatDate(dateString: string) {
-  return new Date(`${dateString}T12:00:00`).toLocaleDateString("en-US", {
+function getBackendBaseUrl() {
+  return (
+    process.env.BACKEND_URL ||
+    process.env.NEXT_PUBLIC_BACKEND_URL ||
+    "https://ambit-0dnp.onrender.com"
+  );
+}
+
+async function fetchLiveContract(slug: string): Promise<LiveOpportunity | null> {
+  const backendBase = getBackendBaseUrl();
+  const url = new URL(
+    `/engine/live-contracts/${encodeURIComponent(slug)}`,
+    backendBase
+  );
+
+  try {
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      cache: "no-store",
+      next: { revalidate: 0 },
+    });
+
+    if (res.status === 404) {
+      return null;
+    }
+
+    if (!res.ok) {
+      return null;
+    }
+
+    return (await res.json()) as LiveOpportunity;
+  } catch {
+    return null;
+  }
+}
+
+function formatDate(date: string | null) {
+  if (!date) return "TBD";
+  return new Date(date).toLocaleDateString("en-US", {
     month: "long",
     day: "numeric",
     year: "numeric",
   });
 }
 
-function getDaysLeft(dateString: string) {
+function getDaysLeft(date: string | null) {
+  if (!date) return null;
+
   const now = new Date();
-  const due = new Date(`${dateString}T23:59:59`);
+  const due = new Date(date);
+  due.setHours(23, 59, 59, 999);
+
   const diff = due.getTime() - now.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+function getTradeLabel(category: string | null) {
+  if (!category) return "Opportunity";
+  return TRADE_LABELS[category] || category;
+}
+
+function getLocationLabel(opportunity: LiveOpportunity) {
+  if (opportunity.location) return opportunity.location;
+  if (opportunity.state) return opportunity.state;
+  return "Location TBD";
+}
+
+function buildFitNote(opportunity: LiveOpportunity) {
+  const trade = getTradeLabel(opportunity.category);
+  const location = getLocationLabel(opportunity);
+
+  const parts = [
+    `This opportunity fits the ${trade.toLowerCase()} lane`,
+    location !== "Location TBD" ? `in ${location}` : null,
+    opportunity.buyer ? `for ${opportunity.buyer}` : null,
+    opportunity.naics ? `under NAICS ${opportunity.naics}` : null,
+  ].filter(Boolean);
+
+  return `${parts.join(" ")}. Public opportunity details are available now, and Ambit can help organize the front-end pursuit/admin side if you decide to move on it.`;
 }
 
 export default async function LiveContractDetailPage({
@@ -92,14 +132,20 @@ export default async function LiveContractDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  const opportunity = opportunities.find((item) => item.slug === slug);
+  const opportunity = await fetchLiveContract(slug);
 
   if (!opportunity) {
     notFound();
   }
 
   const daysLeft = getDaysLeft(opportunity.dueDate);
+  const tradeLabel = getTradeLabel(opportunity.category);
+  const locationLabel = getLocationLabel(opportunity);
+  const overview =
+    opportunity.summaryLong ||
+    opportunity.summaryShort ||
+    "Public opportunity details are available through the official source.";
+  const fitNote = buildFitNote(opportunity);
 
   return (
     <main className="min-h-screen bg-[#EAF3FF] text-black">
@@ -116,13 +162,13 @@ export default async function LiveContractDetailPage({
         <div className="rounded-[32px] border border-black/10 bg-white p-7 shadow-sm sm:p-10">
           <div className="mb-5 flex flex-wrap gap-2">
             <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-              {opportunity.trade}
+              {tradeLabel}
             </span>
             <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-              {opportunity.city}, {opportunity.state}
+              {locationLabel}
             </span>
             <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
-              {opportunity.source}
+              {opportunity.source === "sam.gov" ? "SAM.gov" : opportunity.source}
             </span>
           </div>
 
@@ -131,7 +177,7 @@ export default async function LiveContractDetailPage({
           </h1>
 
           <p className="mt-4 text-[15px] leading-7 text-black/70">
-            {opportunity.summary}
+            {opportunity.summaryShort || overview}
           </p>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -139,16 +185,16 @@ export default async function LiveContractDetailPage({
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45">
                 Buyer
               </p>
-              <p className="mt-2 text-base font-semibold">{opportunity.buyer}</p>
+              <p className="mt-2 text-base font-semibold">
+                {opportunity.buyer || "Public Agency"}
+              </p>
             </div>
 
             <div className="rounded-[24px] border border-black/10 bg-[#F8FBFF] p-5">
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45">
                 Location
               </p>
-              <p className="mt-2 text-base font-semibold">
-                {opportunity.city}, {opportunity.state}
-              </p>
+              <p className="mt-2 text-base font-semibold">{locationLabel}</p>
             </div>
 
             <div className="rounded-[24px] border border-black/10 bg-[#F8FBFF] p-5">
@@ -159,7 +205,9 @@ export default async function LiveContractDetailPage({
                 {formatDate(opportunity.dueDate)}
               </p>
               <p className="mt-1 text-sm text-black/60">
-                {daysLeft > 0
+                {daysLeft === null
+                  ? "Deadline TBD"
+                  : daysLeft > 0
                   ? `${daysLeft} day${daysLeft === 1 ? "" : "s"} left`
                   : "Closing soon"}
               </p>
@@ -172,14 +220,60 @@ export default async function LiveContractDetailPage({
                 Opportunity Overview
               </p>
               <p className="mt-3 text-[15px] leading-7 text-black/70">
-                {opportunity.summary}
+                {overview}
               </p>
+
+              <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                {opportunity.noticeType ? (
+                  <div className="rounded-2xl border border-black/10 bg-[#F8FBFF] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/45">
+                      Notice Type
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-black">
+                      {opportunity.noticeType}
+                    </p>
+                  </div>
+                ) : null}
+
+                {opportunity.naics ? (
+                  <div className="rounded-2xl border border-black/10 bg-[#F8FBFF] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/45">
+                      NAICS
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-black">
+                      {opportunity.naics}
+                    </p>
+                  </div>
+                ) : null}
+
+                {opportunity.postedDate ? (
+                  <div className="rounded-2xl border border-black/10 bg-[#F8FBFF] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/45">
+                      Posted
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-black">
+                      {formatDate(opportunity.postedDate)}
+                    </p>
+                  </div>
+                ) : null}
+
+                {opportunity.status ? (
+                  <div className="rounded-2xl border border-black/10 bg-[#F8FBFF] p-4">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-black/45">
+                      Status
+                    </p>
+                    <p className="mt-2 text-sm font-medium text-black">
+                      {opportunity.status}
+                    </p>
+                  </div>
+                ) : null}
+              </div>
 
               <p className="mt-6 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#4E6FAE]">
                 Why It Fits
               </p>
               <p className="mt-3 text-[15px] leading-7 text-black/70">
-                {opportunity.fitNote}
+                {fitNote}
               </p>
             </div>
 
@@ -206,7 +300,7 @@ export default async function LiveContractDetailPage({
                 <ShareOpportunityButton slug={opportunity.slug} />
 
                 <a
-                  href={opportunity.officialUrl}
+                  href={opportunity.sourceUrl}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center justify-center rounded-2xl border border-black/10 bg-white px-4 py-3 text-sm font-medium transition hover:bg-black/[0.03]"
