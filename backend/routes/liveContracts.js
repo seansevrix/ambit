@@ -35,7 +35,6 @@ const CATEGORY_PRIORITY = {
   electrical: 4,
   "fire-alarm-access-control": 5,
   security: 6,
-
   "waste-management": 7,
   roofing: 8,
   painting: 9,
@@ -43,21 +42,30 @@ const CATEGORY_PRIORITY = {
   "fencing-gates": 11,
   "restoration-mitigation": 12,
   "concrete-paving": 13,
-
   "temporary-help": 14,
   "environmental-remediation": 15,
   "nursing-home-health": 16,
   "medical-equipment-rental": 17,
-
   "logistics-supply-chain": 18,
   "office-admin": 19,
   warehousing: 20,
   "office-supplies": 21,
 };
 
+const NOTICE_TYPE_PRIORITY = {
+  presolicitation: 1,
+  solicitation: 2,
+  "combined synopsis/solicitation": 3,
+  "sources sought": 4,
+};
+
 function asStr(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
+}
+
+function lower(value) {
+  return asStr(value).toLowerCase();
 }
 
 function getSingleQueryValue(value, fallback = "") {
@@ -69,12 +77,18 @@ function buildBaseWhere() {
   return {
     isActive: true,
     source: "sam.gov",
+    segment: "government",
     category: { in: ALLOWED_CATEGORIES },
   };
 }
 
 function getCategoryPriority(category) {
   return CATEGORY_PRIORITY[category] ?? 999;
+}
+
+function getNoticeTypePriority(noticeType) {
+  const text = lower(noticeType);
+  return NOTICE_TYPE_PRIORITY[text] ?? 999;
 }
 
 function toTimestamp(value, fallback) {
@@ -87,15 +101,19 @@ function toTimestamp(value, fallback) {
 function compareLiveOpportunities(a, b) {
   const aCategoryPriority = getCategoryPriority(a.category);
   const bCategoryPriority = getCategoryPriority(b.category);
-
   if (aCategoryPriority !== bCategoryPriority) {
     return aCategoryPriority - bCategoryPriority;
+  }
+
+  const aNoticeTypePriority = getNoticeTypePriority(a.noticeType);
+  const bNoticeTypePriority = getNoticeTypePriority(b.noticeType);
+  if (aNoticeTypePriority !== bNoticeTypePriority) {
+    return aNoticeTypePriority - bNoticeTypePriority;
   }
 
   const farFuture = new Date("2100-01-01").getTime();
   const aDue = toTimestamp(a.dueDate, farFuture);
   const bDue = toTimestamp(b.dueDate, farFuture);
-
   if (aDue !== bDue) {
     return aDue - bDue;
   }
@@ -103,14 +121,12 @@ function compareLiveOpportunities(a, b) {
   const zero = 0;
   const aPosted = toTimestamp(a.postedDate, zero);
   const bPosted = toTimestamp(b.postedDate, zero);
-
   if (aPosted !== bPosted) {
     return bPosted - aPosted;
   }
 
   const aCreated = toTimestamp(a.createdAt, zero);
   const bCreated = toTimestamp(b.createdAt, zero);
-
   return bCreated - aCreated;
 }
 
@@ -149,14 +165,11 @@ router.get("/live-contracts", async (req, res) => {
       ];
     }
 
-    const fetchSize = Math.min(Math.max(limit * 4, 80), 200);
+    const fetchSize = Math.min(Math.max(limit * 4, 80), 240);
 
     const opportunities = await prisma.liveOpportunity.findMany({
       where,
-      orderBy: [
-        { postedDate: "desc" },
-        { createdAt: "desc" },
-      ],
+      orderBy: [{ postedDate: "desc" }, { createdAt: "desc" }],
       take: fetchSize,
       select: {
         id: true,
@@ -166,11 +179,13 @@ router.get("/live-contracts", async (req, res) => {
         location: true,
         state: true,
         category: true,
+        noticeType: true,
         dueDate: true,
         postedDate: true,
         createdAt: true,
         source: true,
         summaryShort: true,
+        summaryLong: true,
         sourceUrl: true,
       },
     });
@@ -188,17 +203,18 @@ router.get("/live-contracts", async (req, res) => {
         location: opp.location,
         state: opp.state,
         category: opp.category,
+        noticeType: opp.noticeType,
         dueDate: opp.dueDate ? opp.dueDate.toISOString() : null,
+        postedDate: opp.postedDate ? opp.postedDate.toISOString() : null,
         source: opp.source,
         summaryShort: opp.summaryShort,
+        opportunitySummary: opp.summaryLong || opp.summaryShort,
         sourceUrl: opp.sourceUrl,
       })),
     });
   } catch (error) {
     console.error("[GET /engine/live-contracts] error:", error);
-    return res.status(500).json({
-      error: "Failed to load live contracts.",
-    });
+    return res.status(500).json({ error: "Failed to load live contracts." });
   }
 });
 
@@ -244,15 +260,12 @@ router.get("/live-contracts/:slug", async (req, res) => {
       postedDate: opportunity.postedDate
         ? opportunity.postedDate.toISOString()
         : null,
-      dueDate: opportunity.dueDate
-        ? opportunity.dueDate.toISOString()
-        : null,
+      dueDate: opportunity.dueDate ? opportunity.dueDate.toISOString() : null,
+      opportunitySummary: opportunity.summaryLong || opportunity.summaryShort,
     });
   } catch (error) {
     console.error("[GET /engine/live-contracts/:slug] error:", error);
-    return res.status(500).json({
-      error: "Failed to load live contract.",
-    });
+    return res.status(500).json({ error: "Failed to load live contract." });
   }
 });
 

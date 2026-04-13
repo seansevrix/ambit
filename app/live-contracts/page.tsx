@@ -93,7 +93,9 @@ type LiveOpportunity = {
   location: string | null;
   state: string | null;
   category: string | null;
+  noticeType: string | null;
   dueDate: string | null;
+  postedDate: string | null;
   source: string;
   summaryShort: string | null;
   opportunitySummary?: string | null;
@@ -130,6 +132,10 @@ function getBackendBaseUrl() {
   );
 }
 
+function getSiteBaseUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL || "https://ambitco.app";
+}
+
 async function fetchLiveContracts(params: {
   trade: string;
   state: string;
@@ -137,6 +143,7 @@ async function fetchLiveContracts(params: {
 }) {
   const backendBase = getBackendBaseUrl();
   const url = new URL("/engine/live-contracts", backendBase);
+  url.searchParams.set("limit", "72");
 
   if (params.trade && params.trade !== "All") {
     url.searchParams.set("trade", params.trade);
@@ -193,6 +200,8 @@ export default async function LiveContractsPage({
     keyword,
   });
 
+  const siteBaseUrl = getSiteBaseUrl();
+
   return (
     <main className="min-h-screen bg-[#EAF3FF] text-black">
       <Script id="live-contract-share" strategy="afterInteractive">{`
@@ -235,14 +244,15 @@ export default async function LiveContractsPage({
           </h1>
 
           <p className="mt-4 max-w-3xl text-[15px] leading-7 text-black/70">
-            Interested in pursuing an opportunity? Contact{" "}
+            Public-facing contract opportunities pulled into Ambit so visitors can
+            review them quickly. Interested in pursuing one? Contact{" "}
             <a
               href="mailto:ambit@sevrixgov.com"
               className="font-medium text-black underline underline-offset-4"
             >
               ambit@sevrixgov.com
             </a>{" "}
-            to have an Ambit team member begin your pursuit.
+            and we will begin the pursuit.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -347,7 +357,7 @@ export default async function LiveContractsPage({
               opp.opportunitySummary ||
               opp.summaryShort ||
               "Active public opportunity available inside Ambit.";
-            const shareUrl = `https://ambitco.app/live-contracts/${opp.slug}`;
+            const shareUrl = `${siteBaseUrl}/live-contracts/${opp.slug}`;
 
             return (
               <article
@@ -360,9 +370,17 @@ export default async function LiveContractsPage({
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
                         {tradeLabel}
                       </span>
+
+                      {opp.noticeType ? (
+                        <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
+                          {opp.noticeType}
+                        </span>
+                      ) : null}
+
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
                         {locationText}
                       </span>
+
                       <span className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium">
                         {opp.source === "sam.gov" ? "SAM.gov" : opp.source}
                       </span>
@@ -392,6 +410,10 @@ export default async function LiveContractsPage({
                     </p>
                     <p className="mt-1 text-lg font-semibold">
                       {formatDate(opp.dueDate)}
+                    </p>
+
+                    <p className="mt-3 text-sm text-black/55">
+                      Posted: {formatDate(opp.postedDate)}
                     </p>
 
                     <div className="mt-4 flex flex-col gap-2">

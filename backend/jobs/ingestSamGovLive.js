@@ -3,24 +3,24 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const SAM_KEY = process.env.SAM_GOV_API_KEY;
-const BASE = "https://api.sam.gov/opportunities/v2/search";
+const SAM_BASE_URL = "https://api.sam.gov/opportunities/v2/search";
 
-function envBool(value, defaultValue = false) {
-  if (value === null || value === undefined || value === "") return defaultValue;
-  const v = String(value).trim().toLowerCase();
-  return v === "1" || v === "true" || v === "yes" || v === "on";
-}
-
-const SAM_LIVE_LOOKBACK_DAYS = Number(process.env.SAM_LIVE_LOOKBACK_DAYS || 21);
-const SAM_LIVE_PAGE_SIZE = Number(process.env.SAM_LIVE_PAGE_SIZE || 50);
-const SAM_LIVE_MAX_PAGES = Number(process.env.SAM_LIVE_MAX_PAGES || 12);
+const SAM_LIVE_LOOKBACK_DAYS = Number(process.env.SAM_LIVE_LOOKBACK_DAYS || 180);
+const SAM_LIVE_PAGE_SIZE = Math.min(
+  Math.max(Number(process.env.SAM_LIVE_PAGE_SIZE || 250), 1),
+  1000
+);
+const SAM_LIVE_MAX_PAGES = Math.max(Number(process.env.SAM_LIVE_MAX_PAGES || 12), 1);
+const SAM_LIVE_PTYPES = String(process.env.SAM_LIVE_PTYPES || "p,r,o,k")
+  .split(",")
+  .map((value) => value.trim().toLowerCase())
+  .filter(Boolean);
 
 const SAM_MAX_RETRIES = Number(process.env.SAM_MAX_RETRIES || 6);
 const SAM_RETRY_BASE_MS = Number(process.env.SAM_RETRY_BASE_MS || 2500);
 const SAM_RETRY_MAX_MS = Number(process.env.SAM_RETRY_MAX_MS || 45000);
 const SAM_FETCH_TIMEOUT_MS = Number(process.env.SAM_FETCH_TIMEOUT_MS || 30000);
 const SAM_SOFT_FAIL_ON_UPSTREAM = envBool(process.env.SAM_SOFT_FAIL_ON_UPSTREAM, true);
-const FORCE_ACTIVE_QUERY = envBool(process.env.SAM_FORCE_ACTIVE_QUERY, false);
 
 const RETRYABLE_HTTP = new Set([408, 425, 429, 500, 502, 503, 504]);
 
@@ -39,6 +39,7 @@ const TARGET_LANE_RULES = [
       "disinfection",
       "restroom cleaning",
       "building cleaning",
+      "cleaning services",
     ],
   },
   {
@@ -50,11 +51,16 @@ const TARGET_LANE_RULES = [
       "groundskeeping",
       "mowing",
       "lawn",
+      "weed and feed",
+      "weed control",
+      "fertilizer",
+      "fertilization",
       "irrigation",
       "tree trimming",
       "snow removal",
       "grounds care",
       "vegetation",
+      "shrub",
     ],
   },
   {
@@ -286,8 +292,6 @@ const TARGET_LANE_RULES = [
       "abatement",
     ],
   },
-
-  // Adjacent teaser lanes
   {
     category: "concrete-paving",
     naics: ["237310"],
@@ -359,34 +363,85 @@ const TARGET_LANE_RULES = [
 
 const ALLOWED_CATEGORIES = TARGET_LANE_RULES.map((rule) => rule.category);
 
+const CATEGORY_LABELS = {
+  janitorial: "janitorial",
+  landscaping: "landscaping",
+  "plumbing-hvac": "plumbing and HVAC",
+  electrical: "electrical",
+  security: "security",
+  "waste-management": "waste management",
+  roofing: "roofing",
+  painting: "painting",
+  "logistics-supply-chain": "logistics and supply chain",
+  "office-admin": "office admin",
+  "temporary-help": "temporary staffing",
+  "office-supplies": "office supplies",
+  warehousing: "warehousing",
+  "nursing-home-health": "nursing and home health",
+  "medical-equipment-rental": "medical equipment rental",
+  "environmental-remediation": "environmental remediation",
+  "concrete-paving": "concrete and paving",
+  "fire-alarm-access-control": "fire alarm and access control",
+  "fencing-gates": "fencing and gates",
+  "restoration-mitigation": "restoration and mitigation",
+  "pest-control": "pest control",
+};
+
+function envBool(value, defaultValue = false) {
+  if (value === null || value === undefined || value === "") return defaultValue;
+  const normalized = String(value).trim().toLowerCase();
+  return ["1", "true", "yes", "on"].includes(normalized);
+}
+
 function sleep(ms) {
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 function jitter(ms) {
   return Math.floor(ms * (0.8 + Math.random() * 0.4));
 }
 
-function mmddyyyy(d) {
-  const mm = String(d.getUTCMonth() + 1).padStart(2, "0");
-  const dd = String(d.getUTCDate()).padStart(2, "0");
-  const yyyy = d.getUTCFullYear();
+function mmddyyyy(date) {
+  const mm = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const dd = String(date.getUTCDate()).padStart(2, "0");
+  const yyyy = date.getUTCFullYear();
   return `${mm}/${dd}/${yyyy}`;
 }
 
-function asStr(v) {
-  if (v === null || v === undefined) return "";
-  return String(v).trim();
+function formatDate(date) {
+  if (!date) return null;
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
-function lower(v) {
-  return asStr(v).toLowerCase();
+function asStr(value) {
+  if (value === null || value === undefined) return "";
+  return String(value).trim();
 }
 
-function toDateOrNull(v) {
-  if (!v) return null;
-  const d = new Date(v);
-  return Number.isNaN(d.getTime()) ? null : d;
+function lower(value) {
+  return asStr(value).toLowerCase();
+}
+
+function looksLikeUrl(value) {
+  const text = asStr(value);
+  return /^https?:\/\//i.test(text);
+}
+
+function toDateOrNull(value) {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function normalizeNaics(value) {
+  const digits = asStr(value).replace(/\D/g, "");
+  if (digits.length < 6) return null;
+  return digits.slice(0, 6);
 }
 
 function pickFirst(obj, paths) {
@@ -400,141 +455,19 @@ function pickFirst(obj, paths) {
       return value;
     }
   }
-  return null;
-}
-
-function buildLocation(o) {
-  const pop = o?.placeOfPerformance || o?.data?.placeOfPerformance;
-  const popCity = asStr(pop?.city?.name || pop?.city);
-  const popState = asStr(pop?.state?.code || pop?.state);
-  const popZip = asStr(pop?.zip);
-
-  const popLoc = [popCity, popState].filter(Boolean).join(", ");
-  if (popLoc) return popLoc;
-  if (popZip) return popZip;
-
-  const off = o?.officeAddress || o?.data?.officeAddress;
-  const offCity = asStr(off?.city);
-  const offState = asStr(off?.state || off?.stateCode);
-  const offZip = asStr(off?.zipcode || off?.zip);
-
-  const offLoc = [offCity, offState].filter(Boolean).join(", ");
-  if (offLoc) return offLoc;
-  if (offZip) return offZip;
 
   return null;
 }
 
-function pickState(o) {
-  const pop = o?.placeOfPerformance || o?.data?.placeOfPerformance;
-  const popState = asStr(pop?.state?.code || pop?.state);
-  if (popState) return popState;
+function cleanText(text, maxLen = 1600) {
+  const raw = asStr(text);
+  if (!raw || looksLikeUrl(raw)) return null;
 
-  const off = o?.officeAddress || o?.data?.officeAddress;
-  const offState = asStr(off?.state || off?.stateCode);
-  if (offState) return offState;
-
-  return null;
-}
-
-function normalizeNaics(val) {
-  const s = asStr(val);
-  const digits = s.replace(/\D/g, "");
-  if (digits.length < 6) return null;
-  return digits.slice(0, 6);
-}
-
-function pickNaics(o) {
-  const candidate =
-    o?.naicsCode ||
-    o?.naics ||
-    o?.ncode ||
-    (Array.isArray(o?.naicsCodes) ? o.naicsCodes[0] : null) ||
-    o?.data?.naics?.[0]?.naicsCode ||
-    o?.data?.naicsCode ||
-    null;
-
-  return normalizeNaics(candidate);
-}
-
-function pickUiLink(o) {
-  return asStr(o?.uiLink || o?.data?.uiLink) || null;
-}
-
-function pickNoticeId(o) {
-  return asStr(o?.noticeId) || asStr(o?.noticeID) || asStr(o?.id) || null;
-}
-
-function pickNoticeType(o) {
-  return (
-    asStr(o?.typeOfNoticeDescription) ||
-    asStr(o?.noticeType) ||
-    asStr(o?.type) ||
-    asStr(o?.data?.typeOfNoticeDescription) ||
-    null
-  );
-}
-
-function pickStatus(o) {
-  return asStr(o?.status) || asStr(o?.opportunityStatus) || asStr(o?.data?.status) || null;
-}
-
-function pickAgency(o) {
-  return (
-    asStr(o?.fullParentPathName) ||
-    asStr(o?.department) ||
-    asStr(o?.subTier) ||
-    asStr(o?.office) ||
-    null
-  );
-}
-
-function pickDueDateRaw(o) {
-  return pickFirst(o, [
-    "responseDeadLine",
-    "responseDeadline",
-    "responseDate",
-    "closeDate",
-    "archiveDate",
-    "data.responseDeadLine",
-    "data.responseDeadline",
-    "data.responseDate",
-    "data.closeDate",
-    "data.archiveDate",
-  ]);
-}
-
-function pickDescription(o) {
-  return (
-    asStr(o?.description) ||
-    asStr(o?.data?.description) ||
-    asStr(o?.additionalInfoLink) ||
-    ""
-  );
-}
-
-function isSamSuspendedPayload(text = "") {
-  const t = String(text || "");
-  return (
-    t.includes('"code":"303001"') ||
-    t.includes('code":"303001"') ||
-    (t.includes("303001") && /State\s*:\s*SUSPENDED/i.test(t))
-  );
-}
-
-class UpstreamTransientError extends Error {
-  constructor(message, meta = {}) {
-    super(message);
-    this.name = "UpstreamTransientError";
-    Object.assign(this, meta);
-  }
-}
-
-function cleanText(text, maxLen = 1200) {
-  const cleaned = asStr(text)
+  const cleaned = raw
     .replace(/<[^>]*>/g, " ")
-    .replace(/\s+/g, " ")
+    .replace(/https?:\/\/\S+/gi, " ")
     .replace(/\u00a0/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
 
   if (!cleaned) return null;
@@ -543,19 +476,143 @@ function cleanText(text, maxLen = 1200) {
 }
 
 function firstSentence(text) {
-  const cleaned = cleanText(text, 800);
+  const cleaned = cleanText(text, 900);
   if (!cleaned) return null;
 
   const match = cleaned.match(/^(.+?[.!?])(\s|$)/);
   const sentence = match?.[1] || cleaned;
 
-  if (sentence.length <= 220) return sentence;
-  return `${sentence.slice(0, 219).trim()}…`;
+  if (sentence.length <= 240) return sentence;
+  return `${sentence.slice(0, 239).trim()}…`;
+}
+
+function pickNoticeId(opportunity) {
+  return (
+    asStr(opportunity?.noticeId) ||
+    asStr(opportunity?.noticeID) ||
+    asStr(opportunity?.id) ||
+    null
+  );
+}
+
+function pickUiLink(opportunity) {
+  return asStr(opportunity?.uiLink || opportunity?.data?.uiLink) || null;
+}
+
+function pickNoticeType(opportunity) {
+  return (
+    asStr(opportunity?.typeOfNoticeDescription) ||
+    asStr(opportunity?.type) ||
+    asStr(opportunity?.noticeType) ||
+    asStr(opportunity?.data?.typeOfNoticeDescription) ||
+    null
+  );
+}
+
+function pickStatus(opportunity) {
+  return (
+    asStr(opportunity?.status) ||
+    asStr(opportunity?.opportunityStatus) ||
+    asStr(opportunity?.active) ||
+    asStr(opportunity?.data?.status) ||
+    null
+  );
+}
+
+function pickAgency(opportunity) {
+  return (
+    asStr(opportunity?.fullParentPathName) ||
+    asStr(opportunity?.organizationName) ||
+    [
+      asStr(opportunity?.department),
+      asStr(opportunity?.subTier),
+      asStr(opportunity?.office),
+    ]
+      .filter(Boolean)
+      .join(" > ") ||
+    null
+  );
+}
+
+function pickDueDateRaw(opportunity) {
+  return pickFirst(opportunity, [
+    "responseDeadLine",
+    "reponseDeadLine",
+    "responseDeadline",
+    "responseDate",
+    "closeDate",
+    "data.responseDeadLine",
+    "data.reponseDeadLine",
+    "data.responseDeadline",
+    "data.responseDate",
+    "data.closeDate",
+  ]);
+}
+
+function buildLocation(opportunity) {
+  const pop = opportunity?.placeOfPerformance || opportunity?.data?.placeOfPerformance;
+  const popCity = asStr(pop?.city?.name || pop?.city);
+  const popState = asStr(pop?.state?.code || pop?.state);
+  const popZip = asStr(pop?.zip);
+
+  const popLocation = [popCity, popState].filter(Boolean).join(", ");
+  if (popLocation) return popLocation;
+  if (popZip) return popZip;
+
+  const officeAddress = opportunity?.officeAddress || opportunity?.data?.officeAddress;
+  const officeCity = asStr(officeAddress?.city);
+  const officeState = asStr(officeAddress?.state || officeAddress?.stateCode);
+  const officeZip = asStr(officeAddress?.zipcode || officeAddress?.zip);
+
+  const officeLocation = [officeCity, officeState].filter(Boolean).join(", ");
+  if (officeLocation) return officeLocation;
+  if (officeZip) return officeZip;
+
+  return null;
+}
+
+function pickState(opportunity) {
+  const pop = opportunity?.placeOfPerformance || opportunity?.data?.placeOfPerformance;
+  const popState = asStr(pop?.state?.code || pop?.state);
+  if (popState) return popState;
+
+  const officeAddress = opportunity?.officeAddress || opportunity?.data?.officeAddress;
+  const officeState = asStr(officeAddress?.state || officeAddress?.stateCode);
+  if (officeState) return officeState;
+
+  return null;
+}
+
+function pickNaics(opportunity) {
+  const value =
+    opportunity?.naicsCode ||
+    opportunity?.naics ||
+    opportunity?.ncode ||
+    (Array.isArray(opportunity?.naicsCodes) ? opportunity.naicsCodes[0] : null) ||
+    opportunity?.data?.naics?.[0]?.naicsCode ||
+    opportunity?.data?.naicsCode ||
+    null;
+
+  return normalizeNaics(value);
+}
+
+function pickDescription(opportunity) {
+  const description =
+    cleanText(opportunity?.description, 1800) ||
+    cleanText(opportunity?.data?.description, 1800) ||
+    cleanText(opportunity?.data?.synopsis, 1800) ||
+    null;
+
+  return description;
+}
+
+function getCategoryLabel(category) {
+  return CATEGORY_LABELS[category] || "contract";
 }
 
 function deriveTargetCategory(title, description, naics) {
   const normalizedNaics = normalizeNaics(naics);
-  const text = lower(`${title} ${description}`);
+  const haystack = lower(`${title} ${description}`);
 
   if (normalizedNaics) {
     for (const rule of TARGET_LANE_RULES) {
@@ -566,7 +623,7 @@ function deriveTargetCategory(title, description, naics) {
   }
 
   for (const rule of TARGET_LANE_RULES) {
-    if (rule.keywords.some((term) => text.includes(term))) {
+    if (rule.keywords.some((term) => haystack.includes(term))) {
       return rule.category;
     }
   }
@@ -590,29 +647,23 @@ function buildSlug(title, externalId) {
   return suffix ? `${base}-${suffix}`.slice(0, 120) : base.slice(0, 120);
 }
 
-function buildSummaries({ title, description, noticeType, agency, location, category }) {
-  const cleanedDescription = cleanText(description, 1800);
+function buildSummaries({ title, description, noticeType, agency, location, category, dueDate }) {
+  const categoryLabel = getCategoryLabel(category);
+  const typeText = asStr(noticeType) || "live";
+  const dueText = formatDate(dueDate);
 
   const summaryShort =
-    firstSentence(cleanedDescription) ||
+    firstSentence(description) ||
     cleanText(
-      [category, noticeType, title, agency, location].filter(Boolean).join(" — "),
-      220
+      `${agency || "Public agency"} posted a ${typeText.toLowerCase()} ${categoryLabel} opportunity${location ? ` in ${location}` : ""}.`,
+      240
     ) ||
     null;
 
   const summaryLong =
-    cleanedDescription ||
+    cleanText(description, 1800) ||
     cleanText(
-      [
-        title,
-        category ? `Lane: ${category}` : null,
-        noticeType ? `Notice type: ${noticeType}` : null,
-        agency,
-        location,
-      ]
-        .filter(Boolean)
-        .join(" — "),
+      `${agency || "A public agency"} posted ${title}${location ? ` in ${location}` : ""}. Notice type: ${typeText}. This appears to be a ${categoryLabel} opportunity for public-facing review.${dueText ? ` Responses are due ${dueText}.` : ""}`,
       1200
     ) ||
     null;
@@ -632,10 +683,13 @@ function isPubliclyUsefulNotice({ title, noticeType, status, dueDate }) {
     "award notice",
     "justification and approval",
     "sole source justification",
+    "intent to award",
     "special notice: award",
+    "fair opportunity",
     "archived",
     "cancelled",
     "canceled",
+    "deleted",
   ];
 
   if (blockedTerms.some((term) => text.includes(term))) {
@@ -649,78 +703,94 @@ function isPubliclyUsefulNotice({ title, noticeType, status, dueDate }) {
   return { keep: true, reason: "ok" };
 }
 
-async function fetchPage({ postedFrom, postedTo, limit, offset }) {
-  const url = new URL(BASE);
+function isSamSuspendedPayload(text = "") {
+  const payload = String(text || "");
+  return (
+    payload.includes('"code":"303001"') ||
+    (payload.includes("303001") && /State\s*:\s*SUSPENDED/i.test(payload))
+  );
+}
+
+class UpstreamTransientError extends Error {
+  constructor(message, meta = {}) {
+    super(message);
+    this.name = "UpstreamTransientError";
+    Object.assign(this, meta);
+  }
+}
+
+async function fetchPage({ postedFrom, postedTo, limit, pageIndex }) {
+  const url = new URL(SAM_BASE_URL);
   url.searchParams.set("api_key", SAM_KEY);
   url.searchParams.set("postedFrom", postedFrom);
   url.searchParams.set("postedTo", postedTo);
+  url.searchParams.set("status", "active");
   url.searchParams.set("limit", String(limit));
-  url.searchParams.set("offset", String(offset));
+  url.searchParams.set("offset", String(pageIndex));
 
-  if (FORCE_ACTIVE_QUERY) {
-    url.searchParams.set("active", "true");
+  for (const ptype of SAM_LIVE_PTYPES) {
+    url.searchParams.append("ptype", ptype);
   }
 
   for (let attempt = 0; attempt <= SAM_MAX_RETRIES; attempt++) {
-    const ac = new AbortController();
-    const timeout = setTimeout(() => ac.abort(), SAM_FETCH_TIMEOUT_MS);
+    const abortController = new AbortController();
+    const timeout = setTimeout(() => abortController.abort(), SAM_FETCH_TIMEOUT_MS);
 
     try {
-      const res = await fetch(url.toString(), {
+      const response = await fetch(url.toString(), {
         method: "GET",
         headers: { Accept: "application/json" },
-        signal: ac.signal,
+        signal: abortController.signal,
       });
 
-      const text = await res.text().catch(() => "");
+      const text = await response.text().catch(() => "");
       clearTimeout(timeout);
 
-      if (res.ok) {
+      if (response.ok) {
         try {
           return JSON.parse(text);
         } catch {
-          throw new Error(`SAM.gov returned non-JSON body (${res.status}): ${text.slice(0, 300)}`);
+          throw new Error(`SAM.gov returned non-JSON body (${response.status}): ${text.slice(0, 300)}`);
         }
       }
 
-      const retryable = RETRYABLE_HTTP.has(res.status) || isSamSuspendedPayload(text);
-      const errMsg = `SAM.gov API failed ${res.status}: ${text.slice(0, 600)}`;
+      const retryable = RETRYABLE_HTTP.has(response.status) || isSamSuspendedPayload(text);
+      const errorMessage = `SAM.gov API failed ${response.status}: ${text.slice(0, 600)}`;
 
       if (!retryable) {
-        throw new Error(errMsg);
+        throw new Error(errorMessage);
       }
 
       if (attempt === SAM_MAX_RETRIES) {
-        throw new UpstreamTransientError(errMsg, {
+        throw new UpstreamTransientError(errorMessage, {
           retryable: true,
-          status: res.status,
+          status: response.status,
           body: text,
-          samSuspended: isSamSuspendedPayload(text),
         });
       }
 
       const backoffMs = Math.min(SAM_RETRY_MAX_MS, SAM_RETRY_BASE_MS * 2 ** attempt);
       console.warn(
-        `[ingestSamGovLive] transient ${res.status} (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms`
+        `[ingestSamGovLive] transient ${response.status} (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms`
       );
       await sleep(jitter(backoffMs));
-    } catch (err) {
+    } catch (error) {
       clearTimeout(timeout);
 
-      const msg = String(err?.message || err || "");
+      const message = String(error?.message || error || "");
       const networkLike =
-        err?.name === "AbortError" ||
-        err?.name === "TypeError" ||
-        err?.code === "ECONNRESET" ||
-        err?.code === "ETIMEDOUT" ||
-        /fetch failed|network|timeout|aborted/i.test(msg);
+        error?.name === "AbortError" ||
+        error?.name === "TypeError" ||
+        error?.code === "ECONNRESET" ||
+        error?.code === "ETIMEDOUT" ||
+        /fetch failed|network|timeout|aborted/i.test(message);
 
       if (!networkLike) {
-        throw err;
+        throw error;
       }
 
       if (attempt === SAM_MAX_RETRIES) {
-        throw new UpstreamTransientError(`SAM.gov network failure after retries: ${msg}`, {
+        throw new UpstreamTransientError(`SAM.gov network failure after retries: ${message}`, {
           retryable: true,
           networkLike: true,
         });
@@ -728,7 +798,7 @@ async function fetchPage({ postedFrom, postedTo, limit, offset }) {
 
       const backoffMs = Math.min(SAM_RETRY_MAX_MS, SAM_RETRY_BASE_MS * 2 ** attempt);
       console.warn(
-        `[ingestSamGovLive] network error (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms: ${msg}`
+        `[ingestSamGovLive] network error (try ${attempt + 1}/${SAM_MAX_RETRIES + 1}) — retrying in ${backoffMs}ms: ${message}`
       );
       await sleep(jitter(backoffMs));
     }
@@ -776,26 +846,25 @@ async function deactivateExistingLiveOpportunity({ source, externalId, sourceUrl
   return result.count;
 }
 
-function shouldSoftFail(err) {
-  const msg = String(err?.message || err || "");
-  if (err instanceof UpstreamTransientError) return true;
-  if (isSamSuspendedPayload(msg)) return true;
-  if (/SAM\.gov API failed (408|425|429|500|502|503|504)/i.test(msg)) return true;
+function shouldSoftFail(error) {
+  const message = String(error?.message || error || "");
+  if (error instanceof UpstreamTransientError) return true;
+  if (isSamSuspendedPayload(message)) return true;
+  if (/SAM\.gov API failed (408|425|429|500|502|503|504)/i.test(message)) return true;
   return false;
 }
 
 async function main() {
-  if (!SAM_KEY) throw new Error("Missing SAM_GOV_API_KEY env var");
+  if (!SAM_KEY) {
+    throw new Error("Missing SAM_GOV_API_KEY env var");
+  }
 
   const now = new Date();
-  const from = new Date(now.getTime() - SAM_LIVE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
-
-  const postedFrom = mmddyyyy(from);
+  const lookbackStart = new Date(now.getTime() - SAM_LIVE_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+  const postedFrom = mmddyyyy(lookbackStart);
   const postedTo = mmddyyyy(now);
 
-  let offset = 0;
-  let pageCount = 0;
-
+  let pageIndex = 0;
   let scanned = 0;
   let inserted = 0;
   let updated = 0;
@@ -805,39 +874,42 @@ async function main() {
   let skippedWrongLane = 0;
   let deactivatedFilteredOut = 0;
 
-  while (pageCount < SAM_LIVE_MAX_PAGES) {
+  while (pageIndex < SAM_LIVE_MAX_PAGES) {
     const data = await fetchPage({
       postedFrom,
       postedTo,
       limit: SAM_LIVE_PAGE_SIZE,
-      offset,
+      pageIndex,
     });
 
     const rows = data?.opportunitiesData || data?.opportunities || [];
-    if (!Array.isArray(rows) || rows.length === 0) break;
+    if (!Array.isArray(rows) || rows.length === 0) {
+      break;
+    }
 
-    for (const o of rows) {
-      scanned++;
+    for (const opportunity of rows) {
+      scanned += 1;
 
-      const title = asStr(o?.title);
+      const title = asStr(opportunity?.title);
       if (!title) {
-        skippedNoTitle++;
+        skippedNoTitle += 1;
         continue;
       }
 
-      const externalId = pickNoticeId(o);
+      const externalId = pickNoticeId(opportunity);
       const sourceUrl =
-        pickUiLink(o) || (externalId ? `https://sam.gov/opp/${externalId}/view` : null);
+        pickUiLink(opportunity) ||
+        (externalId ? `https://sam.gov/opp/${externalId}/view` : null);
 
       if (!sourceUrl) {
-        skippedNoUrl++;
+        skippedNoUrl += 1;
         continue;
       }
 
-      const noticeType = pickNoticeType(o);
-      const status = pickStatus(o);
-      const postedDate = toDateOrNull(o?.postedDate);
-      const dueDate = toDateOrNull(pickDueDateRaw(o));
+      const noticeType = pickNoticeType(opportunity);
+      const status = pickStatus(opportunity);
+      const postedDate = toDateOrNull(opportunity?.postedDate);
+      const dueDate = toDateOrNull(pickDueDateRaw(opportunity));
 
       const keepDecision = isPubliclyUsefulNotice({
         title,
@@ -852,16 +924,15 @@ async function main() {
           externalId,
           sourceUrl,
         });
-        skippedUnusable++;
+        skippedUnusable += 1;
         continue;
       }
 
-      const buyer = pickAgency(o);
-      const location = buildLocation(o);
-      const state = pickState(o);
-      const naics = pickNaics(o);
-      const description = pickDescription(o);
-
+      const buyer = pickAgency(opportunity);
+      const location = buildLocation(opportunity);
+      const state = pickState(opportunity);
+      const naics = pickNaics(opportunity);
+      const description = pickDescription(opportunity);
       const category = deriveTargetCategory(title, description, naics);
 
       if (!category || !ALLOWED_CATEGORIES.includes(category)) {
@@ -870,7 +941,7 @@ async function main() {
           externalId,
           sourceUrl,
         });
-        skippedWrongLane++;
+        skippedWrongLane += 1;
         continue;
       }
 
@@ -881,11 +952,14 @@ async function main() {
         agency: buyer,
         location,
         category,
+        dueDate,
       });
 
       const slug = buildSlug(title, externalId || sourceUrl);
-      const isActive =
-        !isExpired(dueDate) && !/archived|cancelled|canceled/i.test(lower(status));
+      const isMarkedActiveByApi = !/\b(no|inactive|archived|cancelled|canceled|deleted)\b/i.test(
+        lower(status)
+      );
+      const isActive = isMarkedActiveByApi && !isExpired(dueDate);
 
       const payload = {
         segment: "government",
@@ -906,7 +980,7 @@ async function main() {
         postedDate,
         dueDate,
         isActive,
-        raw: o,
+        raw: opportunity,
       };
 
       const existing = await findExistingLiveOpportunity({
@@ -921,18 +995,18 @@ async function main() {
           where: { id: existing.id },
           data: payload,
         });
-        updated++;
-        continue;
+        updated += 1;
+      } else {
+        await prisma.liveOpportunity.create({ data: payload });
+        inserted += 1;
       }
-
-      await prisma.liveOpportunity.create({ data: payload });
-      inserted++;
     }
 
-    offset += rows.length;
-    pageCount++;
+    pageIndex += 1;
 
-    if (rows.length < SAM_LIVE_PAGE_SIZE) break;
+    if (rows.length < SAM_LIVE_PAGE_SIZE) {
+      break;
+    }
   }
 
   const expireResult = await prisma.liveOpportunity.updateMany({
@@ -948,16 +1022,13 @@ async function main() {
     where: {
       source: "sam.gov",
       isActive: true,
-      OR: [
-        { category: null },
-        { category: { notIn: ALLOWED_CATEGORIES } },
-      ],
+      OR: [{ category: null }, { category: { notIn: ALLOWED_CATEGORIES } }],
     },
     data: { isActive: false },
   });
 
   console.log(
-    `[ingestSamGovLive] scanned=${scanned} inserted=${inserted} updated=${updated} skippedNoTitle=${skippedNoTitle} skippedNoUrl=${skippedNoUrl} skippedUnusable=${skippedUnusable} skippedWrongLane=${skippedWrongLane} deactivatedFilteredOut=${deactivatedFilteredOut} expiredMarkedInactive=${expireResult.count} deactivatedNonTarget=${nonTargetCleanupResult.count} postedFrom=${postedFrom} postedTo=${postedTo} pages=${pageCount}`
+    `[ingestSamGovLive] scanned=${scanned} inserted=${inserted} updated=${updated} skippedNoTitle=${skippedNoTitle} skippedNoUrl=${skippedNoUrl} skippedUnusable=${skippedUnusable} skippedWrongLane=${skippedWrongLane} deactivatedFilteredOut=${deactivatedFilteredOut} expiredMarkedInactive=${expireResult.count} deactivatedNonTarget=${nonTargetCleanupResult.count} postedFrom=${postedFrom} postedTo=${postedTo} pages=${pageIndex}`
   );
 }
 
@@ -966,19 +1037,17 @@ main()
     await prisma.$disconnect();
     process.exit(0);
   })
-  .catch(async (err) => {
-    const msg = String(err?.message || err || "");
+  .catch(async (error) => {
+    const message = String(error?.message || error || "");
 
-    if (SAM_SOFT_FAIL_ON_UPSTREAM && shouldSoftFail(err)) {
-      console.warn(
-        `[ingestSamGovLive] upstream outage/transient issue detected — soft fail: ${msg}`
-      );
+    if (SAM_SOFT_FAIL_ON_UPSTREAM && shouldSoftFail(error)) {
+      console.warn(`[ingestSamGovLive] upstream outage/transient issue detected — soft fail: ${message}`);
       await prisma.$disconnect();
       process.exit(0);
       return;
     }
 
-    console.error(err);
+    console.error(error);
     await prisma.$disconnect();
     process.exit(1);
   });
