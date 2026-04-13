@@ -28,6 +28,33 @@ const ALLOWED_CATEGORIES = [
   "pest-control",
 ];
 
+const CATEGORY_PRIORITY = {
+  janitorial: 1,
+  landscaping: 2,
+  "plumbing-hvac": 3,
+  electrical: 4,
+  "fire-alarm-access-control": 5,
+  security: 6,
+
+  "waste-management": 7,
+  roofing: 8,
+  painting: 9,
+  "pest-control": 10,
+  "fencing-gates": 11,
+  "restoration-mitigation": 12,
+  "concrete-paving": 13,
+
+  "temporary-help": 14,
+  "environmental-remediation": 15,
+  "nursing-home-health": 16,
+  "medical-equipment-rental": 17,
+
+  "logistics-supply-chain": 18,
+  "office-admin": 19,
+  warehousing: 20,
+  "office-supplies": 21,
+};
+
 function asStr(value) {
   if (value === null || value === undefined) return "";
   return String(value).trim();
@@ -44,6 +71,47 @@ function buildBaseWhere() {
     source: "sam.gov",
     category: { in: ALLOWED_CATEGORIES },
   };
+}
+
+function getCategoryPriority(category) {
+  return CATEGORY_PRIORITY[category] ?? 999;
+}
+
+function toTimestamp(value, fallback) {
+  if (!value) return fallback;
+  const date = new Date(value);
+  const time = date.getTime();
+  return Number.isNaN(time) ? fallback : time;
+}
+
+function compareLiveOpportunities(a, b) {
+  const aCategoryPriority = getCategoryPriority(a.category);
+  const bCategoryPriority = getCategoryPriority(b.category);
+
+  if (aCategoryPriority !== bCategoryPriority) {
+    return aCategoryPriority - bCategoryPriority;
+  }
+
+  const farFuture = new Date("2100-01-01").getTime();
+  const aDue = toTimestamp(a.dueDate, farFuture);
+  const bDue = toTimestamp(b.dueDate, farFuture);
+
+  if (aDue !== bDue) {
+    return aDue - bDue;
+  }
+
+  const zero = 0;
+  const aPosted = toTimestamp(a.postedDate, zero);
+  const bPosted = toTimestamp(b.postedDate, zero);
+
+  if (aPosted !== bPosted) {
+    return bPosted - aPosted;
+  }
+
+  const aCreated = toTimestamp(a.createdAt, zero);
+  const bCreated = toTimestamp(b.createdAt, zero);
+
+  return bCreated - aCreated;
 }
 
 router.get("/live-contracts", async (req, res) => {
@@ -81,14 +149,15 @@ router.get("/live-contracts", async (req, res) => {
       ];
     }
 
+    const fetchSize = Math.min(Math.max(limit * 4, 80), 200);
+
     const opportunities = await prisma.liveOpportunity.findMany({
       where,
       orderBy: [
-        { dueDate: "asc" },
         { postedDate: "desc" },
         { createdAt: "desc" },
       ],
-      take: limit,
+      take: fetchSize,
       select: {
         id: true,
         slug: true,
@@ -98,16 +167,31 @@ router.get("/live-contracts", async (req, res) => {
         state: true,
         category: true,
         dueDate: true,
+        postedDate: true,
+        createdAt: true,
         source: true,
         summaryShort: true,
         sourceUrl: true,
       },
     });
 
+    const rankedOpportunities = [...opportunities]
+      .sort(compareLiveOpportunities)
+      .slice(0, limit);
+
     return res.status(200).json({
-      opportunities: opportunities.map((opp) => ({
-        ...opp,
+      opportunities: rankedOpportunities.map((opp) => ({
+        id: opp.id,
+        slug: opp.slug,
+        title: opp.title,
+        buyer: opp.buyer,
+        location: opp.location,
+        state: opp.state,
+        category: opp.category,
         dueDate: opp.dueDate ? opp.dueDate.toISOString() : null,
+        source: opp.source,
+        summaryShort: opp.summaryShort,
+        sourceUrl: opp.sourceUrl,
       })),
     });
   } catch (error) {
