@@ -18,6 +18,7 @@ type Match = {
   postedDate: string | null;
   dueDate?: string | null;
   summary: string | null;
+  opportunitySummary?: string | null;
   score: number;
   reasons: string[];
   profileIncomplete: boolean;
@@ -46,10 +47,6 @@ const API_BASE = (
     ? "http://localhost:5001"
     : "https://ambit-0dnp.onrender.com")
 ).replace(/\/$/, "");
-
-function cx(...classes: Array<string | false | undefined | null>) {
-  return classes.filter(Boolean).join(" ");
-}
 
 function fmtDate(input?: string | null) {
   if (!input) return "";
@@ -109,8 +106,10 @@ function looksLikeRawNoticeSummary(summary?: string | null) {
 }
 
 function buildReadableSummary(match: Match) {
-  const raw = String(match.summary || "").trim();
+  const generated = String(match.opportunitySummary || "").trim();
+  if (generated) return generated;
 
+  const raw = String(match.summary || "").trim();
   if (raw && !looksLikeRawNoticeSummary(raw)) {
     return raw;
   }
@@ -203,6 +202,8 @@ export default function ScoutingReportClient(props: { customerId?: number }) {
           m.keywords,
           m.segment,
           m.source,
+          m.opportunitySummary,
+          m.summary,
         ]
           .filter(Boolean)
           .join(" ")

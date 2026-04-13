@@ -96,6 +96,7 @@ type LiveOpportunity = {
   dueDate: string | null;
   source: string;
   summaryShort: string | null;
+  opportunitySummary?: string | null;
   sourceUrl: string;
 };
 
@@ -343,7 +344,9 @@ export default async function LiveContractsPage({
             const tradeLabel = getTradeLabel(opp.category);
             const locationText = opp.location || opp.state || "Location TBD";
             const summary =
-              opp.summaryShort || "Active public opportunity available inside Ambit.";
+              opp.opportunitySummary ||
+              opp.summaryShort ||
+              "Active public opportunity available inside Ambit.";
             const shareUrl = `https://ambitco.app/live-contracts/${opp.slug}`;
 
             return (
@@ -373,9 +376,14 @@ export default async function LiveContractsPage({
                       Buyer: {opp.buyer || "Public Agency"}
                     </p>
 
-                    <p className="mt-3 text-[15px] leading-7 text-black/70">
-                      {summary}
-                    </p>
+                    <div className="mt-4 rounded-[22px] border border-black/10 bg-[#F8FBFF] p-4">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-black/45">
+                        Opportunity Summary
+                      </p>
+                      <p className="mt-2 text-[15px] leading-7 text-black/70">
+                        {summary}
+                      </p>
+                    </div>
                   </div>
 
                   <div className="w-full max-w-xs rounded-[24px] border border-black/10 bg-[#F8FBFF] p-4">
