@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
 
-type Segment = "Residential" | "Commercial" | "Government";
+type Segment = "Commercial" | "Government";
 
 type Testimonial = {
   name: string;
@@ -14,7 +13,6 @@ type Testimonial = {
   initials: string;
   segment?: Segment;
   stars?: 4 | 5;
-  featured?: boolean;
 };
 
 const CONTAINER = "mx-auto max-w-[1240px] px-6 lg:px-10";
@@ -30,7 +28,6 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "SK",
     segment: "Commercial",
     stars: 5,
-    featured: true,
   },
   {
     name: "David Chen",
@@ -42,19 +39,6 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "DC",
     segment: "Commercial",
     stars: 5,
-    featured: true,
-  },
-  {
-    name: "Mark T.",
-    role: "Owner, Plumbing Company",
-    location: "California, USA",
-    hook: "It sends work we can actually bid and win.",
-    quote:
-      "What impressed me most was the accuracy. It sends work we can actually bid and win. It’s become part of our daily routine.",
-    initials: "MT",
-    segment: "Residential",
-    stars: 5,
-    featured: true,
   },
   {
     name: "Erin J.",
@@ -98,27 +82,6 @@ const TESTIMONIALS: Testimonial[] = [
     initials: "JM",
     segment: "Government",
     stars: 5,
-  },
-  {
-    name: "Luis R.",
-    role: "Owner, Landscaping",
-    location: "Hawaii, USA",
-    hook: "It’s part of my morning routine now.",
-    quote:
-      "AMBIT helped me spot projects I would’ve missed. It’s part of my morning routine now.",
-    initials: "LR",
-    segment: "Residential",
-    stars: 4,
-  },
-  {
-    name: "Chris B.",
-    role: "Owner, Concrete",
-    location: "Arizona, USA",
-    hook: "Simple setup. Better matches.",
-    quote: "Simple setup. Better matches. Less noise. Exactly what we needed.",
-    initials: "CB",
-    segment: "Residential",
-    stars: 4,
   },
 ];
 
@@ -196,20 +159,9 @@ function BoldHookQuote({ hook, quote }: { hook: string; quote: string }) {
   );
 }
 
-function QuoteCard({
-  t,
-  featured = false,
-}: {
-  t: Testimonial;
-  featured?: boolean;
-}) {
+function QuoteCard({ t }: { t: Testimonial }) {
   return (
-    <div
-      className={[
-        "rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)]",
-        featured ? "ring-1 ring-[#2A8F8B]/10" : "",
-      ].join(" ")}
-    >
+    <div className="rounded-[28px] bg-white p-7 shadow-[0_16px_36px_rgba(49,36,92,0.08)] ring-1 ring-[#2A8F8B]/10">
       <div className="flex items-start justify-between gap-4">
         <SegmentChip segment={t.segment} />
         <div className="text-3xl leading-none text-[#2A8F8B]/30">“</div>
@@ -238,22 +190,6 @@ function QuoteCard({
 }
 
 export default function TestimonialsPage() {
-  const [showMore, setShowMore] = useState(false);
-
-  const featured = useMemo(
-    () => TESTIMONIALS.filter((t) => t.featured && t.stars === 5).slice(0, 3),
-    []
-  );
-
-  const rest = useMemo(() => {
-    const nonFeatured = TESTIMONIALS.filter((t) => !t.featured);
-    const fives = nonFeatured.filter((t) => t.stars === 5);
-    const fours = nonFeatured.filter((t) => t.stars === 4);
-    return [...fives, ...fours];
-  }, []);
-
-  const visibleReviews = showMore ? rest : rest.slice(0, 6);
-
   return (
     <main className="min-h-screen bg-[#E6F5F2] text-[#31245C]">
       <div className={`${CONTAINER} py-12 sm:py-16 lg:py-20`}>
@@ -269,9 +205,9 @@ export default function TestimonialsPage() {
               Real feedback from contractors using AMBIT
             </h1>
             <p className="mx-auto mt-4 max-w-[760px] text-base leading-8 text-[#6A6775]">
-              Reviews from contractors using AMBIT to find better-fit
-              opportunities, review them faster, and reduce the admin load that
-              slows bidding down.
+              Feedback from commercial and government-focused contractors using
+              AMBIT to find better-fit opportunities, review them faster, and
+              reduce the admin load that slows bidding down.
             </p>
           </div>
 
@@ -280,18 +216,40 @@ export default function TestimonialsPage() {
               4.5/5 average rating
             </div>
             <div className="rounded-full border border-[#2A8F8B]/15 bg-white px-4 py-2 text-sm font-semibold text-[#31245C] shadow-sm">
-              200+ reviews
+              65+ reviews
             </div>
             <div className="rounded-full border border-[#2A8F8B]/15 bg-white px-4 py-2 text-sm font-semibold text-[#31245C] shadow-sm">
-              Trusted by 200+ contractors
+              Trusted by 65+ contractors
             </div>
           </div>
         </div>
 
-        <section className="mt-12 grid gap-6 lg:grid-cols-3">
-          {featured.map((t, idx) => (
-            <QuoteCard key={t.name} t={t} featured={idx === 1} />
+        <section className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {TESTIMONIALS.map((t) => (
+            <QuoteCard key={t.name} t={t} />
           ))}
+        </section>
+
+        <section className="mt-12 rounded-[32px] bg-[#DDF3EF] px-8 py-10 shadow-[0_16px_36px_rgba(49,36,92,0.06)] sm:px-10">
+          <div className="mx-auto max-w-[860px] text-center">
+            <Eyebrow>Our Goal</Eyebrow>
+            <h2 className="mt-3 text-3xl font-black tracking-tight text-[#31245C] sm:text-4xl">
+              Our goal is simple.
+            </h2>
+            <p className="mx-auto mt-4 max-w-[760px] text-base leading-8 text-[#6A6775]">
+              At AMBIT, our goal is to help good companies pursue more work
+              without getting buried in the front-end bid process. We want
+              contractors to spend less time hunting, sorting, and digging
+              through scattered notices and more time deciding which
+              opportunities are actually worth pursuing.
+            </p>
+            <p className="mx-auto mt-4 max-w-[760px] text-base leading-8 text-[#6A6775]">
+              That means clearer opportunities, faster summaries, less noise,
+              and a simpler path from finding work to taking action. We built
+              AMBIT to reduce the admin burden that slows bidding down and help
+              teams stay focused on execution.
+            </p>
+          </div>
         </section>
 
         <section className="mt-12 rounded-[32px] bg-[#DDF3EF] px-8 py-10 text-center shadow-[0_16px_36px_rgba(49,36,92,0.06)] sm:px-10">
@@ -308,39 +266,6 @@ export default function TestimonialsPage() {
             <Button href="/login" variant="secondary">
               Log in
             </Button>
-          </div>
-        </section>
-
-        <section className="mt-12">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <Eyebrow>More reviews</Eyebrow>
-              <h2 className="mt-2 text-3xl font-black tracking-tight text-[#31245C]">
-                More contractor feedback
-              </h2>
-            </div>
-          </div>
-
-          <div className="mt-6 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-            {visibleReviews.map((t) => (
-              <QuoteCard key={t.name} t={t} />
-            ))}
-          </div>
-
-          {rest.length > 6 ? (
-            <div className="mt-8 flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowMore((prev) => !prev)}
-                className="inline-flex items-center justify-center rounded-md border border-[#2A8F8B]/20 bg-white px-5 py-3 text-sm font-semibold text-[#2A8F8B] transition hover:bg-[#2A8F8B]/5"
-              >
-                {showMore ? "Show less" : "Show more"}
-              </button>
-            </div>
-          ) : null}
-
-          <div className="mt-6 text-center text-xs text-[#7A7590]">
-            Star ratings shown reflect individual reviewers.
           </div>
         </section>
       </div>
