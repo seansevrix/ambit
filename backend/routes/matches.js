@@ -75,6 +75,161 @@ const STOP = new Set([
 ]);
 
 /** ---------------------------
+ * ✅ Opportunity summary helpers
+ * - Inline for now so this file is paste-ready
+ * -------------------------- */
+const SUMMARY_KEYWORDS = [
+  "scope",
+  "services",
+  "work includes",
+  "contractor shall",
+  "vendor shall",
+  "install",
+  "provide",
+  "repair",
+  "replace",
+  "maintenance",
+  "janitorial",
+  "custodial",
+  "landscaping",
+  "grounds",
+  "electrical",
+  "hvac",
+  "plumbing",
+  "security",
+  "staffing",
+  "office supplies",
+  "deadline",
+  "due",
+  "proposal",
+  "quote",
+  "bid",
+  "site visit",
+  "walkthrough",
+  "submission",
+];
+
+function cleanSummaryText(input = "") {
+  return String(input || "")
+    .replace(/https?:\/\/\S+/gi, " ")
+    .replace(/www\.\S+/gi, " ")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/[•●▪◦■□]+/g, ". ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function splitSummarySentences(text = "") {
+  return cleanSummaryText(text)
+    .split(/(?<=[.!?])\s+/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+}
+
+function truncateAtWord(text = "", maxLength = 300) {
+  if (!text || text.length <= maxLength) return text;
+  const clipped = text.slice(0, maxLength);
+  const lastSpace = clipped.lastIndexOf(" ");
+  return `${clipped.slice(0, lastSpace > 0 ? lastSpace : maxLength).trim()}…`;
+}
+
+function scoreSummarySentence(sentence = "", index = 0) {
+  const lower = sentence.toLowerCase();
+  let score = 0;
+
+  for (const keyword of SUMMARY_KEYWORDS) {
+    if (lower.includes(keyword)) score += 3;
+  }
+
+  if (
+    /\b(?:submit|proposal|deadline|due|quote|bid|walkthrough|site visit)\b/i.test(lower)
+  ) {
+    score += 4;
+  }
+
+  if (
+    /\b(?:jan|feb|mar|apr|may|jun|jul|aug|sep|sept|oct|nov|dec|monday|tuesday|wednesday|thursday|friday)\b/i.test(
+      sentence
+    )
+  ) {
+    score += 2;
+  }
+
+  if (/\b\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}\b/.test(sentence)) {
+    score += 2;
+  }
+
+  if (sentence.length >= 60 && sentence.length <= 180) {
+    score += 2;
+  }
+
+  score += Math.max(0, 3 - index);
+
+  return score;
+}
+
+function buildOpportunitySummary(opportunity = {}) {
+  const title = cleanSummaryText(opportunity.title || "Opportunity");
+  const location = cleanSummaryText(opportunity.location || "");
+  const rawSummary = cleanSummaryText(opportunity.summary || "");
+
+  if (!rawSummary) {
+    if (location) {
+      return `${title} in ${location}. Review the scope, deadline, and submission requirements to decide whether to pursue.`;
+    }
+
+    return `${title}. Review the scope, deadline, and submission requirements to decide whether to pursue.`;
+  }
+
+  const uniqueSentences = [];
+  const seen = new Set();
+
+  for (const sentence of splitSummarySentences(rawSummary)) {
+    const normalized = sentence.toLowerCase();
+    if (sentence.length < 35) continue;
+    if (seen.has(normalized)) continue;
+    seen.add(normalized);
+    uniqueSentences.push(sentence);
+  }
+
+  if (!uniqueSentences.length) {
+    if (location) {
+      return `${title} in ${location}. Review the scope, deadline, and submission requirements to decide whether to pursue.`;
+    }
+
+    return `${title}. Review the scope, deadline, and submission requirements to decide whether to pursue.`;
+  }
+
+  const picked = uniqueSentences
+    .map((sentence, index) => ({
+      sentence,
+      score: scoreSummarySentence(sentence, index),
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 2)
+    .map((x) => x.sentence);
+
+  let summary = picked.join(" ");
+
+  if (title && !summary.toLowerCase().includes(title.toLowerCase().slice(0, 20))) {
+    summary = `${title}. ${summary}`;
+  }
+
+  if (location && !summary.toLowerCase().includes(location.toLowerCase())) {
+    summary = `${summary} Location: ${location}.`;
+  }
+
+  return truncateAtWord(summary, 300);
+}
+
+function addOpportunitySummary(opportunity = {}) {
+  return {
+    ...opportunity,
+    opportunitySummary: buildOpportunitySummary(opportunity),
+  };
+}
+
+/** ---------------------------
  * ✅ State helpers
  * -------------------------- */
 const STATE_CODES = new Set([
@@ -638,7 +793,10 @@ router.get("/matches/:customerId", async (req, res) => {
 
           const prettyLocation = safeLocation ? abbreviateStateInLocation(safeLocation) : null;
 
-          const s = scoreMatch(customer, { ...opp, location: prettyLocation });
+          const s = scoreMatch(customer, {
+            ...opp,
+            location: prettyLocation,
+          });
 
           if (STRICT_NEARBY_ONLY && custState) {
             const oppState = extractStateCode(prettyLocation);
@@ -700,7 +858,7 @@ router.get("/matches/:customerId", async (req, res) => {
 
     let matches;
     try {
-      matches = dedupeMatches(raw).slice(0, limit);
+      matches = dedupeMatches(raw).slice(0, limit).map(addOpportunitySummary);
     } catch (e) {
       return fail("dedupe_slice", e);
     }
@@ -711,7 +869,7 @@ router.get("/matches/:customerId", async (req, res) => {
       customerId,
       segments: allowedSegments,
       access: {
-        isActive: Boolean(accessAllowed), // front-end should trust this for gating
+        isActive: Boolean(accessAllowed),
         isActiveFlag: Boolean(customer.isActive),
         paidActive: Boolean(paidActive),
         subscriptionStatus: customer.subscriptionStatus ?? null,
